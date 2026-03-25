@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freeway — Brand Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@300;400;500;600;700&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">brandkit</div>
+    <ul class="sidebar-nav" id="nav"></ul>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="main">
+    <div class="page">
+
+      <!-- Header -->
+      <div class="header">
+        <div class="header-wordmark" id="header-wordmark"></div>
+        <div class="header-meta" id="header-meta"></div>
+      </div>
+
+      <!-- Intro -->
+      <div class="section">
+        <p class="section-intro" id="intro"></p>
+      </div>
+
+      <!-- ═══ COLORS ═══ -->
+
+      <!-- Palette -->
+      <div class="section" id="palette">
+        <div class="section-label">Color Palette</div>
+        <div class="color-group-label">Brand</div>
+        <div class="color-grid" id="colors-brand" style="margin-bottom: 28px;"></div>
+        <div class="color-group-label">Neutrals (purple-tinted)</div>
+        <div class="color-grid" id="colors-neutrals" style="margin-bottom: 28px;"></div>
+        <div class="color-group-label">Semantic</div>
+        <div class="color-grid" id="colors-semantic"></div>
+      </div>
+
+      <!-- Gradients -->
+      <div class="section" id="gradients">
+        <div class="section-label">Gradient System</div>
+        <div class="section-intro">The purple-to-coral gradient is the signature visual element. It captures the energy and movement of the brand — the on-ramp from one thing to the next.</div>
+
+        <div class="gradient-row">
+          <div class="gradient-display brand copyable" id="gradient-brand-copy" tabindex="0" role="button" aria-label="Copy gradient CSS">
+            <div class="copy-hint"><span>Click to copy</span></div>
+          </div>
+          <div class="gradient-stops" id="gradient-stops"></div>
+          <div class="gradient-label" id="gradient-brand-label"></div>
+        </div>
+
+        <div class="gradient-row">
+          <div class="gradient-display subtle copyable" id="gradient-subtle-copy" tabindex="0" role="button" aria-label="Copy subtle gradient CSS">
+            <div class="copy-hint"><span>Click to copy</span></div>
+          </div>
+          <div class="gradient-label" id="gradient-subtle-label"></div>
+        </div>
+
+        <div class="gradient-row" style="margin-bottom: 0;">
+          <div style="background: var(--white); border-radius: 20px; padding: 40px; border: 1px solid var(--mist); text-align: center;">
+            <span class="gradient-text" style="font-family: 'Commissioner', sans-serif; font-size: 42px; font-weight: 700; letter-spacing: -0.02em;">The freeway connects everything.</span>
+          </div>
+          <div class="gradient-label">Gradient Text · Headlines on light backgrounds, stat numbers</div>
+        </div>
+
+        <div class="gradient-usage" id="gradient-usage"></div>
+      </div>
+
+      <!-- ═══ LOGOS ═══ -->
+
+      <div class="section" id="logos">
+        <div class="section-label">Logo Assets</div>
+        <div class="section-intro">Download logo files for use across web, social, and print materials. Select format and size, then download.</div>
+        <div class="logo-grid" id="logos-grid"></div>
+      </div>
+
+      <!-- ═══ CONTENT ═══ -->
+
+      <!-- Typography -->
+      <div class="section" id="typography">
+        <div class="section-label">Typography</div>
+        <div class="type-specimen">
+          <div class="type-sample-display" id="type-display-name"></div>
+          <div class="type-details" id="type-display-desc"></div>
+        </div>
+        <div class="type-specimen">
+          <div class="type-sample-body" id="type-body-name"></div>
+          <div class="type-details" id="type-body-desc"></div>
+        </div>
+
+        <div class="type-tester">
+          <div class="type-tester-label">
+            Type Tester
+            <select id="type-tester-font"></select>
+          </div>
+          <div class="type-tester-input" contenteditable="true" id="type-tester-input" data-placeholder="Type anything to test..."></div>
+        </div>
+
+        <div class="type-scale" id="type-scale"></div>
+      </div>
+
+      <!-- Text Hierarchy -->
+      <div class="section" id="hierarchy">
+        <div class="section-label">Text Hierarchy</div>
+        <div class="hierarchy-demo">
+          <p class="h-primary">Primary text uses Ink at full opacity. Body copy, headings, and content where readability is critical.</p>
+          <p class="h-secondary">Secondary text uses Graphite. Descriptions, supporting information, and labels that recede behind primary.</p>
+          <p class="h-tertiary">Tertiary text uses Slate. Captions, timestamps, footnotes, and metadata.</p>
+          <p class="h-accent">Accent text uses the brand primary for links, interactive labels, and calls to action.</p>
+        </div>
+        <div class="hierarchy-labels">
+          <div class="hierarchy-label"><div class="hierarchy-dot" style="background: var(--ink);"></div> Ink: #1A1625</div>
+          <div class="hierarchy-label"><div class="hierarchy-dot" style="background: var(--graphite);"></div> Graphite: #3D3551</div>
+          <div class="hierarchy-label"><div class="hierarchy-dot" style="background: var(--slate);"></div> Slate: #6E6584</div>
+          <div class="hierarchy-label"><div class="hierarchy-dot" style="background: var(--purple);"></div> Purple: #6B2FA0</div>
+        </div>
+      </div>
+
+      <!-- Voice & Tone -->
+      <div class="section" id="voice">
+        <div class="section-label">Voice & Tone</div>
+        <div class="section-intro" id="voice-intro"></div>
+        <div class="voice-grid" id="voice-grid"></div>
+      </div>
+
+      <!-- Spacing -->
+      <div class="section" id="spacing">
+        <div class="section-label">Spacing Scale</div>
+        <div class="section-intro">4px base unit. All spacing values are multiples of 4, aligned with Tailwind's default scale.</div>
+        <div class="spacing-scale" id="spacing-scale"></div>
+      </div>
+
+      <!-- ═══ COMPONENTS ═══ -->
+
+      <!-- Buttons & Cards -->
+      <div class="section" id="components">
+        <div class="section-label">Component Patterns</div>
+        <div class="section-intro">Buttons are pill-shaped across all variants. Sizes scale padding and font, not border-radius.</div>
+        <div id="components-content"></div>
+      </div>
+
+      <!-- Accessibility -->
+      <div class="section" id="accessibility">
+        <div class="section-label">Accessibility</div>
+        <div class="a11y-grid" id="a11y-grid"></div>
+      </div>
+
+      <!-- CSS Variables -->
+      <div class="section" id="variables">
+        <div class="section-label">CSS Variables</div>
+        <div class="section-intro">Maps to the shadcn/ui variable structure. All values in oklch for Tailwind CSS 4. Click any line to copy.</div>
+        <pre class="code-block" id="code-block"></pre>
+      </div>
+
+      <!-- Footer -->
+      <div class="guide-footer" id="footer"></div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Copy Format Toggle -->
+<div class="copy-format-bar">
+  <button class="active" data-format="hex">Hex</button>
+  <button data-format="oklch">oklch</button>
+  <button data-format="cssVar">CSS Var</button>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Engine -->
+<script src="engine.js"></script>
+
+</body>
+</html>

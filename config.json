@@ -1,0 +1,258 @@
+{
+  "brand": {
+    "name": "freeway",
+    "displayName": "Freeway",
+    "tagline": "Your on-ramp to Phoenix's tech ecosystem",
+    "description": "Freeway is the connective tissue of Phoenix's tech ecosystem. Not a coworking space, not a VC fund, not a job board — it's the infrastructure that makes the ecosystem navigable. The visual language reflects that: energetic but grounded, vibrant but never loud, built to connect.",
+    "url": "freewayphx.com",
+    "byline": "built by the stack lab",
+    "version": "1.0",
+    "date": "March 2026"
+  },
+  "fonts": {
+    "display": { "family": "Commissioner", "googleImport": "Commissioner:wght@300;400;500;600;700" },
+    "body": { "family": "Ubuntu", "googleImport": "Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,400" }
+  },
+  "nav": [
+    {
+      "group": "Colors",
+      "items": [
+        { "label": "Palette", "id": "palette" },
+        { "label": "Gradients", "id": "gradients" }
+      ]
+    },
+    {
+      "group": "Logos",
+      "items": [
+        { "label": "Downloads", "id": "logos" }
+      ]
+    },
+    {
+      "group": "Content",
+      "items": [
+        { "label": "Typography", "id": "typography" },
+        { "label": "Text Hierarchy", "id": "hierarchy" },
+        { "label": "Voice & Tone", "id": "voice" },
+        { "label": "Spacing", "id": "spacing" }
+      ]
+    },
+    {
+      "group": "Components",
+      "items": [
+        { "label": "Buttons & Cards", "id": "components" },
+        { "label": "Accessibility", "id": "accessibility" },
+        { "label": "CSS Variables", "id": "variables" }
+      ]
+    }
+  ],
+  "colors": {
+    "brand": [
+      { "name": "Freeway Purple", "hex": "#6B2FA0", "oklch": "oklch(0.42 0.18 300)", "cssVar": "--color-brand-purple", "role": "Primary — buttons, links, accents" },
+      { "name": "Violet", "hex": "#4A1D75", "oklch": "oklch(0.31 0.16 298)", "cssVar": "--color-brand-violet", "role": "Dark accent — hover, depth, gradient start" },
+      { "name": "Lavender", "hex": "#9B6DC6", "oklch": "oklch(0.58 0.14 300)", "cssVar": "--color-brand-lavender", "role": "Light accent — tags, focus rings, badges" },
+      { "name": "Coral", "hex": "#E86B5A", "oklch": "oklch(0.65 0.16 25)", "cssVar": "--color-brand-coral", "role": "Secondary — warm accent, gradient end" },
+      { "name": "Coral Dark", "hex": "#C94F3E", "oklch": "oklch(0.55 0.17 25)", "cssVar": "--color-brand-coral-dark", "role": "Coral hover states" },
+      { "name": "Magenta", "hex": "#B84D8A", "oklch": "oklch(0.52 0.15 340)", "cssVar": "--color-brand-magenta", "role": "Gradient bridge — purple to coral" }
+    ],
+    "neutrals": [
+      { "name": "Ink", "hex": "#1A1625", "oklch": "oklch(0.17 0.02 295)", "cssVar": "--foreground", "role": "Primary text, headings, dark sections" },
+      { "name": "Graphite", "hex": "#3D3551", "oklch": "oklch(0.31 0.04 290)", "cssVar": "--text-secondary", "role": "Secondary text, descriptions" },
+      { "name": "Slate", "hex": "#6E6584", "oklch": "oklch(0.49 0.04 290)", "cssVar": "--muted-foreground", "role": "Tertiary text, captions, labels" },
+      { "name": "Haze", "hex": "#B0A8C0", "oklch": "oklch(0.72 0.04 290)", "cssVar": "--border-color", "role": "Borders, dividers", "light": true },
+      { "name": "Mist", "hex": "#EDEAF2", "oklch": "oklch(0.94 0.01 290)", "cssVar": "--secondary", "role": "Section backgrounds, inputs", "light": true },
+      { "name": "Cloud", "hex": "#F7F5FA", "oklch": "oklch(0.97 0.01 290)", "cssVar": "--background", "role": "Page background", "light": true }
+    ],
+    "semantic": [
+      { "name": "Success", "hex": "#2D9F6F", "oklch": "oklch(0.60 0.14 160)", "cssVar": "--success", "role": "Confirmations, positive states" },
+      { "name": "Warning", "hex": "#D4942A", "oklch": "oklch(0.67 0.15 75)", "cssVar": "--warning", "role": "Attention, caution states" },
+      { "name": "Error", "hex": "#D44040", "oklch": "oklch(0.53 0.19 25)", "cssVar": "--destructive", "role": "Errors, destructive actions" },
+      { "name": "Info", "hex": "#4A8FD4", "oklch": "oklch(0.61 0.13 250)", "cssVar": "--info", "role": "Informational messages" }
+    ]
+  },
+  "gradients": [
+    {
+      "name": "Brand",
+      "css": "linear-gradient(135deg, #4A1D75 0%, #6B2FA0 30%, #B84D8A 65%, #E86B5A 100%)",
+      "description": "Hero backgrounds, wordmark, feature sections",
+      "stops": [
+        { "color": "#4A1D75", "position": "0%", "name": "Violet" },
+        { "color": "#6B2FA0", "position": "30%", "name": "Purple" },
+        { "color": "#B84D8A", "position": "65%", "name": "Magenta" },
+        { "color": "#E86B5A", "position": "100%", "name": "Coral" }
+      ]
+    },
+    {
+      "name": "Subtle",
+      "css": "linear-gradient(135deg, rgba(75, 29, 117, 0.06) 0%, rgba(232, 107, 90, 0.06) 100%)",
+      "description": "Card tints, section backgrounds, hover states"
+    }
+  ],
+  "gradientUsage": {
+    "do": [
+      "Hero section backgrounds (with overlay)",
+      "Accent borders (bottom or left)",
+      "Headline text on light backgrounds",
+      "Primary CTA button (one per page)",
+      "Decorative background shapes"
+    ],
+    "dont": [
+      "Body text or paragraphs",
+      "Every button on the page",
+      "Small UI elements (checkboxes, toggles)",
+      "Backgrounds with dense reading content",
+      "Icon fills at small sizes"
+    ]
+  },
+  "logos": [
+    {
+      "name": "Full Lockup — Black",
+      "description": "Icon + wordmark on light backgrounds",
+      "variants": {
+        "svg": "logos/freeway-black.svg",
+        "png": "logos/freeway-full-black_2x.png",
+        "jpg": "logos/freeway-black_2x.jpg"
+      },
+      "background": "light"
+    },
+    {
+      "name": "Full Lockup — White",
+      "description": "Icon + wordmark on dark backgrounds",
+      "variants": {
+        "svg": "logos/freeway-white.svg",
+        "png": "logos/freeway-full-white_2x.png",
+        "jpg": "logos/freeway-full-white_2x.jpg"
+      },
+      "background": "dark"
+    }
+  ],
+  "logoSizes": [
+    { "label": "Original", "width": null },
+    { "label": "800px", "width": 800 },
+    { "label": "400px", "width": 400 },
+    { "label": "200px", "width": 200 }
+  ],
+  "typography": [
+    { "name": "Display XL", "font": "display", "size": "72px", "weight": 700, "tracking": "-0.03em", "leading": "1.05", "sample": "The freeway connects." },
+    { "name": "Display", "font": "display", "size": "56px", "weight": 700, "tracking": "-0.025em", "leading": "1.1", "sample": "Where talent meets capital." },
+    { "name": "H1", "font": "display", "size": "44px", "weight": 700, "tracking": "-0.02em", "leading": "1.15", "sample": "Your on-ramp to Phoenix tech" },
+    { "name": "H2", "font": "display", "size": "36px", "weight": 700, "tracking": "-0.015em", "leading": "1.2", "sample": "Tech Talent Summit 2026" },
+    { "name": "H3", "font": "display", "size": "28px", "weight": 600, "tracking": "-0.01em", "leading": "1.3", "sample": "500+ companies in the ecosystem" },
+    { "name": "H4", "font": "display", "size": "22px", "weight": 600, "tracking": "-0.005em", "leading": "1.35", "sample": "Be in the room" },
+    { "name": "Body LG", "font": "body", "size": "18px", "weight": 400, "tracking": "0", "leading": "1.7", "sample": "Whether you're building, hiring, or navigating your next move — Freeway connects you to what matters." },
+    { "name": "Body", "font": "body", "size": "16px", "weight": 400, "tracking": "0", "leading": "1.7", "sample": "Phoenix has the talent, the capital, and the momentum. Access just needed a better map." },
+    { "name": "Body SM", "font": "body", "size": "14px", "weight": 400, "tracking": "0", "leading": "1.6", "sample": "Join 4,500+ subscribers getting the weekly ecosystem update." },
+    { "name": "Caption", "font": "body", "size": "12px", "weight": 500, "tracking": "0.02em", "leading": "1.5", "sample": "April 10, 2026 · Scottsdale, AZ" },
+    { "name": "Overline", "font": "body", "size": "11px", "weight": 700, "tracking": "0.1em", "leading": "1.4", "sample": "freewayphx.com · phoenix tech ecosystem", "uppercase": true }
+  ],
+  "voice": {
+    "description": "Freeway sounds like a smart, well-connected friend telling you about something worth showing up for. Direct, energetic, inclusive, grounded. Not a recruiter, not a PR firm, not a conference MC.",
+    "do": [
+      "Your on-ramp to Phoenix's tech ecosystem.",
+      "The talent is here — it's just not always visible.",
+      "500+ companies. 4,500+ subscribers. Be in the room.",
+      "Where talent meets capital and community."
+    ],
+    "dont": [
+      "Disrupting the talent pipeline.",
+      "Leverage synergies across verticals.",
+      "The premier destination for tech professionals.",
+      "We're excited to announce our incredible new partnership!"
+    ]
+  },
+  "wordmark": {
+    "text": "freeway",
+    "description": "The \"freeway\" wordmark is set in Commissioner, 700 weight, lowercase. The lowercase treatment signals approachability.",
+    "variants": [
+      { "bg": "gradient", "label": "Primary: White on Brand Gradient" },
+      { "bg": "dark", "label": "Reversed: White on Ink" },
+      { "bg": "light", "label": "Light: Purple on Mist" },
+      { "bg": "white", "label": "Clean: Purple on White" }
+    ]
+  },
+  "accessibility": [
+    { "fg": "#6B2FA0", "bg": "#FFFFFF", "fgName": "Purple", "bgName": "White", "ratio": "7.2:1", "rating": "AAA", "border": true },
+    { "fg": "#FFFFFF", "bg": "#6B2FA0", "fgName": "White", "bgName": "Purple", "ratio": "7.2:1", "rating": "AAA" },
+    { "fg": "#1A1625", "bg": "#FFFFFF", "fgName": "Ink", "bgName": "White", "ratio": "16.5:1", "rating": "AAA", "border": true },
+    { "fg": "#FFFFFF", "bg": "#1A1625", "fgName": "White", "bgName": "Ink", "ratio": "16.5:1", "rating": "AAA" },
+    { "fg": "#3D3551", "bg": "#F7F5FA", "fgName": "Graphite", "bgName": "Cloud", "ratio": "9.0:1", "rating": "AAA" },
+    { "fg": "#6E6584", "bg": "#FFFFFF", "fgName": "Slate", "bgName": "White", "ratio": "4.8:1", "rating": "AA", "border": true },
+    { "fg": "#E86B5A", "bg": "#FFFFFF", "fgName": "Coral", "bgName": "White", "ratio": "3.2:1", "rating": "AA Large", "border": true, "largeText": true },
+    { "fg": "#9B6DC6", "bg": "#1A1625", "fgName": "Lavender", "bgName": "Ink", "ratio": "4.6:1", "rating": "AA" },
+    { "fg": "#B0A8C0", "bg": "#FFFFFF", "fgName": "Haze", "bgName": "White", "ratio": "2.5:1", "rating": "Decorative", "border": true }
+  ],
+  "cssVariables": [
+    { "section": "Brand tokens", "vars": [
+      { "prop": "--color-brand-purple", "value": "oklch(0.42 0.18 300)", "comment": "#6B2FA0" },
+      { "prop": "--color-brand-violet", "value": "oklch(0.31 0.16 298)", "comment": "#4A1D75" },
+      { "prop": "--color-brand-lavender", "value": "oklch(0.58 0.14 300)", "comment": "#9B6DC6" },
+      { "prop": "--color-brand-coral", "value": "oklch(0.65 0.16 25)", "comment": "#E86B5A" },
+      { "prop": "--color-brand-magenta", "value": "oklch(0.52 0.15 340)", "comment": "#B84D8A" }
+    ]},
+    { "section": "shadcn/ui semantic mapping", "vars": [
+      { "prop": "--background", "value": "oklch(0.97 0.01 290)", "comment": "Cloud" },
+      { "prop": "--foreground", "value": "oklch(0.17 0.02 295)", "comment": "Ink" },
+      { "prop": "--card", "value": "oklch(1 0 0)", "comment": "White" },
+      { "prop": "--card-foreground", "value": "oklch(0.17 0.02 295)", "comment": "Ink" },
+      { "prop": "--primary", "value": "oklch(0.42 0.18 300)", "comment": "Purple" },
+      { "prop": "--primary-foreground", "value": "oklch(1 0 0)", "comment": "White" },
+      { "prop": "--secondary", "value": "oklch(0.94 0.01 290)", "comment": "Mist" },
+      { "prop": "--secondary-foreground", "value": "oklch(0.17 0.02 295)", "comment": "Ink" },
+      { "prop": "--muted", "value": "oklch(0.94 0.01 290)", "comment": "Mist" },
+      { "prop": "--muted-foreground", "value": "oklch(0.49 0.04 290)", "comment": "Slate" },
+      { "prop": "--accent", "value": "oklch(0.65 0.16 25)", "comment": "Coral" },
+      { "prop": "--accent-foreground", "value": "oklch(1 0 0)", "comment": "White" },
+      { "prop": "--destructive", "value": "oklch(0.53 0.19 25)", "comment": "Error" },
+      { "prop": "--border", "value": "oklch(0.94 0.01 290)", "comment": "Mist" },
+      { "prop": "--input", "value": "oklch(0.94 0.01 290)", "comment": "Mist" },
+      { "prop": "--ring", "value": "oklch(0.58 0.14 300)", "comment": "Lavender" },
+      { "prop": "--radius", "value": "0.75rem", "comment": "12px" }
+    ]},
+    { "section": "Gradient", "vars": [
+      { "prop": "--gradient-brand", "value": "linear-gradient(135deg, #4A1D75 0%, #6B2FA0 30%, #B84D8A 65%, #E86B5A 100%)", "comment": "" }
+    ]},
+    { "section": "Typography", "vars": [
+      { "prop": "--font-display", "value": "'Commissioner', sans-serif", "comment": "" },
+      { "prop": "--font-sans", "value": "'Ubuntu', sans-serif", "comment": "" }
+    ]}
+  ],
+  "spacing": [
+    { "px": 4, "token": "space-1" },
+    { "px": 8, "token": "space-2" },
+    { "px": 12, "token": "space-3" },
+    { "px": 16, "token": "space-4" },
+    { "px": 24, "token": "space-6" },
+    { "px": 32, "token": "space-8" },
+    { "px": 48, "token": "space-12" },
+    { "px": 64, "token": "space-16" },
+    { "px": 96, "token": "space-24" }
+  ],
+  "components": {
+    "buttons": [
+      { "variant": "Primary", "items": [
+        { "class": "btn-primary", "sizes": ["sm", "md", "lg"], "labels": ["Small", "Get Connected", "Grab a Ticket"] }
+      ]},
+      { "variant": "Secondary", "items": [
+        { "class": "btn-secondary", "sizes": ["sm", "md", "lg"], "labels": ["Small", "Learn More", "View Schedule"] }
+      ]},
+      { "variant": "Ghost", "items": [
+        { "class": "btn-ghost", "sizes": ["sm", "md", "lg"], "labels": ["Small", "Become a Partner", "View All Events"] }
+      ]},
+      { "variant": "Gradient (hero CTAs — use sparingly)", "items": [
+        { "class": "btn-gradient", "sizes": ["md", "lg"], "labels": ["Join the Ecosystem", "Get Your Ticket"] }
+      ]},
+      { "variant": "Coral Accent", "items": [
+        { "class": "btn-coral", "sizes": ["md", "lg"], "labels": ["Register Now", "Apply to Speak"] }
+      ]}
+    ],
+    "cards": [
+      { "title": "Talent Pipeline", "description": "Connect with 500+ companies actively hiring in Phoenix tech.", "tag": "Community" },
+      { "title": "Capital Access", "description": "Meet investors, accelerators, and funding partners in the room.", "tag": "Capital" },
+      { "title": "Startup Pavilion", "description": "Showcase your startup to 3,000+ attendees and industry leaders.", "tag": "Events" }
+    ],
+    "stats": [
+      { "value": "500+", "label": "Companies in ecosystem" },
+      { "value": "4,500+", "label": "Newsletter subscribers" },
+      { "value": "3,000+", "label": "Event attendees" }
+    ]
+  }
+}
