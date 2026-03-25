@@ -1,37 +1,13 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Brandkit — Freeway PHX Style Guide
+   Brandkit — Style Guide Engine
    Self-contained stylesheet, no dependencies.
-   Google Fonts loaded separately in HTML.
+   CSS custom properties injected by engine.js from config.json.
    ═══════════════════════════════════════════════════════════════════ */
-
-/* ── CSS Custom Properties ── */
-:root {
-  --purple: #6B2FA0;
-  --violet: #4A1D75;
-  --lavender: #9B6DC6;
-  --coral: #E86B5A;
-  --coral-dark: #C94F3E;
-  --coral-light: #F4A699;
-  --magenta: #B84D8A;
-  --ink: #1A1625;
-  --graphite: #3D3551;
-  --slate: #6E6584;
-  --haze: #B0A8C0;
-  --mist: #EDEAF2;
-  --cloud: #F7F5FA;
-  --white: #FFFFFF;
-  --success: #2D9F6F;
-  --warning: #D4942A;
-  --error: #D44040;
-  --info: #4A8FD4;
-  --gradient-brand: linear-gradient(135deg, #4A1D75 0%, #6B2FA0 30%, #B84D8A 65%, #E86B5A 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(75, 29, 117, 0.06) 0%, rgba(232, 107, 90, 0.06) 100%);
-}
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: var(--font-body), sans-serif;
   background: var(--cloud);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
@@ -54,7 +30,7 @@ body {
 }
 
 .sidebar-brand {
-  font-family: 'Commissioner', sans-serif;
+  font-family: var(--font-display), sans-serif;
   font-size: 18px;
   font-weight: 700;
   color: var(--purple);
@@ -76,12 +52,12 @@ body {
 }
 
 .sidebar-nav a:hover { color: var(--ink); background: var(--cloud); }
-.sidebar-nav a.active { color: var(--purple); border-left-color: var(--purple); background: rgba(107, 47, 160, 0.04); font-weight: 500; }
+.sidebar-nav a.active { color: var(--purple); border-left-color: var(--purple); background: rgba(var(--purple-rgb), 0.04); font-weight: 500; }
 
 /* ── Sidebar Grouped Navigation ── */
 .nav-group {
   padding: 20px 24px 6px;
-  font-family: 'Ubuntu', sans-serif;
+  font-family: var(--font-body), sans-serif;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.10em;
@@ -110,7 +86,7 @@ body {
 }
 
 .nav-group-items a:hover { color: var(--ink); background: var(--cloud); }
-.nav-group-items a.active { color: var(--purple); border-left-color: var(--purple); background: rgba(107, 47, 160, 0.04); font-weight: 500; }
+.nav-group-items a.active { color: var(--purple); border-left-color: var(--purple); background: rgba(var(--purple-rgb), 0.04); font-weight: 500; }
 
 .main { margin-left: 200px; flex: 1; }
 
@@ -131,7 +107,7 @@ body {
   border: 1px solid var(--mist);
   border-radius: 9999px;
   padding: 3px;
-  box-shadow: 0 4px 20px rgba(26, 22, 37, 0.1);
+  box-shadow: 0 4px 20px rgba(var(--ink-rgb), 0.1);
   z-index: 200;
   font-size: 12px;
 }
@@ -143,7 +119,7 @@ body {
   background: transparent;
   color: var(--slate);
   cursor: pointer;
-  font-family: 'Ubuntu', sans-serif;
+  font-family: var(--font-body), sans-serif;
   font-size: 12px;
   font-weight: 500;
   transition: all 150ms ease;
@@ -175,8 +151,8 @@ body {
   border-radius: 10px;
   font-size: 13px;
   font-weight: 500;
-  font-family: 'Ubuntu', sans-serif;
-  box-shadow: 0 4px 20px rgba(26, 22, 37, 0.2);
+  font-family: var(--font-body), sans-serif;
+  box-shadow: 0 4px 20px rgba(var(--ink-rgb), 0.2);
   animation: toast-in 200ms ease forwards;
   display: flex;
   align-items: center;
@@ -215,7 +191,7 @@ body {
 }
 
 .header-wordmark {
-  font-family: 'Commissioner', sans-serif;
+  font-family: var(--font-display), sans-serif;
   font-size: 56px;
   font-weight: 700;
   color: var(--white);
@@ -237,7 +213,7 @@ body {
 .section { margin-bottom: 72px; scroll-margin-top: 24px; }
 
 .section-label {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: var(--font-body), sans-serif;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -269,7 +245,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(26, 22, 37, 0.6);
+  background: rgba(var(--ink-rgb), 0.6);
   border-radius: inherit;
   opacity: 0;
   transition: opacity 150ms ease;
@@ -304,7 +280,7 @@ body {
   overflow: hidden;
 }
 
-.color-swatch.has-border { box-shadow: inset 0 0 0 1px rgba(26, 22, 37, 0.08); }
+.color-swatch.has-border { box-shadow: inset 0 0 0 1px rgba(var(--ink-rgb), 0.08); }
 
 .color-name { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
 
@@ -373,7 +349,7 @@ body {
 .gradient-usage-card { background: var(--mist); border-radius: 16px; padding: 28px; }
 
 .gradient-usage-card h4 {
-  font-family: 'Commissioner', sans-serif;
+  font-family: var(--font-display), sans-serif;
   font-size: 14px;
   font-weight: 600;
   color: var(--ink);
@@ -407,7 +383,7 @@ body {
 .type-specimen { margin-bottom: 40px; }
 
 .type-sample-display {
-  font-family: 'Commissioner', sans-serif;
+  font-family: var(--font-display), sans-serif;
   font-size: 56px;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -417,7 +393,7 @@ body {
 }
 
 .type-sample-body {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: var(--font-body), sans-serif;
   font-size: 42px;
   font-weight: 400;
   letter-spacing: -0.01em;
@@ -449,12 +425,12 @@ body {
 }
 
 .type-tester-label select {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: var(--font-body), sans-serif;
   font-size: 12px;
   font-weight: 500;
   color: var(--purple);
-  background: rgba(107, 47, 160, 0.06);
-  border: 1px solid rgba(107, 47, 160, 0.15);
+  background: rgba(var(--purple-rgb), 0.06);
+  border: 1px solid rgba(var(--purple-rgb), 0.15);
   border-radius: 6px;
   padding: 4px 8px;
   cursor: pointer;
@@ -528,7 +504,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Commissioner', sans-serif;
+  font-family: var(--font-display), sans-serif;
   font-size: 48px;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -537,7 +513,7 @@ body {
 .wordmark-box.on-gradient { background: var(--gradient-brand); color: var(--white); }
 .wordmark-box.on-dark { background: var(--ink); color: var(--white); }
 .wordmark-box.on-light { background: var(--mist); color: var(--purple); }
-.wordmark-box.on-white { background: var(--white); color: var(--purple); box-shadow: inset 0 0 0 1px rgba(26, 22, 37, 0.08); }
+.wordmark-box.on-white { background: var(--white); color: var(--purple); box-shadow: inset 0 0 0 1px rgba(var(--ink-rgb), 0.08); }
 
 .wordmark-note { font-size: 12px; color: var(--slate); text-align: center; margin-top: 6px; }
 
@@ -583,7 +559,7 @@ body {
 }
 
 .logo-name {
-  font-family: 'Commissioner', sans-serif;
+  font-family: var(--font-display), sans-serif;
   font-size: 14px;
   font-weight: 600;
   color: var(--white);
@@ -624,7 +600,7 @@ body {
   background: transparent;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  font-family: 'Ubuntu', sans-serif;
+  font-family: var(--font-body), sans-serif;
   font-size: 11px;
   font-weight: 500;
   transition: all 150ms ease;
@@ -662,7 +638,7 @@ body {
 
 .logo-size-select,
 .logo-size-picker {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: var(--font-body), sans-serif;
   font-size: 12px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.8);
@@ -735,7 +711,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.25);
   background: rgba(255, 255, 255, 0.1);
   color: var(--white);
-  font-family: 'Ubuntu', sans-serif;
+  font-family: var(--font-body), sans-serif;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -755,7 +731,7 @@ body {
 }
 
 .logo-card.bg-light .logo-download-btn:hover {
-  background: rgba(107, 47, 160, 0.06);
+  background: rgba(var(--purple-rgb), 0.06);
 }
 
 /* ── Voice ── */
@@ -783,16 +759,16 @@ body {
   color: var(--ink);
   margin-bottom: 10px;
   padding-left: 16px;
-  border-left: 2px solid rgba(107, 47, 160, 0.2);
+  border-left: 2px solid rgba(var(--purple-rgb), 0.2);
 }
 
 .voice-example:last-child { margin-bottom: 0; }
 
 .voice-card.dont .voice-example {
-  border-left-color: rgba(212, 64, 64, 0.25);
+  border-left-color: rgba(var(--error-rgb), 0.25);
   color: var(--slate);
   text-decoration: line-through;
-  text-decoration-color: rgba(212, 64, 64, 0.3);
+  text-decoration-color: rgba(var(--error-rgb), 0.3);
 }
 
 /* ── Components ── */
@@ -804,7 +780,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Ubuntu', sans-serif;
+  font-family: var(--font-body), sans-serif;
   font-weight: 500;
   border: none;
   cursor: pointer;
@@ -838,11 +814,11 @@ body {
 }
 
 .card-demo:hover {
-  box-shadow: 0 4px 12px rgba(26, 22, 37, 0.08), 0 2px 4px rgba(26, 22, 37, 0.04);
+  box-shadow: 0 4px 12px rgba(var(--ink-rgb), 0.08), 0 2px 4px rgba(var(--ink-rgb), 0.04);
   transform: translateY(-2px);
 }
 
-.card-demo h4 { font-family: 'Commissioner', sans-serif; font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+.card-demo h4 { font-family: var(--font-display), sans-serif; font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
 .card-demo p { font-size: 14px; line-height: 1.6; color: var(--graphite); margin-bottom: 14px; }
 
 .card-demo .tag {
@@ -851,7 +827,7 @@ body {
   font-weight: 500;
   padding: 3px 10px;
   border-radius: 9999px;
-  background: rgba(107, 47, 160, 0.08);
+  background: rgba(var(--purple-rgb), 0.08);
   color: var(--purple);
 }
 
@@ -876,7 +852,7 @@ body {
 }
 
 .dark-card:hover { background: rgba(255, 255, 255, 0.08); }
-.dark-card h4 { font-family: 'Commissioner', sans-serif; font-size: 28px; font-weight: 700; color: var(--white); margin-bottom: 4px; letter-spacing: -0.01em; }
+.dark-card h4 { font-family: var(--font-display), sans-serif; font-size: 28px; font-weight: 700; color: var(--white); margin-bottom: 4px; letter-spacing: -0.01em; }
 .dark-card p { font-size: 13px; color: rgba(255, 255, 255, 0.6); }
 
 /* ── Spacing ── */
@@ -937,9 +913,9 @@ body {
   text-transform: uppercase;
 }
 
-.a11y-badge.pass { background: rgba(45, 159, 111, 0.15); color: var(--success); }
-.a11y-badge.fail { background: rgba(212, 64, 64, 0.12); color: var(--error); }
-.a11y-badge.large { background: rgba(107, 47, 160, 0.12); color: var(--purple); }
+.a11y-badge.pass { background: rgba(var(--success-rgb), 0.15); color: var(--success); }
+.a11y-badge.fail { background: rgba(var(--error-rgb), 0.12); color: var(--error); }
+.a11y-badge.large { background: rgba(var(--purple-rgb), 0.12); color: var(--purple); }
 
 /* ── Code Block ── */
 .code-block {

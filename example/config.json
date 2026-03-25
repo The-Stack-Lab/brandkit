@@ -10,8 +10,42 @@
     "date": "March 2026"
   },
   "fonts": {
-    "display": { "family": "Commissioner", "googleImport": "Commissioner:wght@300;400;500;600;700" },
-    "body": { "family": "Ubuntu", "googleImport": "Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,400" }
+    "display": {
+      "family": "Commissioner",
+      "googleImport": "Commissioner:wght@300;400;500;600;700",
+      "description": "Variable geometric sans-serif. Structured, authoritative, modern. Display and headings."
+    },
+    "body": {
+      "family": "Ubuntu",
+      "googleImport": "Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,400",
+      "description": "Humanist sans-serif with rounded terminals. Warm, legible, approachable. Body text and UI."
+    }
+  },
+  "theme": {
+    "--purple": "#6B2FA0",
+    "--violet": "#4A1D75",
+    "--lavender": "#9B6DC6",
+    "--coral": "#E86B5A",
+    "--coral-dark": "#C94F3E",
+    "--coral-light": "#F4A699",
+    "--magenta": "#B84D8A",
+    "--ink": "#1A1625",
+    "--graphite": "#3D3551",
+    "--slate": "#6E6584",
+    "--haze": "#B0A8C0",
+    "--mist": "#EDEAF2",
+    "--cloud": "#F7F5FA",
+    "--white": "#FFFFFF",
+    "--success": "#2D9F6F",
+    "--warning": "#D4942A",
+    "--error": "#D44040",
+    "--info": "#4A8FD4",
+    "--gradient-brand": "linear-gradient(135deg, #4A1D75 0%, #6B2FA0 30%, #B84D8A 65%, #E86B5A 100%)",
+    "--gradient-brand-subtle": "linear-gradient(135deg, rgba(75, 29, 117, 0.06) 0%, rgba(232, 107, 90, 0.06) 100%)",
+    "--purple-rgb": "107, 47, 160",
+    "--ink-rgb": "26, 22, 37",
+    "--error-rgb": "212, 64, 64",
+    "--success-rgb": "45, 159, 111"
   },
   "nav": [
     {
@@ -46,28 +80,37 @@
     }
   ],
   "colors": {
-    "brand": [
-      { "name": "Freeway Purple", "hex": "#6B2FA0", "oklch": "oklch(0.42 0.18 300)", "cssVar": "--color-brand-purple", "role": "Primary — buttons, links, accents" },
-      { "name": "Violet", "hex": "#4A1D75", "oklch": "oklch(0.31 0.16 298)", "cssVar": "--color-brand-violet", "role": "Dark accent — hover, depth, gradient start" },
-      { "name": "Lavender", "hex": "#9B6DC6", "oklch": "oklch(0.58 0.14 300)", "cssVar": "--color-brand-lavender", "role": "Light accent — tags, focus rings, badges" },
-      { "name": "Coral", "hex": "#E86B5A", "oklch": "oklch(0.65 0.16 25)", "cssVar": "--color-brand-coral", "role": "Secondary — warm accent, gradient end" },
-      { "name": "Coral Dark", "hex": "#C94F3E", "oklch": "oklch(0.55 0.17 25)", "cssVar": "--color-brand-coral-dark", "role": "Coral hover states" },
-      { "name": "Magenta", "hex": "#B84D8A", "oklch": "oklch(0.52 0.15 340)", "cssVar": "--color-brand-magenta", "role": "Gradient bridge — purple to coral" }
-    ],
-    "neutrals": [
-      { "name": "Ink", "hex": "#1A1625", "oklch": "oklch(0.17 0.02 295)", "cssVar": "--foreground", "role": "Primary text, headings, dark sections" },
-      { "name": "Graphite", "hex": "#3D3551", "oklch": "oklch(0.31 0.04 290)", "cssVar": "--text-secondary", "role": "Secondary text, descriptions" },
-      { "name": "Slate", "hex": "#6E6584", "oklch": "oklch(0.49 0.04 290)", "cssVar": "--muted-foreground", "role": "Tertiary text, captions, labels" },
-      { "name": "Haze", "hex": "#B0A8C0", "oklch": "oklch(0.72 0.04 290)", "cssVar": "--border-color", "role": "Borders, dividers", "light": true },
-      { "name": "Mist", "hex": "#EDEAF2", "oklch": "oklch(0.94 0.01 290)", "cssVar": "--secondary", "role": "Section backgrounds, inputs", "light": true },
-      { "name": "Cloud", "hex": "#F7F5FA", "oklch": "oklch(0.97 0.01 290)", "cssVar": "--background", "role": "Page background", "light": true }
-    ],
-    "semantic": [
-      { "name": "Success", "hex": "#2D9F6F", "oklch": "oklch(0.60 0.14 160)", "cssVar": "--success", "role": "Confirmations, positive states" },
-      { "name": "Warning", "hex": "#D4942A", "oklch": "oklch(0.67 0.15 75)", "cssVar": "--warning", "role": "Attention, caution states" },
-      { "name": "Error", "hex": "#D44040", "oklch": "oklch(0.53 0.19 25)", "cssVar": "--destructive", "role": "Errors, destructive actions" },
-      { "name": "Info", "hex": "#4A8FD4", "oklch": "oklch(0.61 0.13 250)", "cssVar": "--info", "role": "Informational messages" }
-    ]
+    "brand": {
+      "label": "Brand",
+      "items": [
+        { "name": "Freeway Purple", "hex": "#6B2FA0", "oklch": "oklch(0.42 0.18 300)", "cssVar": "--color-brand-purple", "role": "Primary — buttons, links, accents" },
+        { "name": "Violet", "hex": "#4A1D75", "oklch": "oklch(0.31 0.16 298)", "cssVar": "--color-brand-violet", "role": "Dark accent — hover, depth, gradient start" },
+        { "name": "Lavender", "hex": "#9B6DC6", "oklch": "oklch(0.58 0.14 300)", "cssVar": "--color-brand-lavender", "role": "Light accent — tags, focus rings, badges" },
+        { "name": "Coral", "hex": "#E86B5A", "oklch": "oklch(0.65 0.16 25)", "cssVar": "--color-brand-coral", "role": "Secondary — warm accent, gradient end" },
+        { "name": "Coral Dark", "hex": "#C94F3E", "oklch": "oklch(0.55 0.17 25)", "cssVar": "--color-brand-coral-dark", "role": "Coral hover states" },
+        { "name": "Magenta", "hex": "#B84D8A", "oklch": "oklch(0.52 0.15 340)", "cssVar": "--color-brand-magenta", "role": "Gradient bridge — purple to coral" }
+      ]
+    },
+    "neutrals": {
+      "label": "Neutrals (purple-tinted)",
+      "items": [
+        { "name": "Ink", "hex": "#1A1625", "oklch": "oklch(0.17 0.02 295)", "cssVar": "--foreground", "role": "Primary text, headings, dark sections" },
+        { "name": "Graphite", "hex": "#3D3551", "oklch": "oklch(0.31 0.04 290)", "cssVar": "--text-secondary", "role": "Secondary text, descriptions" },
+        { "name": "Slate", "hex": "#6E6584", "oklch": "oklch(0.49 0.04 290)", "cssVar": "--muted-foreground", "role": "Tertiary text, captions, labels" },
+        { "name": "Haze", "hex": "#B0A8C0", "oklch": "oklch(0.72 0.04 290)", "cssVar": "--border-color", "role": "Borders, dividers", "light": true },
+        { "name": "Mist", "hex": "#EDEAF2", "oklch": "oklch(0.94 0.01 290)", "cssVar": "--secondary", "role": "Section backgrounds, inputs", "light": true },
+        { "name": "Cloud", "hex": "#F7F5FA", "oklch": "oklch(0.97 0.01 290)", "cssVar": "--background", "role": "Page background", "light": true }
+      ]
+    },
+    "semantic": {
+      "label": "Semantic",
+      "items": [
+        { "name": "Success", "hex": "#2D9F6F", "oklch": "oklch(0.60 0.14 160)", "cssVar": "--success", "role": "Confirmations, positive states" },
+        { "name": "Warning", "hex": "#D4942A", "oklch": "oklch(0.67 0.15 75)", "cssVar": "--warning", "role": "Attention, caution states" },
+        { "name": "Error", "hex": "#D44040", "oklch": "oklch(0.53 0.19 25)", "cssVar": "--destructive", "role": "Errors, destructive actions" },
+        { "name": "Info", "hex": "#4A8FD4", "oklch": "oklch(0.61 0.13 250)", "cssVar": "--info", "role": "Informational messages" }
+      ]
+    }
   },
   "gradients": [
     {
@@ -103,6 +146,20 @@
       "Icon fills at small sizes"
     ]
   },
+  "sections": {
+    "gradients": "The purple-to-coral gradient is the signature visual element. It captures the energy and movement of the brand — the on-ramp from one thing to the next.",
+    "gradientTextDemo": "The freeway connects everything.",
+    "logos": "Download logo files for use across web, social, and print materials. Select format and size, then download.",
+    "components": "Buttons are pill-shaped across all variants. Sizes scale padding and font, not border-radius.",
+    "spacing": "4px base unit. All spacing values are multiples of 4, aligned with Tailwind's default scale.",
+    "variables": "Maps to the shadcn/ui variable structure. All values in oklch for Tailwind CSS 4. Click any line to copy."
+  },
+  "hierarchy": [
+    { "class": "h-primary", "label": "Primary", "colorVar": "--ink", "colorName": "Ink", "hex": "#1A1625", "description": "Primary text uses Ink at full opacity. Body copy, headings, and content where readability is critical." },
+    { "class": "h-secondary", "label": "Secondary", "colorVar": "--graphite", "colorName": "Graphite", "hex": "#3D3551", "description": "Secondary text uses Graphite. Descriptions, supporting information, and labels that recede behind primary." },
+    { "class": "h-tertiary", "label": "Tertiary", "colorVar": "--slate", "colorName": "Slate", "hex": "#6E6584", "description": "Tertiary text uses Slate. Captions, timestamps, footnotes, and metadata." },
+    { "class": "h-accent", "label": "Accent", "colorVar": "--purple", "colorName": "Purple", "hex": "#6B2FA0", "description": "Accent text uses the brand primary for links, interactive labels, and calls to action." }
+  ],
   "logos": [
     {
       "name": "Full Lockup — Black",

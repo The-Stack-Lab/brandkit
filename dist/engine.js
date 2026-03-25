@@ -1,25 +1,66 @@
 /**
  * Brandkit Rendering Engine
- * Loads config.json → renders all sections → wires interactivity
+ * Loads config.json → bootstraps theme → renders all sections → wires interactivity
  */
 (async function () {
   /* ================================================================
      0. Load config
      ================================================================ */
-  const res = await fetch('./config.json');
-  const config = await res.json();
+  var res = await fetch('./config.json');
+  var config = await res.json();
   init(config);
 
   function init(cfg) {
-    let copyFormat = localStorage.getItem('brandkit-copy-format') || 'hex';
+    var copyFormat = localStorage.getItem('brandkit-copy-format') || 'hex';
+
+    /* ==============================================================
+       BOOTSTRAP — inject fonts + CSS variables before any rendering
+       ============================================================== */
+    function bootstrap() {
+      // Inject Google Fonts
+      if (cfg.fonts) {
+        var families = [];
+        if (cfg.fonts.display && cfg.fonts.display.googleImport) families.push(cfg.fonts.display.googleImport);
+        if (cfg.fonts.body && cfg.fonts.body.googleImport) families.push(cfg.fonts.body.googleImport);
+        if (families.length) {
+          var link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = 'https://fonts.googleapis.com/css2?family=' + families.join('&family=') + '&display=swap';
+          document.head.appendChild(link);
+        }
+      }
+
+      // Inject CSS custom properties from theme
+      if (cfg.theme) {
+        var vars = [];
+        var keys = Object.keys(cfg.theme);
+        for (var i = 0; i < keys.length; i++) {
+          vars.push('  ' + keys[i] + ': ' + cfg.theme[keys[i]] + ';');
+        }
+        // Add font variables from config
+        if (cfg.fonts) {
+          if (cfg.fonts.display) vars.push("  --font-display: '" + cfg.fonts.display.family + "', sans-serif;");
+          if (cfg.fonts.body) vars.push("  --font-body: '" + cfg.fonts.body.family + "', sans-serif;");
+        }
+        var style = document.createElement('style');
+        style.setAttribute('data-brandkit-theme', '');
+        style.textContent = ':root {\n' + vars.join('\n') + '\n}';
+        document.head.appendChild(style);
+      }
+
+      // Set page title
+      if (cfg.brand && cfg.brand.displayName) {
+        document.title = cfg.brand.displayName + ' \u2014 Brand Guide';
+      }
+    }
 
     /* ==============================================================
        1. Toast
        ============================================================== */
     function toast(message) {
-      const container = document.getElementById('toast-container');
+      var container = document.getElementById('toast-container');
       if (!container) return;
-      const el = document.createElement('div');
+      var el = document.createElement('div');
       el.className = 'toast';
       el.innerHTML =
         '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">' +
@@ -85,9 +126,18 @@
 
     function renderColors() {
       if (!cfg.colors) return;
-      renderColorGrid(cfg.colors.brand, 'colors-brand');
-      renderColorGrid(cfg.colors.neutrals, 'colors-neutrals');
-      renderColorGrid(cfg.colors.semantic, 'colors-semantic');
+      // Support both { label, items } objects and plain arrays
+      var groups = ['brand', 'neutrals', 'semantic'];
+      groups.forEach(function (key) {
+        var group = cfg.colors[key];
+        if (!group) return;
+        var items = group.items || group;
+        var label = group.label || key.charAt(0).toUpperCase() + key.slice(1);
+        // Set the group label if the container's preceding label exists
+        var labelEl = document.getElementById('colors-' + key + '-label');
+        if (labelEl) labelEl.textContent = label;
+        renderColorGrid(items, 'colors-' + key);
+      });
     }
 
     /* ==============================================================
@@ -110,7 +160,7 @@
     }
 
     /* ==============================================================
-       5. Render logos (NEW)
+       5. Render logos
        ============================================================== */
     function renderLogos() {
       var grid = document.getElementById('logos-grid');
@@ -187,13 +237,10 @@
       grid.addEventListener('click', function (e) {
         var fmtBtn = e.target.closest('.logo-format-btn');
         if (fmtBtn) {
-          var logoIdx = fmtBtn.dataset.logoIdx;
-          // Toggle active state within the same card
           var card = fmtBtn.closest('.logo-card');
           card.querySelectorAll('.logo-format-btn').forEach(function (b) {
             b.classList.toggle('active', b === fmtBtn);
           });
-          // Show/hide size picker
           var picker = card.querySelector('.logo-size-picker');
           if (picker) {
             picker.style.display = (fmtBtn.dataset.format === 'svg') ? 'none' : '';
@@ -208,36 +255,29 @@
           var logoData = cfg.logos[logoIndex];
           var cardEl = dlBtn.closest('.logo-card');
 
-          // Active format
           var activeBtn = cardEl.querySelector('.logo-format-btn.active');
           var format = activeBtn ? activeBtn.dataset.format : Object.keys(logoData.variants)[0];
 
-          // File path
           var filePath = logoData.variants[format];
           if (!filePath) return;
 
-          // Build descriptive filename
           var slug = cfg.brand.name || 'brand';
           var namePart = logoData.name.toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '');
 
           if (format === 'svg') {
-            // Direct download
             triggerDirectDownload(filePath, slug + '-' + namePart + '.svg');
             return;
           }
 
-          // Raster: check size picker
           var sizePicker2 = cardEl.querySelector('.logo-size-picker');
           var targetWidth = sizePicker2 ? parseInt(sizePicker2.value, 10) : NaN;
 
           if (!targetWidth || isNaN(targetWidth)) {
-            // Original size — direct download
             var ext = format === 'png' ? '.png' : '.jpg';
             triggerDirectDownload(filePath, slug + '-' + namePart + ext);
           } else {
-            // Resize via canvas
             resizeAndDownload(filePath, format, targetWidth, slug + '-' + namePart + '-' + targetWidth + 'px');
           }
         }
@@ -470,7 +510,59 @@
     }
 
     /* ==============================================================
-       12. Copy to clipboard (initCopy)
+       12. Render hierarchy (from config)
+       ============================================================== */
+    function renderHierarchy() {
+      var container = document.getElementById('hierarchy-content');
+      if (!container || !cfg.hierarchy) return;
+
+      var demoHtml = '<div class="hierarchy-demo">';
+      cfg.hierarchy.forEach(function (h) {
+        demoHtml += '<p class="' + h.class + '">' + h.description + '</p>';
+      });
+      demoHtml += '</div>';
+
+      var labelsHtml = '<div class="hierarchy-labels">';
+      cfg.hierarchy.forEach(function (h) {
+        labelsHtml +=
+          '<div class="hierarchy-label">' +
+            '<div class="hierarchy-dot" style="background: var(' + h.colorVar + ');"></div> ' +
+            h.colorName + ': ' + h.hex +
+          '</div>';
+      });
+      labelsHtml += '</div>';
+
+      container.innerHTML = demoHtml + labelsHtml;
+    }
+
+    /* ==============================================================
+       13. Render section intros (from config)
+       ============================================================== */
+    function renderSectionIntros() {
+      if (!cfg.sections) return;
+      var mapping = {
+        'gradients': 'section-intro-gradients',
+        'logos': 'section-intro-logos',
+        'components': 'section-intro-components',
+        'spacing': 'section-intro-spacing',
+        'variables': 'section-intro-variables'
+      };
+      var keys = Object.keys(mapping);
+      for (var i = 0; i < keys.length; i++) {
+        var el = document.getElementById(mapping[keys[i]]);
+        if (el && cfg.sections[keys[i]]) {
+          el.textContent = cfg.sections[keys[i]];
+        }
+      }
+      // Gradient text demo
+      var gradTextEl = document.getElementById('gradient-text-demo');
+      if (gradTextEl && cfg.sections.gradientTextDemo) {
+        gradTextEl.textContent = cfg.sections.gradientTextDemo;
+      }
+    }
+
+    /* ==============================================================
+       14. Copy to clipboard (initCopy)
        ============================================================== */
     function initCopy() {
       document.addEventListener('click', function (e) {
@@ -506,7 +598,7 @@
     }
 
     /* ==============================================================
-       13. Copy format bar
+       15. Copy format bar
        ============================================================== */
     function initFormatBar() {
       var bar = document.querySelector('.copy-format-bar');
@@ -529,7 +621,7 @@
     }
 
     /* ==============================================================
-       14. Section navigation (IntersectionObserver)
+       16. Section navigation (IntersectionObserver)
        ============================================================== */
     function initNav() {
       var sections = document.querySelectorAll('.section[id]');
@@ -559,7 +651,7 @@
     }
 
     /* ==============================================================
-       15. Type tester
+       17. Type tester
        ============================================================== */
     function initTypeTester() {
       var testerFont = document.getElementById('type-tester-font');
@@ -572,7 +664,7 @@
     }
 
     /* ==============================================================
-       16. Render shell (header, intro, footer, misc)
+       18. Render shell (header, intro, footer, misc)
        ============================================================== */
     function renderShell() {
       // Header
@@ -592,19 +684,23 @@
       // Footer
       var footer = document.getElementById('footer');
       if (footer) footer.innerHTML =
-        '<span>' + cfg.brand.url + ' · ' + cfg.brand.byline + '</span>' +
-        '<span>Web Style Guide v' + cfg.brand.version + ' · ' + cfg.brand.date + '</span>';
+        '<span>' + cfg.brand.url + ' \u00B7 ' + cfg.brand.byline + '</span>' +
+        '<span>Web Style Guide v' + cfg.brand.version + ' \u00B7 ' + cfg.brand.date + '</span>';
 
-      // Typography specimens
+      // Typography specimens — read descriptions from config
       var typeDisplayName = document.getElementById('type-display-name');
       if (typeDisplayName && cfg.fonts) typeDisplayName.textContent = cfg.fonts.display.family;
       var typeDisplayDesc = document.getElementById('type-display-desc');
-      if (typeDisplayDesc) typeDisplayDesc.textContent = 'Variable geometric sans-serif. Structured, authoritative, modern. Display and headings.';
+      if (typeDisplayDesc && cfg.fonts && cfg.fonts.display.description) {
+        typeDisplayDesc.textContent = cfg.fonts.display.description;
+      }
 
       var typeBodyName = document.getElementById('type-body-name');
       if (typeBodyName && cfg.fonts) typeBodyName.textContent = cfg.fonts.body.family;
       var typeBodyDesc = document.getElementById('type-body-desc');
-      if (typeBodyDesc) typeBodyDesc.textContent = 'Humanist sans-serif with rounded terminals. Warm, legible, approachable. Body text and UI.';
+      if (typeBodyDesc && cfg.fonts && cfg.fonts.body.description) {
+        typeBodyDesc.textContent = cfg.fonts.body.description;
+      }
 
       // Type tester font options
       var testerFont = document.getElementById('type-tester-font');
@@ -625,7 +721,7 @@
       }
       var gradBrandLabel = document.getElementById('gradient-brand-label');
       if (gradBrandLabel && cfg.gradients && cfg.gradients[0]) {
-        gradBrandLabel.textContent = cfg.gradients[0].name + ' Gradient · 135° · ' + cfg.gradients[0].description;
+        gradBrandLabel.textContent = cfg.gradients[0].name + ' Gradient \u00B7 135\u00B0 \u00B7 ' + cfg.gradients[0].description;
       }
 
       var gradSubtle = document.getElementById('gradient-subtle-copy');
@@ -634,7 +730,7 @@
       }
       var gradSubtleLabel = document.getElementById('gradient-subtle-label');
       if (gradSubtleLabel && cfg.gradients && cfg.gradients[1]) {
-        gradSubtleLabel.textContent = cfg.gradients[1].name + ' Gradient · 135° · ' + cfg.gradients[1].description;
+        gradSubtleLabel.textContent = cfg.gradients[1].name + ' Gradient \u00B7 135\u00B0 \u00B7 ' + cfg.gradients[1].description;
       }
 
       // Gradient usage do/don't
@@ -646,7 +742,7 @@
             '<ul>' + cfg.gradientUsage.do.map(function (item) { return '<li>' + item + '</li>'; }).join('') + '</ul>' +
           '</div>' +
           '<div class="gradient-usage-card dont">' +
-            '<h4>Don\'t use gradient for</h4>' +
+            "<h4>Don't use gradient for</h4>" +
             '<ul>' + cfg.gradientUsage.dont.map(function (item) { return '<li>' + item + '</li>'; }).join('') + '</ul>' +
           '</div>';
       }
@@ -659,12 +755,15 @@
     /* ==============================================================
        Execute all
        ============================================================== */
+    bootstrap();
     renderShell();
     renderNav();
+    renderSectionIntros();
     renderColors();
     renderGradients();
     renderLogos();
     renderTypography();
+    renderHierarchy();
     renderVoice();
     renderComponents();
     renderSpacing();

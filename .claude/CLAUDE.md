@@ -1,86 +1,130 @@
-# Brandkit
+# CLAUDE.md
 
-A self-contained, config-driven brand guide that lives at `/brand` on any website. Zero dependencies — just HTML, CSS, and vanilla JS.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What This Is
+
+`@stacklab/brandkit` — an npm package that bolts a config-driven brand guide onto any website (React, Vite, Astro, Next.js, plain HTML). Zero runtime dependencies.
+
+The brand guide renders entirely from `config.json` — swap the config and logos to create a guide for any brand. An AI agent can auto-generate the config by scraping the host codebase.
+
+## Development
+
+```bash
+# Run the Freeway PHX example
+node bin/brandkit.js dev example
+# Open http://localhost:4800
+
+# Or use the npm script
+npm run dev
+```
+
+The `fetch()` in engine.js requires a server (won't work from `file://`).
 
 ## Architecture
 
 ```
-├── index.html      ← Minimal HTML shell (loads config + engine + styles)
-├── config.json     ← ALL brand data (swap this per client)
-├── engine.js       ← Rendering engine + interactivity (shared across clients)
-├── styles.css      ← All visual design (shared, themeable via config)
-└── logos/          ← Logo assets per client
+bin/brandkit.js       ← CLI entry point (init, generate, dev, build)
+cli/
+  init.js             ← Scaffold config + copy engine files
+  generate.js         ← Auto-extract config from host codebase
+  dev.js              ← Dev server with SSE live reload
+  build.js            ← Bake config into static production files
+lib/
+  template.js         ← Generate :root CSS + fonts link from config
+  extract-tailwind.js ← Read tailwind.config for colors/fonts/spacing
+  extract-css.js      ← Parse CSS files for custom properties
+  extract-logos.js    ← Find logo/brand assets via glob
+  config-schema.js    ← Starter config template + merge logic
+  resolve.js          ← Path to dist/ (swagger-ui-dist pattern)
+dist/
+  index.html          ← Universal HTML template (no hardcoded content)
+  engine.js           ← Rendering engine (bootstrap + 11 renderers + interactivity)
+  styles.css          ← Stylesheet using only CSS variables (no :root block)
+integrations/
+  vite.js             ← Vite plugin (serves /brand in dev, copies on build)
+  astro.js            ← Astro integration (wraps Vite plugin)
+example/
+  config.json         ← Freeway PHX brand data (reference implementation)
+  logos/              ← Freeway logo assets
 ```
 
-**Key principle**: `config.json` is the only file that changes per client. Everything else is the reusable engine.
+**Key principle**: `dist/` files are universal — they never contain brand-specific content. `config.json` is the only file that changes per client.
 
-## How It Works
+### Rendering Pipeline (dist/engine.js)
 
-1. `index.html` loads Google Fonts (from config), links `styles.css`, and includes structural placeholders
-2. `engine.js` fetches `config.json`, then renders every section from data:
-   - Navigation (grouped sidebar)
-   - Color palette with click-to-copy
-   - Gradient system with live displays
-   - Logo downloads with format/size selection
-   - Typography specimens + interactive tester
-   - Voice & tone guidelines
-   - Component patterns (buttons, cards, stats)
-   - Spacing scale
-   - Accessibility contrast grid
-   - CSS variable reference
-3. Interactivity: clipboard API, toast notifications, IntersectionObserver nav, canvas-based logo resizing
+`engine.js` is a single async IIFE. On load:
 
-## Sidebar Groups
+1. **Bootstrap** — injects Google Fonts `<link>`, generates `:root` CSS variables from `config.theme`, sets page title
+2. **renderShell()** — header, intro, footer, font specimens (reads `fonts.*.description` from config)
+3. **renderNav()** — sidebar from `config.nav`
+4. **renderSectionIntros()** — populates section intro text from `config.sections`
+5. **renderColors()** — brand/neutrals/semantic grids (supports `{ label, items }` structure)
+6. **renderGradients()** — gradient stops
+7. **renderLogos()** — logo cards with format/size selection + canvas resize
+8. **renderTypography()** — type scale
+9. **renderHierarchy()** — text hierarchy demo from `config.hierarchy`
+10. **renderVoice()** — do/don't cards
+11. **renderComponents()** — buttons, cards, stats
+12. **renderSpacing()**, **renderAccessibility()**, **renderCSSVars()**
 
-- **Colors**: Palette, Gradients
-- **Logos**: Downloads (multi-format: SVG/PNG/JPG, multi-size via canvas resize)
-- **Content**: Typography, Text Hierarchy, Voice & Tone, Spacing
-- **Components**: Buttons & Cards, Accessibility, CSS Variables
+Then interactivity: `initCopy()`, `initFormatBar()`, `initNav()`, `initTypeTester()`.
 
-## Config Structure
+### How Theme Injection Works
 
-`config.json` contains:
-- `brand` — name, tagline, description, URL, version
-- `fonts` — display + body font families with Google Fonts import strings
-- `nav` — sidebar navigation groups and section links
-- `colors` — brand, neutrals, semantic (each with hex, oklch, cssVar, role)
-- `gradients` — CSS definitions with stop annotations
-- `logos` — file paths per variant with format availability
+`styles.css` uses CSS custom properties (`var(--purple)`, `var(--font-display)`, etc.) but contains **no** `:root` block.
+
+- **Dev mode**: engine.js bootstrap reads `config.theme` and injects a `<style data-brandkit-theme>` tag with the `:root` block at runtime.
+- **Production build**: `cli/build.js` uses `lib/template.js` to prepend the generated `:root` block to styles.css, plus injects the Google Fonts `<link>` and title into index.html.
+
+### Config Schema
+
+`config.json` top-level keys:
+
+- `brand` — name, displayName, tagline, description, url, byline, version, date
+- `fonts` — display + body with `family`, `googleImport`, `description`
+- `theme` — explicit CSS variable mapping (colors, gradients, font vars, `-rgb` variants)
+- `nav` — sidebar groups and section links
+- `colors` — `{ brand: { label, items }, neutrals: { label, items }, semantic: { label, items } }`
+- `gradients` — CSS definitions with stops
+- `gradientUsage` — do/don't lists
+- `sections` — section intro strings (gradients, logos, components, spacing, variables, gradientTextDemo)
+- `hierarchy` — text hierarchy demo data (class, colorVar, colorName, hex, description)
+- `logos`, `logoSizes` — logo variants + available download sizes
 - `typography` — full type scale with specimens
-- `voice` — do/don't examples
+- `voice` — description + do/don't examples
 - `accessibility` — contrast ratio grid
-- `cssVariables` — complete variable reference
-- `components` — button variants, card examples, stats
-- `spacing` — scale tokens
+- `cssVariables` — variable reference display
+- `spacing` — spacing scale tokens
+- `components` — buttons, cards, stats
 
-## To Create a Guide for a New Client
+## CLI Commands
 
-1. Copy the entire directory
-2. Replace `config.json` with the new client's brand data
-3. Replace `logos/` with the new client's logo files
-4. Update the Google Fonts `<link>` in `index.html` if fonts differ
-5. Deploy — the engine renders everything from config
-
-## Development
-
-No build step. To run locally:
 ```bash
-python3 -m http.server 8888
-# Open http://localhost:8888
+brandkit init [dir]        # Scaffold brand guide with starter config
+brandkit generate [dir]    # Auto-extract config from codebase (Tailwind, CSS, logos)
+brandkit dev [dir]         # Dev server at :4800 with live reload
+brandkit build [dir]       # Build production static files
 ```
 
-The `fetch()` call in engine.js requires a server (won't work from `file://`).
+`generate` merge strategy: extractable fields (colors, fonts, spacing, logos) overwrite; manual fields (voice, accessibility, components, typography samples) are preserved.
 
 ## Coding Standards
 
-- **Vanilla JS only** — no frameworks, no build tools, no npm
-- **ES5-compatible** — uses `var`, `.forEach()`, string concatenation (not template literals) for max browser compat
-- **Config-driven** — no hardcoded brand content in HTML, CSS, or JS
-- **Single responsibility**: `index.html` = structure, `styles.css` = visual, `engine.js` = logic, `config.json` = data
-- **Clipboard API** for copy (`navigator.clipboard.writeText`)
-- **Canvas API** for logo resizing (`toBlob`)
-- **IntersectionObserver** for scroll-based nav highlighting
+- **Vanilla JS only** — no frameworks, no build tools in dist/
+- **ES5-compatible in dist/** — uses `var`, `.forEach()`, string concatenation
+- **Node.js builtins only in cli/lib/** — zero npm dependencies
+- **Config-driven** — no hardcoded brand content in dist/ files
+- `styles.css` uses `var(--font-display)`, `var(--font-body)`, `var(--purple-rgb)` etc. — never literal font names or brand-specific rgba values
 
-## Current Client
+## Adding a New Section
 
-The checked-in `config.json` and `logos/` are for **Freeway PHX** (freewayphx.com) — a Phoenix tech ecosystem community. Colors: purple `#6B2FA0` primary, coral `#E86B5A` secondary. Fonts: Commissioner (display) + Ubuntu (body).
+1. Add the data to `config.json` schema (and `lib/config-schema.js` starter template)
+2. Add a `render*()` function in `dist/engine.js`
+3. Add an empty container element in `dist/index.html`
+4. Add styles in `dist/styles.css` using only CSS variables
+5. Call the render function in the "Execute all" block
+
+## Example Client
+
+`example/config.json` and `example/logos/` are for **Freeway PHX** (freewayphx.com). Primary: purple `#6B2FA0`, secondary: coral `#E86B5A`. Fonts: Commissioner (display) + Ubuntu (body).

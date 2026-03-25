@@ -1,0 +1,37 @@
+{
+  "name": "@stacklab/brandkit",
+  "version": "1.0.0",
+  "description": "Config-driven brand guide that bolts onto any website. Zero dependencies.",
+  "main": "lib/resolve.js",
+  "bin": {
+    "brandkit": "bin/brandkit.js"
+  },
+  "files": [
+    "bin/",
+    "cli/",
+    "lib/",
+    "dist/",
+    "integrations/"
+  ],
+  "scripts": {
+    "dev": "node bin/brandkit.js dev example",
+    "build": "node bin/brandkit.js build example",
+    "example": "node bin/brandkit.js dev example"
+  },
+  "keywords": [
+    "brand",
+    "style-guide",
+    "design-system",
+    "brandkit",
+    "design-tokens"
+  ],
+  "author": "The Stack Lab",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stacklab/brandkit"
+  }
+}

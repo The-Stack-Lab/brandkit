@@ -2,4 +2,7 @@
 *.swp
 *.swo
 *~
+node_modules/
 .claude/memory/
+.linear/
+.latest-status.md
