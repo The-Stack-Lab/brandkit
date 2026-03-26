@@ -47,8 +47,6 @@ module.exports = function generate(args) {
     summary.push('    Creating starter config with example entries');
   }
 
-  summary.forEach(function (line) { console.log(line); });
-
   // Load existing config or create starter
   var configPath = path.join(brandDir, 'config.json');
   var existingConfig = null;
@@ -119,12 +117,13 @@ module.exports = function generate(args) {
   }
 
   // --- Auto-compute derived fields ---
+  // Only overwrite if existing field is empty or all-scaffold (__TODO)
 
   // Determine the theme to derive from (extracted or existing)
   var theme = newFields.theme || baseConfig.theme;
 
   // Auto-generate gradients from theme
-  if (theme) {
+  if (theme && isEmptyOrScaffold(baseConfig.gradients)) {
     var gradients = helpers.buildGradientsFromTheme(theme);
     if (gradients.length) {
       newFields.gradients = gradients;
@@ -133,35 +132,37 @@ module.exports = function generate(args) {
   }
 
   // Auto-generate hierarchy from theme
-  if (theme) {
+  if (theme && isEmptyOrScaffold(baseConfig.hierarchy)) {
     newFields.hierarchy = helpers.buildHierarchyFromTheme(theme);
     summary.push('    Hierarchy: 4 levels auto-generated from theme colors');
   }
 
   // Auto-generate accessibility pairs from all extracted colors
-  var allColors = [];
-  var colorSource = newFields.colors || baseConfig.colors;
-  if (colorSource) {
-    ['brand', 'neutrals', 'semantic'].forEach(function (key) {
-      var group = colorSource[key];
-      if (group) {
-        var items = group.items || group;
-        if (Array.isArray(items)) {
-          allColors = allColors.concat(items);
+  if (isEmptyOrScaffold(baseConfig.accessibility)) {
+    var allColors = [];
+    var colorSource = newFields.colors || baseConfig.colors;
+    if (colorSource) {
+      ['brand', 'neutrals', 'semantic'].forEach(function (key) {
+        var group = colorSource[key];
+        if (group) {
+          var items = group.items || group;
+          if (Array.isArray(items)) {
+            allColors = allColors.concat(items);
+          }
         }
+      });
+    }
+    if (allColors.length) {
+      var a11y = helpers.generateA11yPairs(allColors);
+      if (a11y.length) {
+        newFields.accessibility = a11y;
+        summary.push('    Accessibility: ' + a11y.length + ' contrast pairs auto-computed');
       }
-    });
-  }
-  if (allColors.length) {
-    var a11y = helpers.generateA11yPairs(allColors);
-    if (a11y.length) {
-      newFields.accessibility = a11y;
-      summary.push('    Accessibility: ' + a11y.length + ' contrast pairs auto-computed');
     }
   }
 
   // Auto-generate cssVariables from theme
-  if (theme) {
+  if (theme && isEmptyOrScaffold(baseConfig.cssVariables)) {
     var cssVarSections = helpers.buildCssVariablesFromTheme(theme);
     if (cssVarSections.length) {
       newFields.cssVariables = cssVarSections;
@@ -169,12 +170,14 @@ module.exports = function generate(args) {
     }
   }
 
-  // Auto-scaffold typography if not already populated
-  if (!baseConfig.typography || !baseConfig.typography.length ||
-      (baseConfig.typography.length === 1 && JSON.stringify(baseConfig.typography).indexOf('__TODO') !== -1)) {
+  // Auto-scaffold typography if empty or missing
+  if (isEmptyOrScaffold(baseConfig.typography)) {
     newFields.typography = helpers.scaffoldTypography();
     summary.push('    Typography: standard type scale scaffolded');
   }
+
+  // Print all summary messages (including derived fields computed above)
+  summary.forEach(function (line) { console.log(line); });
 
   // Merge
   var finalConfig = schema.mergeConfigs(baseConfig, newFields);
@@ -209,6 +212,9 @@ function buildColors(colorList) {
 
   for (var i = 0; i < colorList.length; i++) {
     var c = colorList[i];
+    // Skip colors without valid hex (Tailwind function-based colors, etc.)
+    if (!c.hex || typeof c.hex !== 'string' || !/^#[0-9a-fA-F]{3,8}$/.test(c.hex)) continue;
+    if (!c.name) continue;
     var lowerName = c.name.toLowerCase();
 
     var isSemantic = false;
@@ -250,4 +256,17 @@ function countTodos(obj) {
   var regex = /__TODO/g;
   while (regex.exec(str) !== null) count++;
   return count;
+}
+
+/**
+ * Check if a field is empty or only contains scaffold/placeholder data.
+ * Returns true if the field should be overwritten by auto-generation.
+ */
+function isEmptyOrScaffold(value) {
+  if (!value) return true;
+  if (Array.isArray(value) && value.length === 0) return true;
+  // Check if all entries are scaffold (contain __TODO)
+  var str = JSON.stringify(value);
+  if (str.indexOf('__TODO') !== -1) return true;
+  return false;
 }

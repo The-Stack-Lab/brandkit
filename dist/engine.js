@@ -14,6 +14,14 @@
     var copyFormat = localStorage.getItem('brandkit-copy-format') || 'hex';
 
     /* ==============================================================
+       HTML escape helper — prevents XSS from config values
+       ============================================================== */
+    function esc(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    /* ==============================================================
        BOOTSTRAP — inject fonts + CSS variables before any rendering
        ============================================================== */
     function bootstrap() {
@@ -90,9 +98,9 @@
       var navEl = document.getElementById('nav');
       if (!navEl || !cfg.nav) return;
       navEl.innerHTML = cfg.nav.map(function (group) {
-        var header = '<li class="nav-group">' + group.group + '</li>';
+        var header = '<li class="nav-group">' + esc(group.group) + '</li>';
         var items = group.items.map(function (item) {
-          return '<li class="nav-group-items"><a href="#' + item.id + '">' + item.label + '</a></li>';
+          return '<li class="nav-group-items"><a href="#' + esc(item.id) + '">' + esc(item.label) + '</a></li>';
         }).join('');
         return header + items;
       }).join('');
@@ -116,20 +124,20 @@
         var cssVar = c.cssVar || c.token || '';
         var role = c.role || c.usage || '';
         var isLight = c.light || (hex && parseInt(hex.slice(1), 16) > 0xAAAAAA);
-        var valueDisplay = oklch ? (hex + ' \u00B7 ' + oklch) : hex;
+        var valueDisplay = oklch ? (esc(hex) + ' \u00B7 ' + esc(oklch)) : esc(hex);
         return (
           '<div class="color-card">' +
             '<div class="color-swatch copyable ' + (isLight ? 'has-border' : '') + '"' +
-              ' style="background:' + hex + ';"' +
-              ' data-hex="' + hex + '"' +
-              ' data-oklch="' + oklch + '"' +
-              ' data-css-var="' + cssVar + '"' +
-              ' tabindex="0" role="button" aria-label="Copy ' + name + ' color value">' +
+              ' style="background:' + esc(hex) + ';"' +
+              ' data-hex="' + esc(hex) + '"' +
+              ' data-oklch="' + esc(oklch) + '"' +
+              ' data-css-var="' + esc(cssVar) + '"' +
+              ' tabindex="0" role="button" aria-label="Copy ' + esc(name) + ' color value">' +
               '<div class="copy-hint"><span>Click to copy</span></div>' +
             '</div>' +
-            '<div class="color-name">' + name + '</div>' +
-            '<div class="color-value copyable" data-copy="' + hex + '">' + valueDisplay + '</div>' +
-            '<div class="color-role">' + role + '</div>' +
+            '<div class="color-name">' + esc(name) + '</div>' +
+            '<div class="color-value copyable" data-copy="' + esc(hex) + '">' + valueDisplay + '</div>' +
+            '<div class="color-role">' + esc(role) + '</div>' +
           '</div>'
         );
       }).join('');
