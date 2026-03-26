@@ -3,6 +3,7 @@ var path = require('path');
 var extractTailwind = require('../lib/extract-tailwind');
 var extractCSS = require('../lib/extract-css');
 var extractLogos = require('../lib/extract-logos');
+var helpers = require('../lib/generate-helpers');
 var schema = require('../lib/config-schema');
 
 module.exports = function generate(args) {
@@ -20,7 +21,7 @@ module.exports = function generate(args) {
   // Extract from Tailwind config
   var tw = extractTailwind.extract(projectDir);
   if (tw.colors) {
-    summary.push('    Found Tailwind config — extracting colors, fonts, spacing');
+    summary.push('    Found Tailwind config \u2014 extracting colors, fonts, spacing');
     extracted.tailwindColors = tw.colors;
   }
   if (tw.fonts) extracted.tailwindFonts = tw.fonts;
@@ -29,7 +30,7 @@ module.exports = function generate(args) {
   // Extract CSS custom properties
   var cssVars = extractCSS.extract(projectDir);
   if (cssVars) {
-    summary.push('    Found CSS custom properties — extracting theme variables');
+    summary.push('    Found CSS custom properties \u2014 extracting theme variables');
     extracted.cssVars = cssVars;
   }
 
@@ -37,16 +38,14 @@ module.exports = function generate(args) {
   var logos = extractLogos.extract(projectDir);
   if (logos && logos.length) {
     var logoNames = logos.map(function (l) { return path.basename(Object.values(l.variants)[0]); });
-    summary.push('    Found ' + logoNames.join(', ') + ' — adding to logos');
+    summary.push('    Found ' + logoNames.join(', ') + ' \u2014 adding to logos');
     extracted.logos = logos;
   }
 
   if (!summary.length) {
     summary.push('    No Tailwind config, CSS variables, or logo assets detected');
-    summary.push('    Creating starter config with __TODO markers');
+    summary.push('    Creating starter config with example entries');
   }
-
-  summary.forEach(function (line) { console.log(line); });
 
   // Load existing config or create starter
   var configPath = path.join(brandDir, 'config.json');
@@ -54,9 +53,9 @@ module.exports = function generate(args) {
   if (fs.existsSync(configPath)) {
     try {
       existingConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      console.log('    Found existing config.json — preserving manual fields');
+      console.log('    Found existing config.json \u2014 preserving manual fields');
     } catch (_) {
-      console.log('    Existing config.json is invalid — creating fresh');
+      console.log('    Existing config.json is invalid \u2014 creating fresh');
     }
   }
 
@@ -65,7 +64,7 @@ module.exports = function generate(args) {
   // Build extracted config fields
   var newFields = {};
 
-  // Colors from Tailwind
+  // Colors from Tailwind (with auto-computed oklch and light flag)
   if (extracted.tailwindColors) {
     newFields.colors = buildColors(extracted.tailwindColors);
   }
@@ -100,9 +99,8 @@ module.exports = function generate(args) {
     newFields.spacing = extracted.tailwindSpacing;
   }
 
-  // Logos
+  // Logos (make paths relative to brand dir)
   if (extracted.logos) {
-    // Make paths relative to brand dir
     newFields.logos = extracted.logos.map(function (logo) {
       var variants = {};
       var keys = Object.keys(logo.variants);
@@ -117,6 +115,69 @@ module.exports = function generate(args) {
       };
     });
   }
+
+  // --- Auto-compute derived fields ---
+  // Only overwrite if existing field is empty or all-scaffold (__TODO)
+
+  // Determine the theme to derive from (extracted or existing)
+  var theme = newFields.theme || baseConfig.theme;
+
+  // Auto-generate gradients from theme
+  if (theme && isEmptyOrScaffold(baseConfig.gradients)) {
+    var gradients = helpers.buildGradientsFromTheme(theme);
+    if (gradients.length) {
+      newFields.gradients = gradients;
+      summary.push('    Gradients: ' + gradients.length + ' auto-generated from theme');
+    }
+  }
+
+  // Auto-generate hierarchy from theme
+  if (theme && isEmptyOrScaffold(baseConfig.hierarchy)) {
+    newFields.hierarchy = helpers.buildHierarchyFromTheme(theme);
+    summary.push('    Hierarchy: 4 levels auto-generated from theme colors');
+  }
+
+  // Auto-generate accessibility pairs from all extracted colors
+  if (isEmptyOrScaffold(baseConfig.accessibility)) {
+    var allColors = [];
+    var colorSource = newFields.colors || baseConfig.colors;
+    if (colorSource) {
+      ['brand', 'neutrals', 'semantic'].forEach(function (key) {
+        var group = colorSource[key];
+        if (group) {
+          var items = group.items || group;
+          if (Array.isArray(items)) {
+            allColors = allColors.concat(items);
+          }
+        }
+      });
+    }
+    if (allColors.length) {
+      var a11y = helpers.generateA11yPairs(allColors);
+      if (a11y.length) {
+        newFields.accessibility = a11y;
+        summary.push('    Accessibility: ' + a11y.length + ' contrast pairs auto-computed');
+      }
+    }
+  }
+
+  // Auto-generate cssVariables from theme
+  if (theme && isEmptyOrScaffold(baseConfig.cssVariables)) {
+    var cssVarSections = helpers.buildCssVariablesFromTheme(theme);
+    if (cssVarSections.length) {
+      newFields.cssVariables = cssVarSections;
+      summary.push('    CSS Variables: ' + cssVarSections.length + ' sections auto-generated');
+    }
+  }
+
+  // Auto-scaffold typography if empty or missing
+  if (isEmptyOrScaffold(baseConfig.typography)) {
+    newFields.typography = helpers.scaffoldTypography();
+    summary.push('    Typography: standard type scale scaffolded');
+  }
+
+  // Print all summary messages (including derived fields computed above)
+  summary.forEach(function (line) { console.log(line); });
 
   // Merge
   var finalConfig = schema.mergeConfigs(baseConfig, newFields);
@@ -133,7 +194,7 @@ module.exports = function generate(args) {
 
   console.log('');
   console.log('  Generated ' + path.relative(process.cwd(), configPath));
-  if (extracted.tailwindColors) console.log('    Colors: ' + extracted.tailwindColors.length + ' extracted');
+  if (extracted.tailwindColors) console.log('    Colors: ' + extracted.tailwindColors.length + ' extracted (with oklch)');
   if (extracted.tailwindFonts) console.log('    Fonts: ' + Object.keys(extracted.tailwindFonts).length + ' detected');
   if (extracted.tailwindSpacing) console.log('    Spacing: ' + extracted.tailwindSpacing.length + ' tokens');
   if (extracted.logos) console.log('    Logos: ' + extracted.logos.length + ' files found');
@@ -142,7 +203,6 @@ module.exports = function generate(args) {
 };
 
 function buildColors(colorList) {
-  // Simple heuristic: group into brand, neutrals, semantic
   var brand = [];
   var neutrals = [];
   var semantic = [];
@@ -152,6 +212,9 @@ function buildColors(colorList) {
 
   for (var i = 0; i < colorList.length; i++) {
     var c = colorList[i];
+    // Skip colors without valid hex (Tailwind function-based colors, etc.)
+    if (!c.hex || typeof c.hex !== 'string' || !/^#[0-9a-fA-F]{3,8}$/.test(c.hex)) continue;
+    if (!c.name) continue;
     var lowerName = c.name.toLowerCase();
 
     var isSemantic = false;
@@ -165,12 +228,14 @@ function buildColors(colorList) {
       }
     }
 
+    // Auto-compute oklch and light flag
     var entry = {
       name: c.name,
       hex: c.hex,
-      oklch: '',
+      oklch: helpers.hexToOklch(c.hex),
       cssVar: '--color-' + c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      role: c.role || ''
+      role: c.role || '',
+      light: helpers.isLightColor(c.hex)
     };
 
     if (isSemantic) semantic.push(entry);
@@ -191,4 +256,17 @@ function countTodos(obj) {
   var regex = /__TODO/g;
   while (regex.exec(str) !== null) count++;
   return count;
+}
+
+/**
+ * Check if a field is empty or only contains scaffold/placeholder data.
+ * Returns true if the field should be overwritten by auto-generation.
+ */
+function isEmptyOrScaffold(value) {
+  if (!value) return true;
+  if (Array.isArray(value) && value.length === 0) return true;
+  // Check if all entries are scaffold (contain __TODO)
+  var str = JSON.stringify(value);
+  if (str.indexOf('__TODO') !== -1) return true;
+  return false;
 }
