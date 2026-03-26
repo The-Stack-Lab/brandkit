@@ -104,21 +104,32 @@
     function renderColorGrid(colors, containerId) {
       var container = document.getElementById(containerId);
       if (!container) return;
+      if (!colors || !colors.length) {
+        container.innerHTML = '<div class="empty-state">No colors configured</div>';
+        return;
+      }
       container.innerHTML = colors.map(function (c) {
-        var isLight = c.light || (c.hex && parseInt(c.hex.slice(1), 16) > 0xAAAAAA);
+        // Field aliases for resilience
+        var name = c.name || c.label || '';
+        var hex = c.hex || '';
+        var oklch = c.oklch || '';
+        var cssVar = c.cssVar || c.token || '';
+        var role = c.role || c.usage || '';
+        var isLight = c.light || (hex && parseInt(hex.slice(1), 16) > 0xAAAAAA);
+        var valueDisplay = oklch ? (hex + ' \u00B7 ' + oklch) : hex;
         return (
           '<div class="color-card">' +
             '<div class="color-swatch copyable ' + (isLight ? 'has-border' : '') + '"' +
-              ' style="background:' + c.hex + ';"' +
-              ' data-hex="' + c.hex + '"' +
-              ' data-oklch="' + c.oklch + '"' +
-              ' data-css-var="' + (c.cssVar || '') + '"' +
-              ' tabindex="0" role="button" aria-label="Copy ' + c.name + ' color value">' +
+              ' style="background:' + hex + ';"' +
+              ' data-hex="' + hex + '"' +
+              ' data-oklch="' + oklch + '"' +
+              ' data-css-var="' + cssVar + '"' +
+              ' tabindex="0" role="button" aria-label="Copy ' + name + ' color value">' +
               '<div class="copy-hint"><span>Click to copy</span></div>' +
             '</div>' +
-            '<div class="color-name">' + c.name + '</div>' +
-            '<div class="color-value copyable" data-copy="' + c.hex + '">' + c.hex + ' \u00B7 ' + c.oklch + '</div>' +
-            '<div class="color-role">' + c.role + '</div>' +
+            '<div class="color-name">' + name + '</div>' +
+            '<div class="color-value copyable" data-copy="' + hex + '">' + valueDisplay + '</div>' +
+            '<div class="color-role">' + role + '</div>' +
           '</div>'
         );
       }).join('');
@@ -145,9 +156,9 @@
        ============================================================== */
     function renderGradients() {
       var stopsContainer = document.getElementById('gradient-stops');
-      if (!stopsContainer || !cfg.gradients) return;
+      if (!stopsContainer || !cfg.gradients || !cfg.gradients.length) return;
       var brand = cfg.gradients[0];
-      if (brand && brand.stops) {
+      if (brand && brand.stops && brand.stops.length) {
         stopsContainer.innerHTML = brand.stops.map(function (s) {
           return (
             '<div class="gradient-stop">' +
@@ -164,7 +175,11 @@
        ============================================================== */
     function renderLogos() {
       var grid = document.getElementById('logos-grid');
-      if (!grid || !cfg.logos) return;
+      if (!grid) return;
+      if (!cfg.logos || !cfg.logos.length) {
+        grid.innerHTML = '<div class="empty-state">No logos configured. Add logo files to the logos/ directory and update config.json.</div>';
+        return;
+      }
 
       var downloadIcon =
         '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
@@ -324,7 +339,11 @@
        ============================================================== */
     function renderTypography() {
       var typeScale = document.getElementById('type-scale');
-      if (!typeScale || !cfg.typography) return;
+      if (!typeScale) return;
+      if (!cfg.typography || !cfg.typography.length) {
+        typeScale.innerHTML = '<div class="empty-state">No type scale configured</div>';
+        return;
+      }
 
       typeScale.innerHTML = cfg.typography.map(function (t) {
         var family = t.font === 'display'
@@ -381,7 +400,11 @@
        ============================================================== */
     function renderComponents() {
       var container = document.getElementById('components-content');
-      if (!container || !cfg.components) return;
+      if (!container) return;
+      if (!cfg.components) {
+        container.innerHTML = '<div class="empty-state">No component patterns configured</div>';
+        return;
+      }
 
       var html = '';
 
@@ -407,11 +430,14 @@
         html += '<div class="component-label" style="margin-top:28px;">Cards \u2014 Light Background</div>';
         html += '<div class="card-demo-grid">';
         cfg.components.cards.forEach(function (card) {
+          var cardTitle = card.title || card.label || '';
+          var cardDesc = card.description || '';
+          var cardTag = card.tag || '';
           html +=
             '<div class="card-demo">' +
-              '<h4>' + card.title + '</h4>' +
-              '<p>' + card.description + '</p>' +
-              '<span class="tag">' + card.tag + '</span>' +
+              '<h4>' + cardTitle + '</h4>' +
+              '<p>' + cardDesc + '</p>' +
+              (cardTag ? '<span class="tag">' + cardTag + '</span>' : '') +
             '</div>';
         });
         html += '</div>';
@@ -464,21 +490,38 @@
        ============================================================== */
     function renderAccessibility() {
       var grid = document.getElementById('a11y-grid');
-      if (!grid || !cfg.accessibility) return;
+      if (!grid) return;
+      if (!cfg.accessibility || !cfg.accessibility.length) {
+        grid.innerHTML = '<div class="empty-state">No accessibility pairs configured</div>';
+        return;
+      }
 
       grid.innerHTML = cfg.accessibility.map(function (a) {
+        // Field aliases
+        var bg = a.bg || a.background || '#FFFFFF';
+        var fg = a.fg || a.foreground || '#000000';
+        var bgName = a.bgName || '';
+        var fgName = a.fgName || '';
+        var rating = a.rating || a.level || '';
+        var ratio = a.ratio || '';
+        // Split "pair" field if bgName/fgName missing
+        if (!bgName && !fgName && a.pair) {
+          var parts = a.pair.split(' on ');
+          if (parts.length === 2) { fgName = parts[0]; bgName = parts[1]; }
+        }
+
         var ratingClass =
-          (a.rating === 'AAA' || a.rating === 'AA') ? 'pass' :
-          a.rating === 'AA Large' ? 'large' : 'fail';
+          (rating === 'AAA' || rating === 'AA') ? 'pass' :
+          rating === 'AA Large' ? 'large' : 'fail';
         var border = a.border ? 'border:1px solid var(--mist);' : '';
         var textSize = a.largeText ? 'font-size:20px;font-weight:600;' : '';
 
         return (
-          '<div class="a11y-card" style="background:' + a.bg + ';color:' + a.fg + ';' + border + '">' +
-            '<div class="a11y-text" style="' + textSize + '">' + a.fgName + ' on ' + a.bgName + '</div>' +
+          '<div class="a11y-card" style="background:' + bg + ';color:' + fg + ';' + border + '">' +
+            '<div class="a11y-text" style="' + textSize + '">' + fgName + ' on ' + bgName + '</div>' +
             '<div class="a11y-meta">' +
-              '<span class="a11y-ratio">' + a.ratio + '</span>' +
-              '<span class="a11y-badge ' + ratingClass + '">' + a.rating + '</span>' +
+              '<span class="a11y-ratio">' + ratio + '</span>' +
+              '<span class="a11y-badge ' + ratingClass + '">' + rating + '</span>' +
             '</div>' +
           '</div>'
         );
@@ -490,18 +533,28 @@
        ============================================================== */
     function renderCSSVars() {
       var codeBlock = document.getElementById('code-block');
-      if (!codeBlock || !cfg.cssVariables) return;
+      if (!codeBlock) return;
+      if (!cfg.cssVariables || !cfg.cssVariables.length) {
+        codeBlock.innerHTML = '<span class="code-section">/* No CSS variables configured */</span>';
+        return;
+      }
 
       codeBlock.innerHTML = cfg.cssVariables.map(function (section) {
-        var sectionComment = '<span class="code-section">/* \u2500\u2500 ' + section.section + ' \u2500\u2500 */</span>';
-        var lines = section.vars.map(function (v) {
-          var copyVal = v.prop + ': ' + v.value + ';';
-          var comment = v.comment ? '    <span class="token-comment">/* ' + v.comment + ' */</span>' : '';
+        var sectionName = section.section || section.name || 'Variables';
+        var vars = section.vars || [];
+        var sectionComment = '<span class="code-section">/* \u2500\u2500 ' + sectionName + ' \u2500\u2500 */</span>';
+        var lines = vars.map(function (v) {
+          // Field aliases
+          var prop = v.prop || v.var || v.name || '';
+          var value = v.value || '';
+          var comment = v.comment || v.usage || '';
+          var copyVal = prop + ': ' + value + ';';
+          var commentHtml = comment ? '    <span class="token-comment">/* ' + comment + ' */</span>' : '';
           return (
             '<span class="code-line" data-copy="' + copyVal.replace(/"/g, '&quot;') + '">' +
-              '<span class="token-prop">' + v.prop + '</span>: ' +
-              '<span class="token-value">' + v.value + '</span>;' +
-              comment +
+              '<span class="token-prop">' + prop + '</span>: ' +
+              '<span class="token-value">' + value + '</span>;' +
+              commentHtml +
             '</span>'
           );
         }).join('\n');
@@ -514,7 +567,11 @@
        ============================================================== */
     function renderHierarchy() {
       var container = document.getElementById('hierarchy-content');
-      if (!container || !cfg.hierarchy) return;
+      if (!container) return;
+      if (!cfg.hierarchy || !cfg.hierarchy.length) {
+        container.innerHTML = '<div class="empty-state">No text hierarchy configured</div>';
+        return;
+      }
 
       var demoHtml = '<div class="hierarchy-demo">';
       cfg.hierarchy.forEach(function (h) {
@@ -714,23 +771,27 @@
         }
       }
 
-      // Gradient data-copy attributes and labels
+      // Gradient data-copy attributes, inline styles, and labels
       var gradBrand = document.getElementById('gradient-brand-copy');
       if (gradBrand && cfg.gradients && cfg.gradients[0]) {
         gradBrand.dataset.copy = cfg.gradients[0].css;
+        gradBrand.style.background = cfg.gradients[0].css;
       }
       var gradBrandLabel = document.getElementById('gradient-brand-label');
       if (gradBrandLabel && cfg.gradients && cfg.gradients[0]) {
-        gradBrandLabel.textContent = cfg.gradients[0].name + ' Gradient \u00B7 135\u00B0 \u00B7 ' + cfg.gradients[0].description;
+        var g0desc = cfg.gradients[0].description || cfg.gradients[0].usage || '';
+        gradBrandLabel.textContent = cfg.gradients[0].name + ' Gradient \u00B7 135\u00B0 \u00B7 ' + g0desc;
       }
 
       var gradSubtle = document.getElementById('gradient-subtle-copy');
       if (gradSubtle && cfg.gradients && cfg.gradients[1]) {
         gradSubtle.dataset.copy = cfg.gradients[1].css;
+        gradSubtle.style.background = cfg.gradients[1].css;
       }
       var gradSubtleLabel = document.getElementById('gradient-subtle-label');
       if (gradSubtleLabel && cfg.gradients && cfg.gradients[1]) {
-        gradSubtleLabel.textContent = cfg.gradients[1].name + ' Gradient \u00B7 135\u00B0 \u00B7 ' + cfg.gradients[1].description;
+        var g1desc = cfg.gradients[1].description || cfg.gradients[1].usage || '';
+        gradSubtleLabel.textContent = cfg.gradients[1].name + ' Gradient \u00B7 135\u00B0 \u00B7 ' + g1desc;
       }
 
       // Gradient usage do/don't
