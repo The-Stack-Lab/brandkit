@@ -1,5 +1,5 @@
 {
-  "name": "@stacklab/brandkit",
+  "name": "@stacklist-app/brandkit",
   "version": "1.1.1",
   "description": "Config-driven brand guide that bolts onto any website. Zero dependencies.",
   "main": "lib/resolve.js",

@@ -1,4 +1,4 @@
-# @stacklab/brandkit
+# @stacklist-app/brandkit
 
 A config-driven brand guide that bolts onto any website. One `config.json` drives the entire guide — colors, typography, logos, voice, components, spacing, accessibility. Zero runtime dependencies.
 
@@ -41,7 +41,7 @@ Serve the brand guide at `/brand` in your existing dev server and bundle it on b
 **Vite**
 ```js
 // vite.config.js
-import brandkit from '@stacklab/brandkit/integrations/vite'
+import brandkit from '@stacklist-app/brandkit/integrations/vite'
 
 export default {
   plugins: [brandkit()],
@@ -51,7 +51,7 @@ export default {
 **Astro**
 ```js
 // astro.config.mjs
-import brandkit from '@stacklab/brandkit/integrations/astro'
+import brandkit from '@stacklist-app/brandkit/integrations/astro'
 
 export default {
   integrations: [brandkit()],

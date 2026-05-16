@@ -2,12 +2,12 @@ var fs = require('fs');
 var path = require('path');
 
 /**
- * Vite plugin for @stacklab/brandkit.
+ * Vite plugin for @stacklist-app/brandkit.
  * Serves brand guide files at /brand during dev.
  * Copies built files to output on build.
  *
  * Usage in vite.config.js:
- *   import brandkit from '@stacklab/brandkit/integrations/vite'
+ *   import brandkit from '@stacklist-app/brandkit/integrations/vite'
  *   export default defineConfig({ plugins: [brandkit()] })
  */
 module.exports = function brandkitVite(options) {
@@ -15,7 +15,7 @@ module.exports = function brandkitVite(options) {
   var route = (options && options.route) || '/brand';
 
   return {
-    name: '@stacklab/brandkit',
+    name: '@stacklist-app/brandkit',
 
     configureServer: function (server) {
       var dir = path.resolve(brandDir);
