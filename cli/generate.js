@@ -218,11 +218,11 @@ function ensureThemeDefaults(theme) {
   Object.keys(rgbPairs).forEach(function (hexKey) {
     var rgbKey = rgbPairs[hexKey];
     var val = theme[hexKey];
-    if (val && !theme[rgbKey] && /^#[0-9a-fA-F]{3,8}$/.test(val)) {
+    if (val && !theme[rgbKey] && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(val)) {
       theme[rgbKey] = helpers.hexToRgbString(val);
     }
   });
-  if (theme['--accent'] && !theme['--accent-foreground'] && /^#[0-9a-fA-F]{3,8}$/.test(theme['--accent'])) {
+  if (theme['--accent'] && !theme['--accent-foreground'] && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(theme['--accent'])) {
     // Pick the on-fill color with the higher WCAG contrast (not a luminance
     // threshold — a mid-tone fill like orange reads better with black text
     // even though it isn't "light").
@@ -247,7 +247,7 @@ function buildColors(colorList) {
   for (var i = 0; i < colorList.length; i++) {
     var c = colorList[i];
     // Skip colors without valid hex (Tailwind function-based colors, etc.)
-    if (!c.hex || typeof c.hex !== 'string' || !/^#[0-9a-fA-F]{3,8}$/.test(c.hex)) continue;
+    if (!c.hex || typeof c.hex !== 'string' || !/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c.hex)) continue;
     if (!c.name) continue;
     var lowerName = c.name.toLowerCase();
 
