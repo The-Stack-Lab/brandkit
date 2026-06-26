@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="324" height="96" viewBox="0 0 324 96" role="img" aria-label="brandkit">
+  <defs>
+    <linearGradient id="bk-wm-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="8" width="80" height="80" rx="19" fill="url(#bk-wm-grad)"/>
+  <g fill="#FFFFFF">
+    <rect x="22" y="31" width="36" height="9" rx="4.5"/>
+    <rect x="22" y="44" width="36" height="9" rx="4.5" opacity="0.82"/>
+    <rect x="22" y="57" width="23" height="9" rx="4.5" opacity="0.64"/>
+  </g>
+  <text x="100" y="61" font-family="'Space Grotesk', 'Helvetica Neue', Arial, sans-serif" font-size="46" font-weight="600" letter-spacing="-1.5" fill="#111827">brandkit</text>
+</svg>

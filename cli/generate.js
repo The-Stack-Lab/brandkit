@@ -72,6 +72,7 @@ module.exports = function generate(args) {
   // Theme from CSS variables
   if (extracted.cssVars) {
     newFields.theme = extractCSS.mapToTheme(extracted.cssVars);
+    ensureThemeDefaults(newFields.theme);
   }
 
   // Fonts from Tailwind
@@ -202,6 +203,39 @@ module.exports = function generate(args) {
   console.log('');
 };
 
+// Fill in the companion tokens styles.css consumes but a host stylesheet
+// rarely defines: the "r, g, b" variants used by rgba() tints, and the
+// accent on-color pairing. A light fill (e.g. orange) gets a black
+// foreground so buttons stay legible; --accent-text defaults to the fill.
+function ensureThemeDefaults(theme) {
+  if (!theme) return;
+  var rgbPairs = {
+    '--accent': '--accent-rgb',
+    '--ink': '--ink-rgb',
+    '--error': '--error-rgb',
+    '--success': '--success-rgb'
+  };
+  Object.keys(rgbPairs).forEach(function (hexKey) {
+    var rgbKey = rgbPairs[hexKey];
+    var val = theme[hexKey];
+    if (val && !theme[rgbKey] && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(val)) {
+      theme[rgbKey] = helpers.hexToRgbString(val);
+    }
+  });
+  if (theme['--accent'] && !theme['--accent-foreground'] && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(theme['--accent'])) {
+    // Pick the on-fill color with the higher WCAG contrast (not a luminance
+    // threshold — a mid-tone fill like orange reads better with black text
+    // even though it isn't "light").
+    var lum = helpers.relativeLuminance(theme['--accent']);
+    var contrastWhite = 1.05 / (lum + 0.05);
+    var contrastBlack = (lum + 0.05) / 0.05;
+    theme['--accent-foreground'] = contrastBlack >= contrastWhite ? '#000000' : '#FFFFFF';
+  }
+  if (theme['--accent'] && !theme['--accent-text']) {
+    theme['--accent-text'] = theme['--accent'];
+  }
+}
+
 function buildColors(colorList) {
   var brand = [];
   var neutrals = [];
@@ -213,7 +247,7 @@ function buildColors(colorList) {
   for (var i = 0; i < colorList.length; i++) {
     var c = colorList[i];
     // Skip colors without valid hex (Tailwind function-based colors, etc.)
-    if (!c.hex || typeof c.hex !== 'string' || !/^#[0-9a-fA-F]{3,8}$/.test(c.hex)) continue;
+    if (!c.hex || typeof c.hex !== 'string' || !/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c.hex)) continue;
     if (!c.name) continue;
     var lowerName = c.name.toLowerCase();
 

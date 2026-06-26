@@ -163,8 +163,18 @@
        4. Render gradients
        ============================================================== */
     function renderGradients() {
+      var gradientsSection = document.getElementById('gradients');
+      // No gradient configured → hide the whole section. The swatches are
+      // CSS-backed (var(--gradient-brand)), so leaving the scaffolding would
+      // render the default gradient under an empty "Gradient System" header.
+      if (!cfg.gradients || !cfg.gradients.length) {
+        if (gradientsSection) gradientsSection.style.display = 'none';
+        return;
+      }
+      if (gradientsSection) gradientsSection.style.display = '';
+
       var stopsContainer = document.getElementById('gradient-stops');
-      if (!stopsContainer || !cfg.gradients || !cfg.gradients.length) return;
+      if (!stopsContainer) return;
       var brand = cfg.gradients[0];
       if (brand && brand.stops && brand.stops.length) {
         stopsContainer.innerHTML = brand.stops.map(function (s) {
@@ -732,11 +742,20 @@
        18. Render shell (header, intro, footer, misc)
        ============================================================== */
     function renderShell() {
-      // Header
+      // Header — show brand.headerLogo image if set, else the brand name as text.
+      // brand.guideLabel renames the "Web Style Guide" label (header + footer).
+      var guideLabel = cfg.brand.guideLabel || 'Web Style Guide';
       var wordmark = document.getElementById('header-wordmark');
-      if (wordmark) wordmark.textContent = cfg.brand.name;
+      if (wordmark) {
+        if (cfg.brand.headerLogo) {
+          wordmark.innerHTML = '<img class="header-logo" src="' + esc(cfg.brand.headerLogo) +
+            '" alt="' + esc(cfg.brand.name || 'Logo') + '">';
+        } else {
+          wordmark.textContent = cfg.brand.name;
+        }
+      }
       var meta = document.getElementById('header-meta');
-      if (meta) meta.innerHTML = 'Web Style Guide v' + cfg.brand.version + '<br>' + cfg.brand.date;
+      if (meta) meta.innerHTML = esc(guideLabel) + ' v' + esc(cfg.brand.version) + '<br>' + esc(cfg.brand.date);
 
       // Intro
       var intro = document.getElementById('intro');
@@ -749,8 +768,8 @@
       // Footer
       var footer = document.getElementById('footer');
       if (footer) footer.innerHTML =
-        '<span>' + cfg.brand.url + ' \u00B7 ' + cfg.brand.byline + '</span>' +
-        '<span>Web Style Guide v' + cfg.brand.version + ' \u00B7 ' + cfg.brand.date + '</span>';
+        '<span>' + esc(cfg.brand.url) + ' \u00B7 ' + esc(cfg.brand.byline) + '</span>' +
+        '<span>' + esc(guideLabel) + ' v' + esc(cfg.brand.version) + ' \u00B7 ' + esc(cfg.brand.date) + '</span>';
 
       // Typography specimens — read descriptions from config
       var typeDisplayName = document.getElementById('type-display-name');
@@ -771,11 +790,21 @@
       var testerFont = document.getElementById('type-tester-font');
       var testerInput = document.getElementById('type-tester-input');
       if (testerFont && cfg.fonts) {
-        testerFont.innerHTML =
-          '<option value="' + cfg.fonts.display.family + '">' + cfg.fonts.display.family + '</option>' +
-          '<option value="' + cfg.fonts.body.family + '">' + cfg.fonts.body.family + '</option>';
-        if (testerInput) {
-          testerInput.style.fontFamily = "'" + cfg.fonts.display.family + "', sans-serif";
+        // De-duplicate families so a brand using one typeface for both
+        // display and body shows a single option, not the same one twice.
+        var famList = [];
+        if (cfg.fonts.display && cfg.fonts.display.family) famList.push(cfg.fonts.display.family);
+        if (cfg.fonts.body && cfg.fonts.body.family) famList.push(cfg.fonts.body.family);
+        var seenFam = {};
+        var uniqueFams = [];
+        famList.forEach(function (f) {
+          if (!seenFam[f]) { seenFam[f] = true; uniqueFams.push(f); }
+        });
+        testerFont.innerHTML = uniqueFams.map(function (f) {
+          return '<option value="' + esc(f) + '">' + esc(f) + '</option>';
+        }).join('');
+        if (testerInput && uniqueFams.length) {
+          testerInput.style.fontFamily = "'" + uniqueFams[0] + "', sans-serif";
         }
       }
 
@@ -816,9 +845,16 @@
           '</div>';
       }
 
-      // Sidebar brand name
+      // Sidebar brand — logo image if brand.sidebarLogo is set, else brand name
       var sidebarBrand = document.querySelector('.sidebar-brand');
-      if (sidebarBrand) sidebarBrand.textContent = 'brandkit';
+      if (sidebarBrand) {
+        if (cfg.brand.sidebarLogo) {
+          sidebarBrand.innerHTML = '<img class="sidebar-logo" src="' + esc(cfg.brand.sidebarLogo) +
+            '" alt="' + esc(cfg.brand.name || 'Logo') + '">';
+        } else {
+          sidebarBrand.textContent = cfg.brand.name || 'Brand';
+        }
+      }
     }
 
     /* ==============================================================

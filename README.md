@@ -9,7 +9,7 @@ Swap the config and assets to generate a brand guide for any project. An optiona
 ```bash
 npm install github:The-Stack-Lab/brandkit
 # or pin to a tag
-npm install github:The-Stack-Lab/brandkit#v1.1.1
+npm install github:The-Stack-Lab/brandkit#v1.1.2
 ```
 
 Requires Node.js 18+.
@@ -23,7 +23,7 @@ npx brandkit dev brand         # preview at http://localhost:4800 (live reload)
 npx brandkit build brand       # bake into static files for production
 ```
 
-The `brand` directory name is your choice — pass any path.
+`init` scaffolds a complete, ready-to-run demo brand (the self-titled "Brandkit" guide), so `dev` shows a polished guide immediately — then you swap in your own colors, fonts, copy, and logos. The `brand` directory name is your choice — pass any path.
 
 ## CLI
 
@@ -64,7 +64,7 @@ export default {
 
 `config.json` is the single source of truth. Top-level keys:
 
-- `brand` — name, tagline, description, version
+- `brand` — name, tagline, description, version, date; optional `guideLabel` (renames the "Web Style Guide" header/footer label), `headerLogo` and `sidebarLogo` (logo image paths that replace the text wordmark in the header and left menu)
 - `fonts` — display + body with Google Fonts import
 - `theme` — CSS variable map (colors, gradients, font vars)
 - `nav` — sidebar structure
@@ -79,14 +79,22 @@ export default {
 - `accessibility` — contrast ratio grid
 - `cssVariables` — variable reference
 
-See `example/config.json` for a complete reference implementation (Freeway PHX).
+See `example/config.json` for the complete default demo brand — the same config `init` scaffolds.
 
-## How theming works
+## Theming
 
-`dist/styles.css` uses CSS custom properties (`var(--purple)`, `var(--font-display)`, etc.) with no `:root` block.
+`dist/styles.css` ships a baseline `:root` block with sensible defaults for **every** token it consumes, so a minimal or partial config never renders broken. Your config only needs to *override* what it wants to change.
 
-- **Dev**: the engine reads `config.theme` and injects a `<style data-brandkit-theme>` tag at runtime.
-- **Build**: `brandkit build` prepends the generated `:root` block to `styles.css` and injects the Google Fonts `<link>` and page title into `index.html`.
+The accent uses a fill/text split (the same convention as Material and shadcn/ui):
+
+- `--accent` — the fill color (buttons, active states)
+- `--accent-foreground` — text/icons **on** the fill (must meet contrast against `--accent`)
+- `--accent-text` — the accent used **as** text or links on a light surface
+
+This lets a low-contrast fill (say a bright orange) stay accessible: set `--accent-foreground: #000000` and `--accent-text` to a darker shade. Pre-1.1.2 configs that set `--purple` / `--purple-rgb` still work — those feed `--accent`.
+
+- **Dev**: the engine reads `config.theme` and injects a `<style data-brandkit-theme>` block at runtime, which cascades over the defaults.
+- **Build**: `brandkit build` appends the generated `:root` after the stylesheet's defaults and injects the Google Fonts `<link>` and page title into `index.html`.
 
 Swap the config, and every color, gradient, and font token updates everywhere.
 

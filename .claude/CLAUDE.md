@@ -11,7 +11,7 @@ The brand guide renders entirely from `config.json` — swap the config and logo
 ## Development
 
 ```bash
-# Run the Freeway PHX example
+# Run the default demo brand (the self-titled "Brandkit" guide)
 node bin/brandkit.js dev example
 # Open http://localhost:4800
 
@@ -40,13 +40,14 @@ lib/
 dist/
   index.html          ← Universal HTML template (no hardcoded content)
   engine.js           ← Rendering engine (bootstrap + 11 renderers + interactivity)
-  styles.css          ← Stylesheet using only CSS variables (no :root block)
+  styles.css          ← Stylesheet driven by CSS variables; ships a baseline :root of default tokens
+  logos/              ← Default generic brandkit logos (SVG), copied by `init`
 integrations/
   vite.js             ← Vite plugin (serves /brand in dev, copies on build)
   astro.js            ← Astro integration (wraps Vite plugin)
 example/
-  config.json         ← Freeway PHX brand data (reference implementation)
-  logos/              ← Freeway logo assets
+  config.json         ← Default demo brand data (snapshot of starterConfig)
+  logos/              ← Default brandkit demo logos
 ```
 
 **Key principle**: `dist/` files are universal — they never contain brand-specific content. `config.json` is the only file that changes per client.
@@ -72,16 +73,18 @@ Then interactivity: `initCopy()`, `initFormatBar()`, `initNav()`, `initTypeTeste
 
 ### How Theme Injection Works
 
-`styles.css` uses CSS custom properties (`var(--purple)`, `var(--font-display)`, etc.) but contains **no** `:root` block.
+`styles.css` ships a baseline `:root` block defining **every** token it consumes (default values), so a minimal/ported config never renders broken. Config-supplied tokens cascade over those defaults.
 
-- **Dev mode**: engine.js bootstrap reads `config.theme` and injects a `<style data-brandkit-theme>` tag with the `:root` block at runtime.
-- **Production build**: `cli/build.js` uses `lib/template.js` to prepend the generated `:root` block to styles.css, plus injects the Google Fonts `<link>` and title into index.html.
+The accent uses a fill/text split: `--accent` (fill), `--accent-foreground` (text on the fill), `--accent-text` (accent as text on a light surface). The baseline aliases `--accent: var(--purple, …)` so pre-1.1.2 configs that set `--purple`/`--purple-rgb` still work.
+
+- **Dev mode**: engine.js bootstrap reads `config.theme` and injects a `<style data-brandkit-theme>` `:root` block at runtime — appended to `<head>`, so it cascades over the baseline.
+- **Production build**: `cli/build.js` uses `lib/template.js` to **append** the generated `:root` block after styles.css (so brand overrides win), plus injects the Google Fonts `<link>` and title into index.html.
 
 ### Config Schema
 
 `config.json` top-level keys:
 
-- `brand` — name, displayName, tagline, description, url, byline, version, date
+- `brand` — name, displayName, tagline, description, url, byline, version, date; optional `guideLabel` (renames the "Web Style Guide" header/footer label), `headerLogo` (image replacing the header text wordmark), `sidebarLogo` (image replacing the brand name at the top of the left menu). Logo fields fall back to `brand.name` text when empty/unset; the sidebar previously hardcoded "brandkit" — it now uses `brand.name`.
 - `fonts` — display + body with `family`, `googleImport`, `description`
 - `theme` — explicit CSS variable mapping (colors, gradients, font vars, `-rgb` variants)
 - `nav` — sidebar groups and section links
@@ -115,7 +118,7 @@ brandkit build [dir]       # Build production static files
 - **ES5-compatible in dist/** — uses `var`, `.forEach()`, string concatenation
 - **Node.js builtins only in cli/lib/** — zero npm dependencies
 - **Config-driven** — no hardcoded brand content in dist/ files
-- `styles.css` uses `var(--font-display)`, `var(--font-body)`, `var(--purple-rgb)` etc. — never literal font names or brand-specific rgba values
+- `styles.css` uses `var(--font-display)`, `var(--accent)`, `var(--accent-text)`, `var(--accent-rgb)` etc. — never literal font names or brand-specific colors (the baseline `:root` holds the only default values)
 
 ## Adding a New Section
 
@@ -125,6 +128,15 @@ brandkit build [dir]       # Build production static files
 4. Add styles in `dist/styles.css` using only CSS variables
 5. Call the render function in the "Execute all" block
 
-## Example Client
+## Default Demo Brand
 
-`example/config.json` and `example/logos/` are for **Freeway PHX** (freewayphx.com). Primary: purple `#6B2FA0`, secondary: coral `#E86B5A`. Fonts: Commissioner (display) + Ubuntu (body).
+`example/config.json` and `example/logos/` are the company-agnostic **Brandkit** demo — the same guide `brandkit init` scaffolds (`lib/config-schema.js` `starterConfig()`). It doubles as living documentation. Primary accent: indigo `#4F46E5` (text `#4338CA`). Fonts: Space Grotesk (display) + Inter (body). Logos are generated SVGs in `dist/logos/`.
+
+`example/config.json` is a snapshot of `starterConfig()` with two overrides: `brand.version` tracks the package version (the demo *is* brandkit, so its guide version matches the release; the scaffold default stays `1.0` for real clients) and `brand.date` is pinned. Regenerate it after editing the starter:
+
+```bash
+node -e "const fs=require('fs');const pkg=require('./package.json');const s=require('./lib/config-schema').starterConfig();s.brand.version=pkg.version;s.brand.date='June 2026';fs.writeFileSync('example/config.json',JSON.stringify(s,null,2)+'\n')"
+cp dist/engine.js dist/styles.css dist/index.html example/   # keep engine files in sync with dist/
+```
+
+No client brand data lives in this repo.

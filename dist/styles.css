@@ -4,6 +4,61 @@
    CSS custom properties injected by engine.js from config.json.
    ═══════════════════════════════════════════════════════════════════ */
 
+/* ───────────────────────────────────────────────────────────────────
+   Default tokens — a config only needs to OVERRIDE these.
+   This stylesheet consumes every variable below; shipping defaults here
+   means a minimal or ported config never renders broken (invisible
+   buttons, colorless code, system fonts, transparent tints).
+
+   The injected config.theme (dev) and the generated :root (build) both
+   cascade AFTER this block, so any token a config sets wins.
+
+   Backward compatibility: pre-1.1.2 configs set --purple / --purple-rgb.
+   Those feed --accent / --accent-rgb below, so old configs keep working
+   without setting the new accent tokens.
+   ─────────────────────────────────────────────────────────────────── */
+:root {
+  /* Surfaces & ink */
+  --white: #FFFFFF;
+  --cloud: #F9FAFB;
+  --mist: #F3F4F6;
+  --haze: #D1D5DB;
+  --slate: #6B7280;
+  --graphite: #374151;
+  --ink: #111827;
+  --ink-rgb: 17, 24, 39;
+
+  /* Fonts (overridden per-brand from config.fonts) */
+  --font-display: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Accent — fill vs. text split (Material/shadcn "on-color" convention)
+       --accent            the fill color (buttons, active chips)
+       --accent-foreground text/icon color ON the fill (must pass on --accent)
+       --accent-text       the accent used AS text/links on a light surface */
+  --accent: var(--purple, #6366F1);
+  --accent-rgb: var(--purple-rgb, 99, 102, 241);
+  --accent-foreground: #FFFFFF;
+  --accent-text: var(--accent);
+
+  /* Gradients */
+  --gradient-brand: linear-gradient(135deg, #4338CA 0%, #6366F1 50%, #EC4899 100%);
+  --gradient-brand-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(236, 72, 153, 0.06) 100%);
+
+  /* Semantic */
+  --success: #10B981;
+  --success-rgb: 16, 185, 129;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --error-rgb: 239, 68, 68;
+
+  /* Extended palette (coral accents, code-syntax highlight) */
+  --coral: #F87171;
+  --coral-dark: #DC2626;
+  --coral-light: #FCA5A5;
+  --lavender: #A5B4FC;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -33,10 +88,18 @@ body {
   font-family: var(--font-display), sans-serif;
   font-size: 18px;
   font-weight: 700;
-  color: var(--purple);
+  color: var(--accent-text);
   padding: 0 24px;
   margin-bottom: 32px;
   letter-spacing: -0.02em;
+}
+
+/* Optional logo image in the sidebar top (brand.sidebarLogo) */
+.sidebar-logo {
+  display: block;
+  max-height: 28px;
+  max-width: 100%;
+  width: auto;
 }
 
 .sidebar-nav { list-style: none; }
@@ -52,7 +115,7 @@ body {
 }
 
 .sidebar-nav a:hover { color: var(--ink); background: var(--cloud); }
-.sidebar-nav a.active { color: var(--purple); border-left-color: var(--purple); background: rgba(var(--purple-rgb), 0.04); font-weight: 500; }
+.sidebar-nav a.active { color: var(--accent-text); border-left-color: var(--accent-text); background: rgba(var(--accent-rgb), 0.04); font-weight: 500; }
 
 /* ── Sidebar Grouped Navigation ── */
 .nav-group {
@@ -86,7 +149,7 @@ body {
 }
 
 .nav-group-items a:hover { color: var(--ink); background: var(--cloud); }
-.nav-group-items a.active { color: var(--purple); border-left-color: var(--purple); background: rgba(var(--purple-rgb), 0.04); font-weight: 500; }
+.nav-group-items a.active { color: var(--accent-text); border-left-color: var(--accent-text); background: rgba(var(--accent-rgb), 0.04); font-weight: 500; }
 
 .main { margin-left: 200px; flex: 1; }
 
@@ -126,8 +189,8 @@ body {
 }
 
 .copy-format-bar button.active {
-  background: var(--purple);
-  color: var(--white);
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
 
 .copy-format-bar button:hover:not(.active) { background: var(--cloud); }
@@ -207,6 +270,14 @@ body {
   line-height: 1.6;
   position: relative;
   z-index: 1;
+}
+
+/* Optional logo image in the header (brand.headerLogo) */
+.header-logo {
+  display: block;
+  max-height: 56px;
+  max-width: 100%;
+  width: auto;
 }
 
 /* ── Section ── */
@@ -293,7 +364,7 @@ body {
   padding: 2px 0;
 }
 
-.color-value:hover { color: var(--purple); }
+.color-value:hover { color: var(--accent-text); }
 
 .color-role { font-size: 11px; color: var(--haze); margin-top: 2px; }
 
@@ -428,9 +499,9 @@ body {
   font-family: var(--font-body), sans-serif;
   font-size: 12px;
   font-weight: 500;
-  color: var(--purple);
-  background: rgba(var(--purple-rgb), 0.06);
-  border: 1px solid rgba(var(--purple-rgb), 0.15);
+  color: var(--accent-text);
+  background: rgba(var(--accent-rgb), 0.06);
+  border: 1px solid rgba(var(--accent-rgb), 0.15);
   border-radius: 6px;
   padding: 4px 8px;
   cursor: pointer;
@@ -488,7 +559,7 @@ body {
 .hierarchy-demo .h-primary { font-size: 15px; color: var(--ink); line-height: 1.7; margin-bottom: 14px; }
 .hierarchy-demo .h-secondary { font-size: 15px; color: var(--graphite); line-height: 1.7; margin-bottom: 14px; }
 .hierarchy-demo .h-tertiary { font-size: 13px; color: var(--slate); line-height: 1.6; margin-bottom: 14px; }
-.hierarchy-demo .h-accent { font-size: 15px; font-weight: 500; color: var(--purple); }
+.hierarchy-demo .h-accent { font-size: 15px; font-weight: 500; color: var(--accent-text); }
 
 .hierarchy-labels { display: flex; gap: 28px; flex-wrap: wrap; }
 
@@ -512,8 +583,8 @@ body {
 
 .wordmark-box.on-gradient { background: var(--gradient-brand); color: var(--white); }
 .wordmark-box.on-dark { background: var(--ink); color: var(--white); }
-.wordmark-box.on-light { background: var(--mist); color: var(--purple); }
-.wordmark-box.on-white { background: var(--white); color: var(--purple); box-shadow: inset 0 0 0 1px rgba(var(--ink-rgb), 0.08); }
+.wordmark-box.on-light { background: var(--mist); color: var(--accent-text); }
+.wordmark-box.on-white { background: var(--white); color: var(--accent-text); box-shadow: inset 0 0 0 1px rgba(var(--ink-rgb), 0.08); }
 
 .wordmark-note { font-size: 12px; color: var(--slate); text-align: center; margin-top: 6px; }
 
@@ -607,8 +678,8 @@ body {
 }
 
 .logo-format-toggle button.active {
-  background: var(--purple);
-  color: var(--white);
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
 
 .logo-format-toggle button:hover:not(.active) {
@@ -627,8 +698,8 @@ body {
 }
 
 .logo-card.bg-light .logo-format-toggle button.active {
-  background: var(--purple);
-  color: var(--white);
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
 
 .logo-card.bg-light .logo-format-toggle button:hover:not(.active) {
@@ -682,8 +753,8 @@ body {
   color: var(--slate);
 }
 .logo-card.on-light .logo-format-toggle button.active {
-  background: var(--purple);
-  color: var(--white);
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
 .logo-card.on-light .logo-format-toggle button:hover:not(.active) {
   background: var(--cloud);
@@ -696,7 +767,7 @@ body {
 .logo-card.on-light .logo-download-btn {
   border-color: var(--haze);
   background: transparent;
-  color: var(--purple);
+  color: var(--accent-text);
 }
 .logo-card.on-light .logo-download-btn:hover {
   background: var(--cloud);
@@ -727,11 +798,11 @@ body {
 .logo-card.bg-light .logo-download-btn {
   border-color: var(--haze);
   background: transparent;
-  color: var(--purple);
+  color: var(--accent-text);
 }
 
 .logo-card.bg-light .logo-download-btn:hover {
-  background: rgba(var(--purple-rgb), 0.06);
+  background: rgba(var(--accent-rgb), 0.06);
 }
 
 /* ── Voice ── */
@@ -759,7 +830,7 @@ body {
   color: var(--ink);
   margin-bottom: 10px;
   padding-left: 16px;
-  border-left: 2px solid rgba(var(--purple-rgb), 0.2);
+  border-left: 2px solid rgba(var(--accent-rgb), 0.2);
 }
 
 .voice-example:last-child { margin-bottom: 0; }
@@ -792,11 +863,11 @@ body {
 .btn-sm { height: 32px; padding: 0 16px; font-size: 13px; border-radius: 9999px; }
 .btn-md { height: 40px; padding: 0 24px; font-size: 14px; border-radius: 9999px; }
 .btn-lg { height: 48px; padding: 0 28px; font-size: 16px; border-radius: 9999px; }
-.btn-primary { background: var(--purple); color: var(--white); }
-.btn-primary:hover { background: #5A2688; }
+.btn-primary { background: var(--accent); color: var(--accent-foreground); }
+.btn-primary:hover { filter: brightness(0.9); }
 .btn-secondary { background: var(--mist); color: var(--ink); }
-.btn-secondary:hover { background: #DDD8E8; }
-.btn-ghost { background: transparent; color: var(--purple); border: 1px solid var(--haze); }
+.btn-secondary:hover { filter: brightness(0.96); }
+.btn-ghost { background: transparent; color: var(--accent-text); border: 1px solid var(--haze); }
 .btn-ghost:hover { background: var(--cloud); }
 .btn-gradient { background: var(--gradient-brand); color: var(--white); }
 .btn-gradient:hover { opacity: 0.9; }
@@ -827,8 +898,8 @@ body {
   font-weight: 500;
   padding: 3px 10px;
   border-radius: 9999px;
-  background: rgba(var(--purple-rgb), 0.08);
-  color: var(--purple);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--accent-text);
 }
 
 .dark-card-demo { background: var(--ink); border-radius: 20px; padding: 36px; margin-top: 20px; }
@@ -915,7 +986,7 @@ body {
 
 .a11y-badge.pass { background: rgba(var(--success-rgb), 0.15); color: var(--success); }
 .a11y-badge.fail { background: rgba(var(--error-rgb), 0.12); color: var(--error); }
-.a11y-badge.large { background: rgba(var(--purple-rgb), 0.12); color: var(--purple); }
+.a11y-badge.large { background: rgba(var(--accent-rgb), 0.12); color: var(--accent-text); }
 
 /* ── Code Block ── */
 .code-block {
