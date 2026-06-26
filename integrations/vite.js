@@ -77,7 +77,8 @@ module.exports = function brandkitVite(options) {
           var resolve = require('../lib/resolve');
           template.build(resolve.getDistPath(), outDir, config);
         } catch (e) {
-          // Leave the raw copy in place; don't fail the host build.
+          // Leave the raw copy in place; don't fail the host build, but say why.
+          console.warn('[brandkit] agent-export step skipped: ' + e.message);
         }
       }
     }

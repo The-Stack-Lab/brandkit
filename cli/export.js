@@ -48,8 +48,7 @@ module.exports = function exportCmd(args) {
   var dest = outDir ? path.resolve(outDir) : targetDir;
   if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
 
-  var formats = format.indexOf(',') !== -1 ? format.split(',') : format;
-  var result = exporter.writeExports(config, dest, formats);
+  var result = exporter.writeExports(config, dest, format.split(','));
 
   console.log('');
   console.log('  brandkit export');

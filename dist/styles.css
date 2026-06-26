@@ -41,9 +41,21 @@
   --accent-foreground: #FFFFFF;
   --accent-text: var(--accent);
 
+  /* Primary action — the fill for primary buttons / CTAs.
+       Defaults to the accent, so single-accent brands are unchanged. Brands that
+       separate the primary action from the accent (e.g. a black CTA with an orange
+       accent) override --primary / --primary-foreground. */
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+
   /* Gradients */
   --gradient-brand: linear-gradient(135deg, #4338CA 0%, #6366F1 50%, #EC4899 100%);
   --gradient-brand-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(236, 72, 153, 0.06) 100%);
+
+  /* Header background — the hero block behind the wordmark/logo.
+       Defaults to the brand gradient; override (e.g. a flat dark color) for a
+       hero that shouldn't carry the accent. */
+  --header-bg: var(--gradient-brand);
 
   /* Semantic */
   --success: #10B981;
@@ -231,7 +243,7 @@ body {
 
 /* ── Header ── */
 .header {
-  background: var(--gradient-brand);
+  background: var(--header-bg);
   border-radius: 24px;
   padding: 64px 56px;
   margin-bottom: 72px;
@@ -863,7 +875,7 @@ body {
 .btn-sm { height: 32px; padding: 0 16px; font-size: 13px; border-radius: 9999px; }
 .btn-md { height: 40px; padding: 0 24px; font-size: 14px; border-radius: 9999px; }
 .btn-lg { height: 48px; padding: 0 28px; font-size: 16px; border-radius: 9999px; }
-.btn-primary { background: var(--accent); color: var(--accent-foreground); }
+.btn-primary { background: var(--primary); color: var(--primary-foreground); }
 .btn-primary:hover { filter: brightness(0.9); }
 .btn-secondary { background: var(--mist); color: var(--ink); }
 .btn-secondary:hover { filter: brightness(0.96); }

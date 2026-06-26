@@ -4,7 +4,7 @@
   "tagline": "The config-driven brand guide",
   "description": "Brandkit turns a single config.json into a complete, living brand guide — colors, typography, logos, voice, and components, all driven by design tokens. This is the default guide; swap the config and assets to make it your own.",
   "url": "github.com/The-Stack-Lab/brandkit",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "generatedBy": "brandkit",
   "voice": {
     "summary": "Clear, confident, and friendly. Brandkit speaks like a thoughtful teammate — it explains the what and the why without jargon, and never talks down to the reader.",
