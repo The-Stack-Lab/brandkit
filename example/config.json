@@ -29,6 +29,7 @@
     "--accent-rgb": "79, 70, 229",
     "--accent-foreground": "#FFFFFF",
     "--accent-text": "#4338CA",
+    "--accent-2": "#7C3AED",
     "--lavender": "#A5B4FC",
     "--coral": "#FB7185",
     "--coral-dark": "#E11D48",

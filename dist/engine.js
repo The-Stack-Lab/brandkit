@@ -755,7 +755,7 @@
         }
       }
       var meta = document.getElementById('header-meta');
-      if (meta) meta.innerHTML = esc(guideLabel) + ' v' + cfg.brand.version + '<br>' + cfg.brand.date;
+      if (meta) meta.innerHTML = esc(guideLabel) + ' v' + esc(cfg.brand.version) + '<br>' + esc(cfg.brand.date);
 
       // Intro
       var intro = document.getElementById('intro');
@@ -768,8 +768,8 @@
       // Footer
       var footer = document.getElementById('footer');
       if (footer) footer.innerHTML =
-        '<span>' + cfg.brand.url + ' \u00B7 ' + cfg.brand.byline + '</span>' +
-        '<span>' + esc(guideLabel) + ' v' + cfg.brand.version + ' \u00B7 ' + cfg.brand.date + '</span>';
+        '<span>' + esc(cfg.brand.url) + ' \u00B7 ' + esc(cfg.brand.byline) + '</span>' +
+        '<span>' + esc(guideLabel) + ' v' + esc(cfg.brand.version) + ' \u00B7 ' + esc(cfg.brand.date) + '</span>';
 
       // Typography specimens — read descriptions from config
       var typeDisplayName = document.getElementById('type-display-name');
