@@ -132,10 +132,10 @@ brandkit build [dir]       # Build production static files
 
 `example/config.json` and `example/logos/` are the company-agnostic **Brandkit** demo — the same guide `brandkit init` scaffolds (`lib/config-schema.js` `starterConfig()`). It doubles as living documentation. Primary accent: indigo `#4F46E5` (text `#4338CA`). Fonts: Space Grotesk (display) + Inter (body). Logos are generated SVGs in `dist/logos/`.
 
-`example/config.json` is a snapshot of `starterConfig()` — regenerate it after editing the starter:
+`example/config.json` is a snapshot of `starterConfig()` with two overrides: `brand.version` tracks the package version (the demo *is* brandkit, so its guide version matches the release; the scaffold default stays `1.0` for real clients) and `brand.date` is pinned. Regenerate it after editing the starter:
 
 ```bash
-node -e "const fs=require('fs');const s=require('./lib/config-schema').starterConfig();s.brand.date='v1.0';fs.writeFileSync('example/config.json',JSON.stringify(s,null,2)+'\n')"
+node -e "const fs=require('fs');const pkg=require('./package.json');const s=require('./lib/config-schema').starterConfig();s.brand.version=pkg.version;s.brand.date='June 2026';fs.writeFileSync('example/config.json',JSON.stringify(s,null,2)+'\n')"
 cp dist/engine.js dist/styles.css dist/index.html example/   # keep engine files in sync with dist/
 ```
 
