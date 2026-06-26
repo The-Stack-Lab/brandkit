@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Brandkit mark, reversed">
+  <rect x="1.5" y="1.5" width="93" height="93" rx="20.5" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+  <g fill="#FFFFFF">
+    <rect x="26" y="28" width="44" height="11" rx="5.5"/>
+    <rect x="26" y="43" width="44" height="11" rx="5.5" opacity="0.82"/>
+    <rect x="26" y="58" width="28" height="11" rx="5.5" opacity="0.64"/>
+  </g>
+</svg>

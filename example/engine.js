@@ -163,8 +163,18 @@
        4. Render gradients
        ============================================================== */
     function renderGradients() {
+      var gradientsSection = document.getElementById('gradients');
+      // No gradient configured → hide the whole section. The swatches are
+      // CSS-backed (var(--gradient-brand)), so leaving the scaffolding would
+      // render the default gradient under an empty "Gradient System" header.
+      if (!cfg.gradients || !cfg.gradients.length) {
+        if (gradientsSection) gradientsSection.style.display = 'none';
+        return;
+      }
+      if (gradientsSection) gradientsSection.style.display = '';
+
       var stopsContainer = document.getElementById('gradient-stops');
-      if (!stopsContainer || !cfg.gradients || !cfg.gradients.length) return;
+      if (!stopsContainer) return;
       var brand = cfg.gradients[0];
       if (brand && brand.stops && brand.stops.length) {
         stopsContainer.innerHTML = brand.stops.map(function (s) {
@@ -771,11 +781,21 @@
       var testerFont = document.getElementById('type-tester-font');
       var testerInput = document.getElementById('type-tester-input');
       if (testerFont && cfg.fonts) {
-        testerFont.innerHTML =
-          '<option value="' + cfg.fonts.display.family + '">' + cfg.fonts.display.family + '</option>' +
-          '<option value="' + cfg.fonts.body.family + '">' + cfg.fonts.body.family + '</option>';
-        if (testerInput) {
-          testerInput.style.fontFamily = "'" + cfg.fonts.display.family + "', sans-serif";
+        // De-duplicate families so a brand using one typeface for both
+        // display and body shows a single option, not the same one twice.
+        var famList = [];
+        if (cfg.fonts.display && cfg.fonts.display.family) famList.push(cfg.fonts.display.family);
+        if (cfg.fonts.body && cfg.fonts.body.family) famList.push(cfg.fonts.body.family);
+        var seenFam = {};
+        var uniqueFams = [];
+        famList.forEach(function (f) {
+          if (!seenFam[f]) { seenFam[f] = true; uniqueFams.push(f); }
+        });
+        testerFont.innerHTML = uniqueFams.map(function (f) {
+          return '<option value="' + esc(f) + '">' + esc(f) + '</option>';
+        }).join('');
+        if (testerInput && uniqueFams.length) {
+          testerInput.style.fontFamily = "'" + uniqueFams[0] + "', sans-serif";
         }
       }
 

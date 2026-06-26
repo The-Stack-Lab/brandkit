@@ -37,6 +37,22 @@ module.exports = function init(args) {
     }
   }
 
+  // Copy the default showcase logos so the scaffold renders complete out of
+  // the box. Skipped on --update (preserve the user's assets) and skipped per
+  // file if the user already has one with that name.
+  var distLogosDir = path.join(distDir, 'logos');
+  if (!isUpdate && fs.existsSync(distLogosDir)) {
+    var logoFiles = fs.readdirSync(distLogosDir);
+    for (var l = 0; l < logoFiles.length; l++) {
+      var logoSrc = path.join(distLogosDir, logoFiles[l]);
+      var logoDest = path.join(logosDir, logoFiles[l]);
+      if (!fs.existsSync(logoDest)) {
+        fs.copyFileSync(logoSrc, logoDest);
+        console.log('    copied  logos/' + logoFiles[l]);
+      }
+    }
+  }
+
   // Create starter config.json (skip if exists and not forcing)
   var configPath = path.join(targetDir, 'config.json');
   if (!fs.existsSync(configPath) && !isUpdate) {
