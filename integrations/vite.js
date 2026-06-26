@@ -52,7 +52,6 @@ module.exports = function brandkitVite(options) {
     },
 
     closeBundle: function () {
-      // Copy brand directory to build output
       var srcDir = path.resolve(brandDir);
       if (!fs.existsSync(srcDir)) return;
 
@@ -61,7 +60,26 @@ module.exports = function brandkitVite(options) {
         fs.mkdirSync(outDir, { recursive: true });
       }
 
+      // Copy assets (config.json, logos, anything in brand/) to the output.
       copyDir(srcDir, outDir);
+
+      // Then produce a real production build into the output: theme baked into
+      // styles.css, engine.js copied, and the agent-native exports written +
+      // embedded in index.html. This makes the deployed /brand carry brand.json,
+      // tokens.json, brand.md and the inline <script id="brandkit-brand"> — so an
+      // agent pointed at the URL gets structured brand data without a manual
+      // `brandkit build` step. Falls back to the raw copy if config is missing.
+      var configPath = path.join(srcDir, 'config.json');
+      if (fs.existsSync(configPath)) {
+        try {
+          var config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          var template = require('../lib/template');
+          var resolve = require('../lib/resolve');
+          template.build(resolve.getDistPath(), outDir, config);
+        } catch (e) {
+          // Leave the raw copy in place; don't fail the host build.
+        }
+      }
     }
   };
 };
