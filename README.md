@@ -104,6 +104,13 @@ The accent uses a fill/text split (the same convention as Material and shadcn/ui
 
 This lets a low-contrast fill (say a bright orange) stay accessible: set `--accent-foreground: #000000` and `--accent-text` to a darker shade. Pre-1.1.2 configs that set `--purple` / `--purple-rgb` still work — those feed `--accent`.
 
+By default the **primary button** and the **header** carry the accent. Brands that separate a brand role from the accent — e.g. a black primary CTA and a black hero, with orange kept as the accent — override:
+
+- `--primary` / `--primary-foreground` — primary-button fill and the text on it (default to `--accent` / `--accent-foreground`)
+- `--header-bg` — the header/hero background behind the wordmark or logo (defaults to `--gradient-brand`)
+
+The fallbacks mean single-accent brands need set none of these.
+
 - **Dev**: the engine reads `config.theme` and injects a `<style data-brandkit-theme>` block at runtime, which cascades over the defaults.
 - **Build**: `brandkit build` appends the generated `:root` after the stylesheet's defaults and injects the Google Fonts `<link>` and page title into `index.html`.
 

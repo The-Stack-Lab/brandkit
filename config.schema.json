@@ -67,7 +67,10 @@
       "properties": {
         "--accent": { "type": "string", "description": "Accent fill color (buttons, active states)." },
         "--accent-foreground": { "type": "string", "description": "Text/icon color ON the accent fill (must meet contrast against --accent)." },
-        "--accent-text": { "type": "string", "description": "Accent used AS text/links on a light surface (must meet AA)." }
+        "--accent-text": { "type": "string", "description": "Accent used AS text/links on a light surface (must meet AA)." },
+        "--primary": { "type": "string", "description": "Primary action fill (primary buttons / CTAs). Defaults to --accent; override to separate the primary action from the accent (e.g. a black CTA with an orange accent)." },
+        "--primary-foreground": { "type": "string", "description": "Text/icon color ON the primary fill (must meet contrast against --primary). Defaults to --accent-foreground." },
+        "--header-bg": { "type": "string", "description": "Header/hero background behind the wordmark or logo. Defaults to --gradient-brand; override (e.g. a flat dark color) for a hero that shouldn't carry the accent." }
       }
     },
     "nav": {
