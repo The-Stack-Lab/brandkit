@@ -16,6 +16,9 @@ switch (command) {
   case 'generate':
     require('../cli/generate')(args.slice(1));
     break;
+  case 'export':
+    require('../cli/export')(args.slice(1));
+    break;
   case 'help':
   case '--help':
   case '-h':
@@ -41,6 +44,7 @@ function printHelp() {
   console.log('    brandkit generate [dir]    Auto-generate config from codebase');
   console.log('    brandkit dev [dir]         Start dev server with live reload');
   console.log('    brandkit build [dir]       Build static files for production');
+  console.log('    brandkit export [dir]      Emit agent-native brand data (brand.json, tokens.json, brand.md)');
   console.log('');
   console.log('  Options:');
   console.log('    --help, -h     Show this help message');

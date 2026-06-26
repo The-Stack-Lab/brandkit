@@ -23,12 +23,17 @@ module.exports = function build(args) {
 
   var config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
-  template.build(distDir, targetDir, config);
+  var exported = template.build(distDir, targetDir, config);
 
   var brandName = (config.brand && config.brand.displayName) || 'Brand';
-  console.log('    built   index.html   (' + brandName + ' title + fonts baked in)');
+  console.log('    built   index.html   (' + brandName + ' title + fonts + embedded brand data)');
   console.log('    built   styles.css   (:root variables generated)');
   console.log('    copied  engine.js');
+  if (exported && exported.written) {
+    exported.written.forEach(function (f) {
+      console.log('    wrote   ' + f + '   (agent-native export)');
+    });
+  }
   console.log('');
   console.log('  Ready to deploy. Serve ' + path.relative(process.cwd(), targetDir) + '/ as static files.');
   console.log('');

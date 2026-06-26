@@ -30,13 +30,16 @@ cli/
   generate.js         ← Auto-extract config from host codebase
   dev.js              ← Dev server with SSE live reload
   build.js            ← Bake config into static production files
+  export.js           ← Emit agent-native brand data (brand.json/tokens.json/brand.md)
 lib/
-  template.js         ← Generate :root CSS + fonts link from config
+  template.js         ← Generate :root CSS + fonts link from config; writes + embeds exports
+  export.js           ← Project config → brand.json (semantic) / tokens.json (DTCG) / brand.md (LLM brief)
   extract-tailwind.js ← Read tailwind.config for colors/fonts/spacing
   extract-css.js      ← Parse CSS files for custom properties
   extract-logos.js    ← Find logo/brand assets via glob
   config-schema.js    ← Starter config template + merge logic
   resolve.js          ← Path to dist/ (swagger-ui-dist pattern)
+config.schema.json    ← JSON Schema for config.json (shipped in npm files)
 dist/
   index.html          ← Universal HTML template (no hardcoded content)
   engine.js           ← Rendering engine (bootstrap + 11 renderers + interactivity)
@@ -107,10 +110,20 @@ The accent uses a fill/text split: `--accent` (fill), `--accent-foreground` (tex
 brandkit init [dir]        # Scaffold brand guide with starter config
 brandkit generate [dir]    # Auto-extract config from codebase (Tailwind, CSS, logos)
 brandkit dev [dir]         # Dev server at :4800 with live reload
-brandkit build [dir]       # Build production static files
+brandkit build [dir]       # Build production static files (+ agent exports, embedded in the page)
+brandkit export [dir]      # Emit only the agent exports (--format json|dtcg|md|all, --out <dir>)
 ```
 
 `generate` merge strategy: extractable fields (colors, fonts, spacing, logos) overwrite; manual fields (voice, accessibility, components, typography samples) are preserved.
+
+### Agent-native exports (lib/export.js)
+
+`build` and `export` project `config.json` into machine-first views, written next to the HTML:
+- `brand.json` — normalized, semantic brand (accent fill/text split with contrast, color roles, voice, logos with usage, spacing). The agent-first view, not the render config.
+- `tokens.json` — W3C Design Tokens (DTCG) `{ $type, $value }` for color / fontFamily / dimension. Only hex theme values become color tokens (gradients/`-rgb` are excluded to stay tool-compatible).
+- `brand.md` — an LLM brief; surfaces low-contrast pairs as explicit cautions.
+
+`build` also injects `<link rel="alternate" type="application/json" href="brand.json">` and embeds `<script type="application/json" id="brandkit-brand">` (with `</script>` escaped) so an agent fetching the deployed page gets structured data without scraping. The transforms are pure (`lib/export.js`); file writing is `writeExports()`.
 
 ## Coding Standards
 
@@ -137,6 +150,9 @@ brandkit build [dir]       # Build production static files
 ```bash
 node -e "const fs=require('fs');const pkg=require('./package.json');const s=require('./lib/config-schema').starterConfig();s.brand.version=pkg.version;s.brand.date='June 2026';fs.writeFileSync('example/config.json',JSON.stringify(s,null,2)+'\n')"
 cp dist/engine.js dist/styles.css dist/index.html example/   # keep engine files in sync with dist/
+node bin/brandkit.js export example                          # refresh the committed agent exports
 ```
+
+`example/{brand.json,tokens.json,brand.md}` are committed as a reference of what the exports look like — regenerate them with `export` (not `build`, which would overwrite the raw dev `index.html`/`styles.css`).
 
 No client brand data lives in this repo.

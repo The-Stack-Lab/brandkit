@@ -1,6 +1,6 @@
 {
   "name": "@stacklist-app/brandkit",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Config-driven brand guide that bolts onto any website. Zero dependencies.",
   "main": "lib/resolve.js",
   "bin": {
@@ -11,7 +11,8 @@
     "cli/",
     "lib/",
     "dist/",
-    "integrations/"
+    "integrations/",
+    "config.schema.json"
   ],
   "scripts": {
     "dev": "node bin/brandkit.js dev example",

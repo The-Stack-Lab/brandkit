@@ -1,0 +1,343 @@
+{
+  "name": "brandkit",
+  "displayName": "Brandkit",
+  "tagline": "The config-driven brand guide",
+  "description": "Brandkit turns a single config.json into a complete, living brand guide — colors, typography, logos, voice, and components, all driven by design tokens. This is the default guide; swap the config and assets to make it your own.",
+  "url": "github.com/The-Stack-Lab/brandkit",
+  "version": "1.1.2",
+  "generatedBy": "brandkit",
+  "voice": {
+    "summary": "Clear, confident, and friendly. Brandkit speaks like a thoughtful teammate — it explains the what and the why without jargon, and never talks down to the reader.",
+    "do": [
+      "Swap the config and your whole guide updates.",
+      "Every token is one source of truth.",
+      "Ship a polished brand guide in minutes."
+    ],
+    "dont": [
+      "Leverage synergistic design paradigms.",
+      "It just works (somehow).",
+      "Refer to the documentation for further details."
+    ]
+  },
+  "color": {
+    "accent": {
+      "fill": "#4F46E5",
+      "onFill": "#FFFFFF",
+      "asText": "#4338CA",
+      "contrast": {
+        "onFill": {
+          "ratio": "6.3:1",
+          "rating": "AA"
+        },
+        "asTextOnWhite": {
+          "ratio": "7.9:1",
+          "rating": "AAA"
+        }
+      }
+    },
+    "brand": [
+      {
+        "name": "Indigo",
+        "hex": "#4F46E5",
+        "oklch": "oklch(0.51 0.23 277)",
+        "role": "Primary accent — buttons, links, focus",
+        "token": "--accent"
+      },
+      {
+        "name": "Violet",
+        "hex": "#7C3AED",
+        "oklch": "oklch(0.54 0.25 293)",
+        "role": "Secondary accent, gradient end",
+        "token": "--accent-2"
+      }
+    ],
+    "neutral": [
+      {
+        "name": "Ink",
+        "hex": "#111827",
+        "oklch": "oklch(0.21 0.03 265)",
+        "role": "Primary text, headings",
+        "token": "--ink"
+      },
+      {
+        "name": "Graphite",
+        "hex": "#374151",
+        "oklch": "oklch(0.37 0.03 260)",
+        "role": "Secondary text, descriptions",
+        "token": "--graphite"
+      },
+      {
+        "name": "Slate",
+        "hex": "#6B7280",
+        "oklch": "oklch(0.55 0.02 264)",
+        "role": "Tertiary text, captions",
+        "token": "--slate"
+      },
+      {
+        "name": "Mist",
+        "hex": "#F3F4F6",
+        "oklch": "oklch(0.97 0.00 265)",
+        "role": "Borders, section backgrounds",
+        "token": "--mist"
+      },
+      {
+        "name": "Cloud",
+        "hex": "#F9FAFB",
+        "oklch": "oklch(0.98 0.00 248)",
+        "role": "Page background",
+        "token": "--cloud"
+      }
+    ],
+    "semantic": [
+      {
+        "name": "Success",
+        "hex": "#16A34A",
+        "oklch": "oklch(0.63 0.17 149)",
+        "role": "Confirmations, positive states",
+        "token": "--success"
+      },
+      {
+        "name": "Warning",
+        "hex": "#D97706",
+        "oklch": "oklch(0.67 0.16 58)",
+        "role": "Attention, caution states",
+        "token": "--warning"
+      },
+      {
+        "name": "Error",
+        "hex": "#DC2626",
+        "oklch": "oklch(0.58 0.22 27)",
+        "role": "Errors, destructive actions",
+        "token": "--error"
+      }
+    ]
+  },
+  "gradient": {
+    "brand": "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
+    "subtle": "linear-gradient(135deg, rgba(79, 70, 229, 0.06) 0%, rgba(124, 58, 237, 0.06) 100%)",
+    "usage": {
+      "do": [
+        "Hero and feature section backgrounds",
+        "Large display headlines (as gradient text)",
+        "Key stat numbers and accent moments"
+      ],
+      "dont": [
+        "Body copy or small text",
+        "Behind dense UI or data tables",
+        "More than one focal area per screen"
+      ]
+    }
+  },
+  "type": {
+    "display": {
+      "family": "Space Grotesk",
+      "googleImport": "Space+Grotesk:wght@400;500;600;700",
+      "description": "Space Grotesk — a geometric sans with a little character. Used for headlines, the wordmark, and large display moments."
+    },
+    "body": {
+      "family": "Inter",
+      "googleImport": "Inter:wght@300;400;500;600;700",
+      "description": "Inter — a highly legible workhorse for body copy, UI labels, and long-form reading at every size."
+    },
+    "scale": [
+      {
+        "name": "Display XL",
+        "size": "72px",
+        "weight": 700,
+        "font": "display"
+      },
+      {
+        "name": "Display",
+        "size": "56px",
+        "weight": 700,
+        "font": "display"
+      },
+      {
+        "name": "H1",
+        "size": "44px",
+        "weight": 700,
+        "font": "display"
+      },
+      {
+        "name": "H2",
+        "size": "36px",
+        "weight": 700,
+        "font": "display"
+      },
+      {
+        "name": "H3",
+        "size": "28px",
+        "weight": 600,
+        "font": "display"
+      },
+      {
+        "name": "H4",
+        "size": "22px",
+        "weight": 600,
+        "font": "display"
+      },
+      {
+        "name": "Body LG",
+        "size": "18px",
+        "weight": 400,
+        "font": "body"
+      },
+      {
+        "name": "Body",
+        "size": "16px",
+        "weight": 400,
+        "font": "body"
+      },
+      {
+        "name": "Body SM",
+        "size": "14px",
+        "weight": 400,
+        "font": "body"
+      },
+      {
+        "name": "Caption",
+        "size": "12px",
+        "weight": 500,
+        "font": "body"
+      },
+      {
+        "name": "Overline",
+        "size": "11px",
+        "weight": 700,
+        "font": "body"
+      }
+    ]
+  },
+  "spacing": [
+    {
+      "token": "space-1",
+      "px": 4
+    },
+    {
+      "token": "space-2",
+      "px": 8
+    },
+    {
+      "token": "space-3",
+      "px": 12
+    },
+    {
+      "token": "space-4",
+      "px": 16
+    },
+    {
+      "token": "space-6",
+      "px": 24
+    },
+    {
+      "token": "space-8",
+      "px": 32
+    },
+    {
+      "token": "space-12",
+      "px": 48
+    },
+    {
+      "token": "space-16",
+      "px": 64
+    },
+    {
+      "token": "space-24",
+      "px": 96
+    }
+  ],
+  "logos": [
+    {
+      "name": "Wordmark",
+      "description": "Primary lockup — use on light backgrounds.",
+      "use": "light backgrounds",
+      "formats": [
+        "svg"
+      ],
+      "src": "logos/brandkit-wordmark-dark.svg",
+      "variants": {
+        "svg": "logos/brandkit-wordmark-dark.svg"
+      }
+    },
+    {
+      "name": "Wordmark, reversed",
+      "description": "For dark backgrounds and photography.",
+      "use": "dark backgrounds",
+      "formats": [
+        "svg"
+      ],
+      "src": "logos/brandkit-wordmark-light.svg",
+      "variants": {
+        "svg": "logos/brandkit-wordmark-light.svg"
+      }
+    },
+    {
+      "name": "Monogram",
+      "description": "Compact mark for avatars and favicons.",
+      "use": "light backgrounds",
+      "formats": [
+        "svg"
+      ],
+      "src": "logos/brandkit-mark.svg",
+      "variants": {
+        "svg": "logos/brandkit-mark.svg"
+      }
+    },
+    {
+      "name": "Monogram on gradient",
+      "description": "Reversed mark for the brand gradient.",
+      "use": "the brand gradient",
+      "formats": [
+        "svg"
+      ],
+      "src": "logos/brandkit-mark-white.svg",
+      "variants": {
+        "svg": "logos/brandkit-mark-white.svg"
+      }
+    }
+  ],
+  "accessibility": [
+    {
+      "pair": "Indigo Text on White",
+      "fg": "#4338CA",
+      "bg": "#FFFFFF",
+      "ratio": "7.9:1",
+      "rating": "AAA"
+    },
+    {
+      "pair": "White on Indigo",
+      "fg": "#FFFFFF",
+      "bg": "#4F46E5",
+      "ratio": "6.3:1",
+      "rating": "AA"
+    },
+    {
+      "pair": "White on Ink",
+      "fg": "#FFFFFF",
+      "bg": "#111827",
+      "ratio": "17.7:1",
+      "rating": "AAA"
+    },
+    {
+      "pair": "Graphite on Cloud",
+      "fg": "#374151",
+      "bg": "#F9FAFB",
+      "ratio": "9.9:1",
+      "rating": "AAA"
+    },
+    {
+      "pair": "Slate on White",
+      "fg": "#6B7280",
+      "bg": "#FFFFFF",
+      "ratio": "4.8:1",
+      "rating": "AA"
+    },
+    {
+      "pair": "White on Success",
+      "fg": "#FFFFFF",
+      "bg": "#16A34A",
+      "ratio": "3.3:1",
+      "rating": "AA Large"
+    }
+  ]
+}
