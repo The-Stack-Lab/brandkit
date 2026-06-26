@@ -742,11 +742,20 @@
        18. Render shell (header, intro, footer, misc)
        ============================================================== */
     function renderShell() {
-      // Header
+      // Header — show brand.headerLogo image if set, else the brand name as text.
+      // brand.guideLabel renames the "Web Style Guide" label (header + footer).
+      var guideLabel = cfg.brand.guideLabel || 'Web Style Guide';
       var wordmark = document.getElementById('header-wordmark');
-      if (wordmark) wordmark.textContent = cfg.brand.name;
+      if (wordmark) {
+        if (cfg.brand.headerLogo) {
+          wordmark.innerHTML = '<img class="header-logo" src="' + esc(cfg.brand.headerLogo) +
+            '" alt="' + esc(cfg.brand.name || 'Logo') + '">';
+        } else {
+          wordmark.textContent = cfg.brand.name;
+        }
+      }
       var meta = document.getElementById('header-meta');
-      if (meta) meta.innerHTML = 'Web Style Guide v' + cfg.brand.version + '<br>' + cfg.brand.date;
+      if (meta) meta.innerHTML = esc(guideLabel) + ' v' + cfg.brand.version + '<br>' + cfg.brand.date;
 
       // Intro
       var intro = document.getElementById('intro');
@@ -760,7 +769,7 @@
       var footer = document.getElementById('footer');
       if (footer) footer.innerHTML =
         '<span>' + cfg.brand.url + ' \u00B7 ' + cfg.brand.byline + '</span>' +
-        '<span>Web Style Guide v' + cfg.brand.version + ' \u00B7 ' + cfg.brand.date + '</span>';
+        '<span>' + esc(guideLabel) + ' v' + cfg.brand.version + ' \u00B7 ' + cfg.brand.date + '</span>';
 
       // Typography specimens — read descriptions from config
       var typeDisplayName = document.getElementById('type-display-name');
@@ -836,9 +845,16 @@
           '</div>';
       }
 
-      // Sidebar brand name
+      // Sidebar brand — logo image if brand.sidebarLogo is set, else brand name
       var sidebarBrand = document.querySelector('.sidebar-brand');
-      if (sidebarBrand) sidebarBrand.textContent = 'brandkit';
+      if (sidebarBrand) {
+        if (cfg.brand.sidebarLogo) {
+          sidebarBrand.innerHTML = '<img class="sidebar-logo" src="' + esc(cfg.brand.sidebarLogo) +
+            '" alt="' + esc(cfg.brand.name || 'Logo') + '">';
+        } else {
+          sidebarBrand.textContent = cfg.brand.name || 'Brand';
+        }
+      }
     }
 
     /* ==============================================================

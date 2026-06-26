@@ -94,6 +94,14 @@ body {
   letter-spacing: -0.02em;
 }
 
+/* Optional logo image in the sidebar top (brand.sidebarLogo) */
+.sidebar-logo {
+  display: block;
+  max-height: 28px;
+  max-width: 100%;
+  width: auto;
+}
+
 .sidebar-nav { list-style: none; }
 
 .sidebar-nav a {
@@ -262,6 +270,14 @@ body {
   line-height: 1.6;
   position: relative;
   z-index: 1;
+}
+
+/* Optional logo image in the header (brand.headerLogo) */
+.header-logo {
+  display: block;
+  max-height: 56px;
+  max-width: 100%;
+  width: auto;
 }
 
 /* ── Section ── */

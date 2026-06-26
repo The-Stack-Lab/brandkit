@@ -7,7 +7,10 @@
     "url": "github.com/The-Stack-Lab/brandkit",
     "byline": "Open source · MIT",
     "version": "1.0",
-    "date": "v1.0"
+    "date": "June 2026",
+    "guideLabel": "Web Style Guide",
+    "headerLogo": "",
+    "sidebarLogo": "logos/brandkit-wordmark-dark.svg"
   },
   "fonts": {
     "display": {

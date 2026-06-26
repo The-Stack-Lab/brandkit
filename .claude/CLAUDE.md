@@ -84,7 +84,7 @@ The accent uses a fill/text split: `--accent` (fill), `--accent-foreground` (tex
 
 `config.json` top-level keys:
 
-- `brand` — name, displayName, tagline, description, url, byline, version, date
+- `brand` — name, displayName, tagline, description, url, byline, version, date; optional `guideLabel` (renames the "Web Style Guide" header/footer label), `headerLogo` (image replacing the header text wordmark), `sidebarLogo` (image replacing the brand name at the top of the left menu). Logo fields fall back to `brand.name` text when empty/unset; the sidebar previously hardcoded "brandkit" — it now uses `brand.name`.
 - `fonts` — display + body with `family`, `googleImport`, `description`
 - `theme` — explicit CSS variable mapping (colors, gradients, font vars, `-rgb` variants)
 - `nav` — sidebar groups and section links
