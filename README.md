@@ -7,9 +7,7 @@ Swap the config and assets to generate a brand guide for any project. An optiona
 ## Install
 
 ```bash
-npm install github:The-Stack-Lab/brandkit
-# or pin to a tag
-npm install github:The-Stack-Lab/brandkit#v1.1.2
+npm install @stacklist-app/brandkit
 ```
 
 Requires Node.js 18+.
@@ -32,7 +30,20 @@ npx brandkit build brand       # bake into static files for production
 | `brandkit init [dir]` | Scaffold a new brand guide with a starter `config.json` |
 | `brandkit generate [dir]` | Extract colors, fonts, spacing, and logos from the host codebase and merge into `config.json`. Manual fields (voice, accessibility, components) are preserved. |
 | `brandkit dev [dir]` | Local dev server on `:4800` with SSE live reload |
-| `brandkit build [dir]` | Produce static `index.html` + `styles.css` + `engine.js` with the theme baked in |
+| `brandkit build [dir]` | Produce static `index.html` + `styles.css` + `engine.js` (theme baked in) **plus** the agent-native exports below |
+| `brandkit export [dir]` | Emit just the agent-native brand data (`--format json\|dtcg\|md\|all`, `--out <dir>`) |
+
+## Agent-readable brand data
+
+A brandkit guide isn't just a page for people — `build` (and the standalone `export` command) emit machine-native views of the brand so an AI agent or design-token tool can consume it without scraping HTML:
+
+- **`brand.json`** — normalized, semantic brand: colors with **roles + contrast pairings**, the accent fill/text split, voice do/don'ts, typography, logos with usage, spacing. The agent-first view.
+- **`tokens.json`** — the same colors, fonts, and spacing in **W3C Design Tokens (DTCG)** format (`{ "$type", "$value" }`), readable by Style Dictionary, Tokens Studio, and Figma.
+- **`brand.md`** — an LLM brief ("how to write/design on-brand") you can drop straight into an agent's context.
+
+`build` also makes the data **discoverable from the deployed page**: it injects `<link rel="alternate" type="application/json" href="brand.json">` and embeds the brand inline as `<script type="application/json" id="brandkit-brand">`, so an agent that fetches the URL gets structured brand data with zero extra requests.
+
+A JSON Schema for `config.json` ships at [`config.schema.json`](config.schema.json) — point your editor's `$schema` at it for validation and autocomplete.
 
 ## Framework integrations
 
@@ -92,6 +103,13 @@ The accent uses a fill/text split (the same convention as Material and shadcn/ui
 - `--accent-text` — the accent used **as** text or links on a light surface
 
 This lets a low-contrast fill (say a bright orange) stay accessible: set `--accent-foreground: #000000` and `--accent-text` to a darker shade. Pre-1.1.2 configs that set `--purple` / `--purple-rgb` still work — those feed `--accent`.
+
+By default the **primary button** and the **header** carry the accent. Brands that separate a brand role from the accent — e.g. a black primary CTA and a black hero, with orange kept as the accent — override:
+
+- `--primary` / `--primary-foreground` — primary-button fill and the text on it (default to `--accent` / `--accent-foreground`)
+- `--header-bg` — the header/hero background behind the wordmark or logo (defaults to `--gradient-brand`)
+
+The fallbacks mean single-accent brands need set none of these.
 
 - **Dev**: the engine reads `config.theme` and injects a `<style data-brandkit-theme>` block at runtime, which cascades over the defaults.
 - **Build**: `brandkit build` appends the generated `:root` after the stylesheet's defaults and injects the Google Fonts `<link>` and page title into `index.html`.

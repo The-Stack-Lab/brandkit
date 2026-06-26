@@ -1,0 +1,253 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/The-Stack-Lab/brandkit/config.schema.json",
+  "title": "brandkit config",
+  "description": "Configuration for a brandkit brand guide. The single source of truth — drives the rendered guide and the agent-native exports (brand.json, tokens.json, brand.md).",
+  "type": "object",
+  "required": ["brand", "fonts", "theme"],
+  "additionalProperties": true,
+  "definitions": {
+    "font": {
+      "type": "object",
+      "required": ["family"],
+      "properties": {
+        "family": { "type": "string", "description": "Font family name (matches the Google Fonts family)." },
+        "googleImport": { "type": "string", "description": "Google Fonts css2 query segment, e.g. 'Inter:wght@300;400;700'." },
+        "description": { "type": "string" }
+      }
+    },
+    "colorItem": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "hex": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
+        "oklch": { "type": "string" },
+        "cssVar": { "type": "string" },
+        "role": { "type": "string" },
+        "light": { "type": "boolean", "description": "Hint that the swatch needs a border on light backgrounds." }
+      }
+    },
+    "colorGroup": {
+      "type": "object",
+      "properties": {
+        "label": { "type": "string" },
+        "items": { "type": "array", "items": { "$ref": "#/definitions/colorItem" } }
+      }
+    }
+  },
+  "properties": {
+    "brand": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "description": "Short brand/slug name; shown as the header wordmark when no headerLogo is set." },
+        "displayName": { "type": "string" },
+        "tagline": { "type": "string" },
+        "description": { "type": "string" },
+        "url": { "type": "string" },
+        "byline": { "type": "string" },
+        "version": { "type": "string", "description": "The brand guide's own revision (shown in the banner/footer) — not the brandkit package version." },
+        "date": { "type": "string" },
+        "guideLabel": { "type": "string", "description": "Renames the 'Web Style Guide' label in the header and footer." },
+        "headerLogo": { "type": "string", "description": "Path to a logo image shown in the header instead of the text wordmark (use a light/reversed logo)." },
+        "sidebarLogo": { "type": "string", "description": "Path to a logo image shown at the top of the left menu instead of the brand name (use a dark logo)." }
+      }
+    },
+    "fonts": {
+      "type": "object",
+      "properties": {
+        "display": { "$ref": "#/definitions/font" },
+        "body": { "$ref": "#/definitions/font" }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "description": "CSS custom property map. Keys are token names (e.g. '--accent'). The engine only needs to OVERRIDE the baseline defaults shipped in styles.css.",
+      "additionalProperties": { "type": "string" },
+      "properties": {
+        "--accent": { "type": "string", "description": "Accent fill color (buttons, active states)." },
+        "--accent-foreground": { "type": "string", "description": "Text/icon color ON the accent fill (must meet contrast against --accent)." },
+        "--accent-text": { "type": "string", "description": "Accent used AS text/links on a light surface (must meet AA)." },
+        "--primary": { "type": "string", "description": "Primary action fill (primary buttons / CTAs). Defaults to --accent; override to separate the primary action from the accent (e.g. a black CTA with an orange accent)." },
+        "--primary-foreground": { "type": "string", "description": "Text/icon color ON the primary fill (must meet contrast against --primary). Defaults to --accent-foreground." },
+        "--header-bg": { "type": "string", "description": "Header/hero background behind the wordmark or logo. Defaults to --gradient-brand; override (e.g. a flat dark color) for a hero that shouldn't carry the accent." }
+      }
+    },
+    "nav": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "group": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": { "label": { "type": "string" }, "id": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "colors": {
+      "type": "object",
+      "properties": {
+        "brand": { "$ref": "#/definitions/colorGroup" },
+        "neutrals": { "$ref": "#/definitions/colorGroup" },
+        "semantic": { "$ref": "#/definitions/colorGroup" }
+      }
+    },
+    "gradients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "css": { "type": "string" },
+          "description": { "type": "string" },
+          "stops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "color": { "type": "string" },
+                "position": { "type": "string" },
+                "name": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "gradientUsage": {
+      "type": "object",
+      "properties": {
+        "do": { "type": "array", "items": { "type": "string" } },
+        "dont": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "sections": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "hierarchy": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "class": { "type": "string" },
+          "label": { "type": "string" },
+          "colorVar": { "type": "string" },
+          "colorName": { "type": "string" },
+          "hex": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "logos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "variants"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "variants": {
+            "type": "object",
+            "description": "Map of format → file path, e.g. { \"svg\": \"logos/mark.svg\" }.",
+            "additionalProperties": { "type": "string" }
+          },
+          "background": { "type": "string", "enum": ["light", "dark", "gradient"] }
+        }
+      }
+    },
+    "logoSizes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": { "type": "string" },
+          "width": { "type": ["integer", "null"] }
+        }
+      }
+    },
+    "typography": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "font": { "type": "string", "enum": ["display", "body"] },
+          "size": { "type": "string" },
+          "weight": { "type": ["integer", "string"] },
+          "tracking": { "type": "string" },
+          "leading": { "type": "string" },
+          "sample": { "type": "string" },
+          "uppercase": { "type": "boolean" }
+        }
+      }
+    },
+    "voice": {
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "do": { "type": "array", "items": { "type": "string" } },
+        "dont": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "accessibility": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "fg": { "type": "string" },
+          "bg": { "type": "string" },
+          "fgName": { "type": "string" },
+          "bgName": { "type": "string" },
+          "ratio": { "type": "string" },
+          "rating": { "type": "string", "enum": ["AAA", "AA", "AA Large", "Fail"] },
+          "border": { "type": "boolean" },
+          "largeText": { "type": "boolean" }
+        }
+      }
+    },
+    "cssVariables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "section": { "type": "string" },
+          "vars": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "prop": { "type": "string" },
+                "value": { "type": "string" },
+                "comment": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "spacing": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "px": { "type": "number" },
+          "token": { "type": "string" }
+        }
+      }
+    },
+    "components": {
+      "type": "object",
+      "properties": {
+        "buttons": { "type": "array" },
+        "cards": { "type": "array" },
+        "stats": { "type": "array" }
+      }
+    }
+  }
+}
