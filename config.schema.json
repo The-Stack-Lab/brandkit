@@ -12,6 +12,7 @@
       "required": ["family"],
       "properties": {
         "family": { "type": "string", "description": "Font family name (matches the Google Fonts family)." },
+        "fallback": { "type": "string", "description": "Optional web-available stand-in for brands whose official typeface isn't on the web. When set, the rendered CSS font stack becomes 'family', 'fallback', sans-serif everywhere the font renders; labels still show 'family' alone." },
         "googleImport": { "type": "string", "description": "Google Fonts css2 query segment, e.g. 'Inter:wght@300;400;700'." },
         "description": { "type": "string" }
       }
