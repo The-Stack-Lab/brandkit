@@ -29,8 +29,11 @@
        ============================================================== */
     function fontStack(f) {
       if (!f || !f.family) return 'sans-serif';
-      var stack = "'" + f.family + "'";
-      if (f.fallback) stack += ", '" + f.fallback + "'";
+      // Escape backslash + single-quote so a config value can't break out of
+      // the quoted CSS string and inject rules into the injected :root block.
+      function q(s) { return String(s).replace(/[\\']/g, '\\$&'); }
+      var stack = "'" + q(f.family) + "'";
+      if (f.fallback) stack += ", '" + q(f.fallback) + "'";
       return stack + ', sans-serif';
     }
 
