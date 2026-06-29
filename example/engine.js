@@ -22,6 +22,23 @@
     }
 
     /* ==============================================================
+       Font stack helper — weaves in an optional `fallback` web stand-in
+       for brands whose official typeface isn't web-available:
+         'Family', 'Fallback', sans-serif
+       No fallback → 'Family', sans-serif (backward-compatible).
+       ============================================================== */
+    function fontStack(f) {
+      if (!f || !f.family) return 'sans-serif';
+      // Strip control chars (a raw newline ends a CSS string) then escape
+      // backslash + single-quote, so a config value can't break out of the
+      // quoted CSS string and inject rules into the injected :root block.
+      function q(s) { return String(s).replace(/[\u0000-\u001F\u007F]/g, '').replace(/[\\']/g, '\\$&'); }
+      var stack = "'" + q(f.family) + "'";
+      if (f.fallback) stack += ", '" + q(f.fallback) + "'";
+      return stack + ', sans-serif';
+    }
+
+    /* ==============================================================
        BOOTSTRAP — inject fonts + CSS variables before any rendering
        ============================================================== */
     function bootstrap() {
@@ -47,8 +64,8 @@
         }
         // Add font variables from config
         if (cfg.fonts) {
-          if (cfg.fonts.display) vars.push("  --font-display: '" + cfg.fonts.display.family + "', sans-serif;");
-          if (cfg.fonts.body) vars.push("  --font-body: '" + cfg.fonts.body.family + "', sans-serif;");
+          if (cfg.fonts.display) vars.push('  --font-display: ' + fontStack(cfg.fonts.display) + ';');
+          if (cfg.fonts.body) vars.push('  --font-body: ' + fontStack(cfg.fonts.body) + ';');
         }
         var style = document.createElement('style');
         style.setAttribute('data-brandkit-theme', '');
@@ -734,7 +751,8 @@
       if (!testerFont || !testerInput) return;
 
       testerFont.addEventListener('change', function () {
-        testerInput.style.fontFamily = "'" + testerFont.value + "', sans-serif";
+        // The option value is already a complete font stack (incl. fallback).
+        testerInput.style.fontFamily = testerFont.value;
       });
     }
 
@@ -790,21 +808,26 @@
       var testerFont = document.getElementById('type-tester-font');
       var testerInput = document.getElementById('type-tester-input');
       if (testerFont && cfg.fonts) {
-        // De-duplicate families so a brand using one typeface for both
+        // De-duplicate by family so a brand using one typeface for both
         // display and body shows a single option, not the same one twice.
-        var famList = [];
-        if (cfg.fonts.display && cfg.fonts.display.family) famList.push(cfg.fonts.display.family);
-        if (cfg.fonts.body && cfg.fonts.body.family) famList.push(cfg.fonts.body.family);
-        var seenFam = {};
-        var uniqueFams = [];
-        famList.forEach(function (f) {
-          if (!seenFam[f]) { seenFam[f] = true; uniqueFams.push(f); }
+        // The option value carries the full font stack (incl. any fallback)
+        // so the tester renders in the web stand-in when one is configured;
+        // the label stays the clean family name.
+        var fontList = [];
+        if (cfg.fonts.display && cfg.fonts.display.family) fontList.push(cfg.fonts.display);
+        if (cfg.fonts.body && cfg.fonts.body.family) fontList.push(cfg.fonts.body);
+        // null-proto map so a family literally named "__proto__"/"toString"
+        // isn't mistaken for already-seen via an inherited Object property.
+        var seenFam = Object.create(null);
+        var uniqueFonts = [];
+        fontList.forEach(function (f) {
+          if (!seenFam[f.family]) { seenFam[f.family] = true; uniqueFonts.push(f); }
         });
-        testerFont.innerHTML = uniqueFams.map(function (f) {
-          return '<option value="' + esc(f) + '">' + esc(f) + '</option>';
+        testerFont.innerHTML = uniqueFonts.map(function (f) {
+          return '<option value="' + esc(fontStack(f)) + '">' + esc(f.family) + '</option>';
         }).join('');
-        if (testerInput && uniqueFams.length) {
-          testerInput.style.fontFamily = "'" + uniqueFams[0] + "', sans-serif";
+        if (testerInput && uniqueFonts.length) {
+          testerInput.style.fontFamily = fontStack(uniqueFonts[0]);
         }
       }
 

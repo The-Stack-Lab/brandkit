@@ -76,7 +76,7 @@ export default {
 `config.json` is the single source of truth. Top-level keys:
 
 - `brand` — name, tagline, description, version, date; optional `guideLabel` (renames the "Web Style Guide" header/footer label), `headerLogo` and `sidebarLogo` (logo image paths that replace the text wordmark in the header and left menu)
-- `fonts` — display + body with Google Fonts import
+- `fonts` — display + body with Google Fonts import; each font takes an optional `fallback` web stand-in for brands whose official typeface isn't web-available (the rendered font stack becomes `'family', 'fallback', sans-serif`, while labels keep the clean family name)
 - `theme` — CSS variable map (colors, gradients, font vars)
 - `nav` — sidebar structure
 - `colors` — brand / neutrals / semantic palettes
