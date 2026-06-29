@@ -816,7 +816,9 @@
         var fontList = [];
         if (cfg.fonts.display && cfg.fonts.display.family) fontList.push(cfg.fonts.display);
         if (cfg.fonts.body && cfg.fonts.body.family) fontList.push(cfg.fonts.body);
-        var seenFam = {};
+        // null-proto map so a family literally named "__proto__"/"toString"
+        // isn't mistaken for already-seen via an inherited Object property.
+        var seenFam = Object.create(null);
         var uniqueFonts = [];
         fontList.forEach(function (f) {
           if (!seenFam[f.family]) { seenFam[f.family] = true; uniqueFonts.push(f); }
