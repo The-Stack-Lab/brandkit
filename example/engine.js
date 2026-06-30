@@ -144,7 +144,10 @@
       } catch (_) {
         brandUrl = 'brand.json'; tokensUrl = 'tokens.json'; mdUrl = 'brand.md';
       }
-      var name = (cfg.brand && (cfg.brand.displayName || cfg.brand.name)) || 'this brand';
+      // Strip control chars / newlines and collapse whitespace so a hostile
+      // brand name can't smuggle instructions into the paste-ready agent prompt.
+      var name = ((cfg.brand && (cfg.brand.displayName || cfg.brand.name)) || 'this brand')
+        .replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim() || 'this brand';
       var prompt =
         'This page is a brandkit brand guide for ' + name + '. It publishes ' +
         'machine-readable brand data — read these instead of scraping the page:\n\n' +
@@ -159,7 +162,7 @@
         '<button type="button" class="sidebar-agent-btn" id="agent-callout-btn">Copy agent prompt</button>';
       // Set the payload via property (not an HTML attribute) so no font/brand
       // value needs escaping and newlines survive intact.
-      var btn = document.getElementById('agent-callout-btn');
+      var btn = box.querySelector('#agent-callout-btn');
       if (btn) btn.dataset.copy = prompt;
       box.hidden = false;
     }
