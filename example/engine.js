@@ -202,7 +202,7 @@
           '<circle cx="12" cy="12" r="9"/>' +
         '</svg>' +
         '<span class="sidebar-changelog-label">Changelog</span>' +
-        '<span class="sidebar-changelog-version">v' + esc(cfg.brand.version) + '</span>';
+        '<span class="sidebar-changelog-version">v' + esc(cfg.brand && cfg.brand.version) + '</span>';
       link.hidden = false;
     }
 

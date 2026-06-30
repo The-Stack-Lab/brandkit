@@ -32,10 +32,22 @@ module.exports = function changelog(args) {
     process.exit(1);
   }
 
+  // Drop blank/whitespace-only messages so a stray empty arg can't create a
+  // blank bullet (and silently bump the version).
+  opts.messages = opts.messages.filter(function (m) { return String(m).trim() !== ''; });
   if (!opts.messages.length) {
     console.error('');
     console.error('  Nothing to log — pass at least one change message.');
     console.error('  Example: brandkit changelog "Added the gradient system"');
+    console.error('');
+    process.exit(1);
+  }
+
+  // Reject a malformed explicit --version so junk never lands in brand.version
+  // (which build/template.js consume downstream).
+  if (opts.version && !/^\d+\.\d+(\.\d+)?$/.test(opts.version)) {
+    console.error('');
+    console.error('  Invalid --version "' + opts.version + '" — expected MAJOR.MINOR (e.g. 0.3 or 1.0).');
     console.error('');
     process.exit(1);
   }
@@ -45,6 +57,17 @@ module.exports = function changelog(args) {
   if (!Array.isArray(config.changelog)) config.changelog = [];
 
   var prevVersion = config.brand.version || '0.1';
+
+  // --lock finalizes a pre-1.0 brand at 1.0; refuse to move a >=1.0 brand
+  // backward (which would also break the newest-first version ordering).
+  if (opts.lock && parseVersion(prevVersion).major >= 1) {
+    console.error('');
+    console.error('  Already at v' + prevVersion + ' — the brand is locked (>= 1.0).');
+    console.error('  Use --major or --version X.Y to bump further.');
+    console.error('');
+    process.exit(1);
+  }
+
   var nextVersion = nextVersionFor(prevVersion, opts);
   var date = opts.date || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
