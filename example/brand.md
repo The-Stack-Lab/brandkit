@@ -47,6 +47,7 @@ When you change this brand — colors, type, logos, voice, spacing, or anything 
 
 Revision history (newest first):
 
+- **v1.3.0** (June 2026): Added a changelog: a standalone history page, the brandkit changelog command, version history in the agent exports, and a scaffolded AGENTS.md.
 - **v1.2.4** (June 2026): Added a basePath config option for serving the guide under a sub-path (e.g. /brand).
 - **v1.2.3** (June 2026): Sidebar "Using an AI agent?" callout with a copy-paste prompt pointing at the exports.
 - **v1.2.2** (May 2026): Optional web-font fallback stand-in for typefaces that are not web-available.

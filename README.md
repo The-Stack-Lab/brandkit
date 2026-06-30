@@ -32,6 +32,7 @@ npx brandkit build brand       # bake into static files for production
 | `brandkit dev [dir]` | Local dev server on `:4800` with SSE live reload |
 | `brandkit build [dir]` | Produce static `index.html` + `styles.css` + `engine.js` (theme baked in) **plus** the agent-native exports below |
 | `brandkit export [dir]` | Emit just the agent-native brand data (`--format json\|dtcg\|md\|all`, `--out <dir>`) |
+| `brandkit changelog "<msg>" [dir]` | Record a revision: prepend a changelog entry and bump `brand.version` (`--lock`, `--major`, `--version X.Y`, `--date`, `--dir`) |
 
 ## Agent-readable brand data
 
@@ -46,6 +47,22 @@ A brandkit guide isn't just a page for people — `build` (and the standalone `e
 And for a person who wants to hand the guide to their own agent, the sidebar shows a **"Using an AI agent?"** callout with a one-click copy-paste prompt — it carries absolute URLs to `brand.json` / `tokens.json` / `brand.md` and tells the agent to read those instead of scraping the page. Hide it with `brand.agentCallout: false`.
 
 A JSON Schema for `config.json` ships at [`config.schema.json`](config.schema.json) — point your editor's `$schema` at it for validation and autocomplete.
+
+## Changelog
+
+A brand guide evolves, so brandkit keeps a history of its revisions. Record one with:
+
+```bash
+npx brandkit changelog "Swapped the accent to teal, refreshed the logo"
+```
+
+This prepends a `{ version, date, changes }` entry to `config.changelog` and bumps `brand.version`. A fresh guide starts at **0.1** and climbs with each change (`0.1 → 0.2 → …`); finalize the brand at **1.0** with `--lock`:
+
+```bash
+npx brandkit changelog --lock "Brand finalized"
+```
+
+The history renders on a standalone **`changelog.html`** page (linked from the bottom of the sidebar) and is included in `brand.json` / `brand.md` so agents see it too. `init` also scaffolds an **`AGENTS.md`** into the guide directory — a maintenance contract telling an AI agent the source of truth, to read from the exports, and to record changes with `brandkit changelog`.
 
 ## Framework integrations
 
