@@ -28,7 +28,8 @@ module.exports = function build(args) {
   var brandName = (config.brand && config.brand.displayName) || 'Brand';
   console.log('    built   index.html   (' + brandName + ' title + fonts + embedded brand data)');
   console.log('    built   styles.css   (:root variables generated)');
-  console.log('    copied  engine.js');
+  console.log('    built   changelog.html (' + brandName + ' title + fonts)');
+  console.log('    copied  engine.js, changelog.js');
   if (exported && exported.written) {
     exported.written.forEach(function (f) {
       console.log('    wrote   ' + f + '   (agent-native export)');

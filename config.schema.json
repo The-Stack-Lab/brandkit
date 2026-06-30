@@ -251,6 +251,18 @@
         "cards": { "type": "array" },
         "stats": { "type": "array" }
       }
+    },
+    "changelog": {
+      "type": "array",
+      "description": "Revision history for the brand guide, newest entry first. Rendered on the standalone changelog.html page and surfaced in the agent exports. Maintain it with `brandkit changelog`. The latest entry's version should match brand.version.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "version": { "type": "string", "description": "Revision label, e.g. '0.2'. Starts at 0.1 on a fresh guide; 1.0 = locked/finalized." },
+          "date": { "type": "string", "description": "Human-readable date, e.g. 'June 2026'." },
+          "changes": { "type": "array", "items": { "type": "string" }, "description": "Bullet list of what changed in this revision." }
+        }
+      }
     }
   }
 }

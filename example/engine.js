@@ -184,6 +184,29 @@
     }
 
     /* ==============================================================
+       2c. Render changelog link — pinned to the bottom of the sidebar when
+       a changelog exists, pointing at the standalone changelog.html page.
+       ============================================================== */
+    function renderChangelogLink() {
+      var link = document.getElementById('sidebar-changelog');
+      if (!link) return;
+      if (!cfg.changelog || !cfg.changelog.length) return;
+
+      // Resolve against BASE so the link works when the guide is served from a
+      // non-trailing-slash base path (e.g. /brand → /brand/index.html).
+      var href = (BASE && BASE !== '.') ? BASE + '/changelog.html' : 'changelog.html';
+      link.setAttribute('href', href);
+      link.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+          '<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2"/>' +
+          '<circle cx="12" cy="12" r="9"/>' +
+        '</svg>' +
+        '<span class="sidebar-changelog-label">Changelog</span>' +
+        '<span class="sidebar-changelog-version">v' + esc(cfg.brand && cfg.brand.version) + '</span>';
+      link.hidden = false;
+    }
+
+    /* ==============================================================
        3. Render colors
        ============================================================== */
     function renderColorGrid(colors, containerId) {
@@ -954,6 +977,7 @@
     renderShell();
     renderNav();
     renderAgentCallout();
+    renderChangelogLink();
     renderSectionIntros();
     renderColors();
     renderGradients();
