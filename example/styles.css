@@ -171,6 +171,10 @@ body {
 .sidebar-agent-btn:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 
 /* Changelog link — pinned to the bottom of the sidebar column */
+/* The author `display:flex` below would override the UA `[hidden]{display:none}`
+   (author beats UA), leaving an empty bordered box when JS hasn't un-hidden it
+   (no changelog, or before the engine runs) — so restore hidden explicitly. */
+.sidebar-changelog[hidden] { display: none; }
 .sidebar-changelog {
   margin: auto 16px 4px;        /* auto top pushes it to the bottom */
   padding-top: 16px;

@@ -52,8 +52,10 @@ module.exports = function changelog(args) {
   }
 
   // Reject a malformed explicit --version so junk never lands in brand.version
-  // (which build/template.js consume downstream).
-  if (opts.version && !/^\d+\.\d+(\.\d+)?$/.test(opts.version)) {
+  // (which build/template.js consume downstream). The changelog scheme is
+  // strictly MAJOR.MINOR, so a patch (1.2.3) is rejected too — keeping the
+  // regex, the message, and parseVersion's bump logic consistent.
+  if (opts.version && !/^\d+\.\d+$/.test(opts.version)) {
     console.error('');
     console.error('  Invalid --version "' + opts.version + '" — expected MAJOR.MINOR (e.g. 0.3 or 1.0).');
     console.error('');
@@ -65,6 +67,14 @@ module.exports = function changelog(args) {
   if (!Array.isArray(config.changelog)) config.changelog = [];
 
   var prevVersion = config.brand.version || '0.1';
+
+  // The scheme is MAJOR.MINOR. If the stored version isn't clean (hand-edited,
+  // or a 3-part value like the demo's package version), warn rather than
+  // silently normalizing — the bump uses only its leading major.minor.
+  if (!opts.version && !/^\d+\.\d+$/.test(prevVersion)) {
+    console.error('  Note: brand.version "' + prevVersion +
+      '" is not MAJOR.MINOR — bumping from its leading major.minor.');
+  }
 
   // --lock finalizes a pre-1.0 brand at 1.0; refuse to move a >=1.0 brand
   // backward (which would also break the newest-first version ordering).
