@@ -22,6 +22,14 @@ module.exports = function changelog(args) {
     return;
   }
 
+  if (opts.error) {
+    console.error('');
+    console.error('  ' + opts.error);
+    console.error('');
+    printUsage();
+    process.exit(1);
+  }
+
   var targetDir = path.resolve(opts.dir || '.');
   var configPath = path.join(targetDir, 'config.json');
   if (!fs.existsSync(configPath)) {
@@ -115,15 +123,23 @@ function parseVersion(v) {
 }
 
 function parseArgs(args) {
-  var opts = { messages: [], dir: '.', lock: false, major: false, version: null, date: null, help: false };
+  var opts = { messages: [], dir: '.', lock: false, major: false, version: null, date: null, help: false, error: null };
+  var valueFlags = { '--version': 'version', '--date': 'date', '--dir': 'dir' };
   for (var i = 0; i < args.length; i++) {
     var a = args[i];
     if (a === '--help' || a === '-h') opts.help = true;
     else if (a === '--lock') opts.lock = true;
     else if (a === '--major') opts.major = true;
-    else if (a === '--version') { opts.version = args[++i]; }
-    else if (a === '--date') { opts.date = args[++i]; }
-    else if (a === '--dir') { opts.dir = args[++i]; }
+    else if (valueFlags[a]) {
+      // A value flag at the end of argv would otherwise read undefined and be
+      // silently ignored — error instead.
+      if (i + 1 >= args.length) { opts.error = a + ' requires a value.'; break; }
+      opts[valueFlags[a]] = args[++i];
+    }
+    // Reject an unknown --flag (e.g. a "--majro" typo) rather than recording it
+    // as a changelog message. Single-dash args pass through so a message can
+    // still start with "-" (e.g. "-20% load time").
+    else if (a.indexOf('--') === 0) { opts.error = 'Unknown option: ' + a; break; }
     else opts.messages.push(a);
   }
   return opts;
