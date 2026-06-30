@@ -87,7 +87,7 @@ The accent uses a fill/text split: `--accent` (fill), `--accent-foreground` (tex
 
 `config.json` top-level keys:
 
-- `brand` — name, displayName, tagline, description, url, byline, version, date; optional `guideLabel` (renames the "Web Style Guide" header/footer label), `headerLogo` (image replacing the header text wordmark), `sidebarLogo` (image replacing the brand name at the top of the left menu). Logo fields fall back to `brand.name` text when empty/unset; the sidebar previously hardcoded "brandkit" — it now uses `brand.name`.
+- `brand` — name, displayName, tagline, description, url, byline, version, date; optional `guideLabel` (renames the "Web Style Guide" header/footer label), `headerLogo` (image replacing the header text wordmark), `sidebarLogo` (image replacing the brand name at the top of the left menu). Logo fields fall back to `brand.name` text when empty/unset; the sidebar previously hardcoded "brandkit" — it now uses `brand.name`. Optional `agentCallout` (default `true`) toggles the sidebar "Using an AI agent?" copy-paste prompt; set `false` to hide it.
 - `fonts` — display + body with `family`, `googleImport`, `description`
 - `theme` — explicit CSS variable mapping (colors, gradients, font vars, `-rgb` variants)
 - `nav` — sidebar groups and section links
@@ -124,6 +124,8 @@ brandkit export [dir]      # Emit only the agent exports (--format json|dtcg|md|
 - `brand.md` — an LLM brief; surfaces low-contrast pairs as explicit cautions.
 
 `build` also injects `<link rel="alternate" type="application/json" href="brand.json">` and embeds `<script type="application/json" id="brandkit-brand">` (with `</script>` escaped) so an agent fetching the deployed page gets structured data without scraping. The transforms are pure (`lib/export.js`); file writing is `writeExports()`.
+
+For a human pointing their own agent at the guide, `renderAgentCallout()` (engine.js) renders a "Using an AI agent?" box under the sidebar nav with a copy-paste prompt. The prompt resolves the export URLs against `location.href` (via `new URL`) so it carries absolute links to `brand.json` / `tokens.json` / `brand.md`, and names the brand from `cfg.brand`. Hide it with `brand.agentCallout: false`.
 
 ## Coding Standards
 

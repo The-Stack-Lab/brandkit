@@ -124,6 +124,57 @@
     }
 
     /* ==============================================================
+       2b. Render agent callout — a paste-ready prompt that points an AI
+       agent at the machine-readable exports (brand.json / tokens.json /
+       brand.md) so it reads structured brand data instead of scraping the
+       rendered page. Opt out with brand.agentCallout === false.
+       ============================================================== */
+    function renderAgentCallout() {
+      var box = document.getElementById('agent-callout');
+      if (!box) return;
+      if (cfg.brand && cfg.brand.agentCallout === false) return;
+
+      // Resolve export URLs relative to this page exactly as a link would, so
+      // the pasted prompt carries absolute URLs the agent can fetch directly.
+      // Clear any userinfo so basic-auth creds in the page URL don't leak into
+      // the copied prompt (a relative path already drops the page query/hash).
+      function exportUrl(file) {
+        var u = new URL(file, location.href);
+        u.username = ''; u.password = '';
+        return u.href;
+      }
+      var brandUrl, tokensUrl, mdUrl;
+      try {
+        brandUrl = exportUrl('brand.json');
+        tokensUrl = exportUrl('tokens.json');
+        mdUrl = exportUrl('brand.md');
+      } catch (_) {
+        brandUrl = 'brand.json'; tokensUrl = 'tokens.json'; mdUrl = 'brand.md';
+      }
+      // Strip control chars / newlines and collapse whitespace so a hostile
+      // brand name can't smuggle instructions into the paste-ready agent prompt.
+      var name = ((cfg.brand && (cfg.brand.displayName || cfg.brand.name)) || 'this brand')
+        .replace(/[\u0000-\u001F\u007F\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/g, ' ').replace(/\s+/g, ' ').trim() || 'this brand';
+      var prompt =
+        'This page is a brandkit brand guide for ' + name + '. It publishes ' +
+        'machine-readable brand data — read these instead of scraping the page:\n\n' +
+        '- ' + brandUrl + ' — full structured brand: colors (roles + contrast), typography, voice, logos, spacing\n' +
+        '- ' + tokensUrl + ' — W3C design tokens (DTCG $type/$value), for code and design tooling\n' +
+        '- ' + mdUrl + ' — brand brief: how to stay on-brand\n\n' +
+        'Fetch them, then apply ' + name + "'s colors, type, and voice to what you're building.";
+
+      box.innerHTML =
+        '<div class="sidebar-agent-title">Using an AI agent?</div>' +
+        '<p class="sidebar-agent-desc">Paste this so it reads the brand data, not the page.</p>' +
+        '<button type="button" class="sidebar-agent-btn" id="agent-callout-btn">Copy agent prompt</button>';
+      // Set the payload via property (not an HTML attribute) so no font/brand
+      // value needs escaping and newlines survive intact.
+      var btn = box.querySelector('#agent-callout-btn');
+      if (btn) btn.dataset.copy = prompt;
+      box.hidden = false;
+    }
+
+    /* ==============================================================
        3. Render colors
        ============================================================== */
     function renderColorGrid(colors, containerId) {
@@ -686,6 +737,13 @@
           copyText(codeLine.dataset.copy);
           return;
         }
+
+        // Agent callout prompt
+        var agentBtn = e.target.closest('#agent-callout-btn');
+        if (agentBtn) {
+          copyText(agentBtn.dataset.copy);
+          return;
+        }
       });
     }
 
@@ -886,6 +944,7 @@
     bootstrap();
     renderShell();
     renderNav();
+    renderAgentCallout();
     renderSectionIntros();
     renderColors();
     renderGradients();

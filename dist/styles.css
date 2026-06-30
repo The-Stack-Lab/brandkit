@@ -129,11 +129,49 @@ body {
 .sidebar-nav a:hover { color: var(--ink); background: var(--cloud); }
 .sidebar-nav a.active { color: var(--accent-text); border-left-color: var(--accent-text); background: rgba(var(--accent-rgb), 0.04); font-weight: 500; }
 
+/* Agent callout — paste-ready prompt that points an AI agent at the exports */
+.sidebar-agent {
+  margin: 28px 16px 8px;
+  padding: 14px;
+  border: 1px solid var(--mist);
+  border-radius: 12px;
+  background: rgba(var(--accent-rgb), 0.04);
+}
+.sidebar-agent-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.sidebar-agent-desc {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--slate);
+  margin: 0 0 10px;
+}
+.sidebar-agent-btn {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: filter 150ms ease;
+}
+.sidebar-agent-btn:hover { filter: brightness(0.9); }
+.sidebar-agent-btn:active { transform: translateY(1px); }
+.sidebar-agent-btn:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+
 /* ── Sidebar Grouped Navigation ── */
 .nav-group {
   padding: 20px 24px 6px;
   font-family: var(--font-body), sans-serif;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.10em;
   text-transform: uppercase;
