@@ -6,7 +6,7 @@
     "description": "Brandkit turns a single config.json into a complete, living brand guide — colors, typography, logos, voice, and components, all driven by design tokens. This is the default guide; swap the config and assets to make it your own.",
     "url": "github.com/The-Stack-Lab/brandkit",
     "byline": "Open source · MIT",
-    "version": "1.2.2",
+    "version": "1.2.3",
     "date": "June 2026",
     "guideLabel": "Web Style Guide",
     "headerLogo": "",

@@ -43,6 +43,8 @@ A brandkit guide isn't just a page for people — `build` (and the standalone `e
 
 `build` also makes the data **discoverable from the deployed page**: it injects `<link rel="alternate" type="application/json" href="brand.json">` and embeds the brand inline as `<script type="application/json" id="brandkit-brand">`, so an agent that fetches the URL gets structured brand data with zero extra requests.
 
+And for a person who wants to hand the guide to their own agent, the sidebar shows a **"Using an AI agent?"** callout with a one-click copy-paste prompt — it carries absolute URLs to `brand.json` / `tokens.json` / `brand.md` and tells the agent to read those instead of scraping the page. Hide it with `brand.agentCallout: false`.
+
 A JSON Schema for `config.json` ships at [`config.schema.json`](config.schema.json) — point your editor's `$schema` at it for validation and autocomplete.
 
 ## Framework integrations

@@ -51,7 +51,8 @@
         "date": { "type": "string" },
         "guideLabel": { "type": "string", "description": "Renames the 'Web Style Guide' label in the header and footer." },
         "headerLogo": { "type": "string", "description": "Path to a logo image shown in the header instead of the text wordmark (use a light/reversed logo)." },
-        "sidebarLogo": { "type": "string", "description": "Path to a logo image shown at the top of the left menu instead of the brand name (use a dark logo)." }
+        "sidebarLogo": { "type": "string", "description": "Path to a logo image shown at the top of the left menu instead of the brand name (use a dark logo)." },
+        "agentCallout": { "type": "boolean", "description": "Show the 'Using an AI agent?' callout under the sidebar nav — a copy-paste prompt pointing an agent at the brand.json / tokens.json / brand.md exports. Defaults to true; set false to hide it." }
       }
     },
     "fonts": {
