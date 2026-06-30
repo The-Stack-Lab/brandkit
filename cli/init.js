@@ -2,6 +2,7 @@ var fs = require('fs');
 var path = require('path');
 var resolve = require('../lib/resolve');
 var schema = require('../lib/config-schema');
+var agentsDoc = require('../lib/agents-doc').agentsDoc;
 
 module.exports = function init(args) {
   var targetDir = path.resolve(args[0] || 'brand');
@@ -27,7 +28,7 @@ module.exports = function init(args) {
   var isUpdate = args.indexOf('--update') !== -1;
 
   // Copy engine files from dist/
-  var files = ['engine.js', 'styles.css', 'index.html'];
+  var files = ['engine.js', 'styles.css', 'index.html', 'changelog.html', 'changelog.js'];
   for (var i = 0; i < files.length; i++) {
     var src = path.join(distDir, files[i]);
     var dest = path.join(targetDir, files[i]);
@@ -63,6 +64,16 @@ module.exports = function init(args) {
     console.log('    kept    config.json (--update)');
   } else {
     console.log('    kept    config.json (already exists)');
+  }
+
+  // Maintenance contract for agents/humans working in this dir — written when
+  // absent (so older guides pick it up on --update) and never clobbered.
+  var agentsPath = path.join(targetDir, 'AGENTS.md');
+  if (!fs.existsSync(agentsPath)) {
+    fs.writeFileSync(agentsPath, agentsDoc());
+    console.log('    created AGENTS.md');
+  } else {
+    console.log('    kept    AGENTS.md (already exists)');
   }
 
   console.log('');

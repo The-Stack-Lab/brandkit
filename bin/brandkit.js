@@ -19,6 +19,9 @@ switch (command) {
   case 'export':
     require('../cli/export')(args.slice(1));
     break;
+  case 'changelog':
+    require('../cli/changelog')(args.slice(1));
+    break;
   case 'help':
   case '--help':
   case '-h':
@@ -45,6 +48,7 @@ function printHelp() {
   console.log('    brandkit dev [dir]         Start dev server with live reload');
   console.log('    brandkit build [dir]       Build static files for production');
   console.log('    brandkit export [dir]      Emit agent-native brand data (brand.json, tokens.json, brand.md)');
+  console.log('    brandkit changelog "<msg>" Record a revision (bumps version, adds a changelog entry)');
   console.log('');
   console.log('  Options:');
   console.log('    --help, -h     Show this help message');

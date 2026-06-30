@@ -94,6 +94,9 @@ body {
   background: var(--white);
   border-right: 1px solid var(--mist);
   z-index: 100;
+  /* Column layout so the changelog link can pin to the bottom (margin-top:auto) */
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-brand {
@@ -166,6 +169,30 @@ body {
 .sidebar-agent-btn:hover { filter: brightness(0.9); }
 .sidebar-agent-btn:active { transform: translateY(1px); }
 .sidebar-agent-btn:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+
+/* Changelog link — pinned to the bottom of the sidebar column */
+.sidebar-changelog {
+  margin: auto 16px 4px;        /* auto top pushes it to the bottom */
+  padding-top: 16px;
+  border-top: 1px solid var(--mist);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--slate);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+.sidebar-changelog:hover { color: var(--accent-text); }
+.sidebar-changelog svg { width: 14px; height: 14px; flex: none; }
+.sidebar-changelog-label { flex: 1; }
+.sidebar-changelog-version {
+  font-size: 11px;
+  color: var(--haze);
+  font-variant-numeric: tabular-nums;
+}
+.sidebar-changelog:hover .sidebar-changelog-version { color: var(--slate); }
 
 /* ── Sidebar Grouped Navigation ── */
 .nav-group {
@@ -1097,6 +1124,150 @@ body {
   justify-content: space-between;
 }
 
+/* ── Changelog page (standalone changelog.html) ── */
+.changelog-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 72px 32px 96px;
+}
+
+.changelog-header { margin-bottom: 56px; }
+
+.changelog-back {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate);
+  text-decoration: none;
+  margin-bottom: 32px;
+  transition: color 150ms ease;
+}
+
+.changelog-back:hover { color: var(--accent-text); }
+
+.changelog-brand {
+  font-family: var(--font-body), sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--slate);
+  margin-bottom: 12px;
+}
+
+.changelog-title {
+  font-family: var(--font-display), sans-serif;
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--ink);
+  margin: 0 0 12px;
+}
+
+.changelog-lead {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--graphite);
+  margin: 0;
+}
+
+/* Each release — a vertical timeline with the version "ticked" on the rail */
+.changelog-list {
+  border-left: 2px solid var(--mist);
+  padding-left: 32px;
+}
+
+.changelog-entry {
+  position: relative;
+  padding-bottom: 40px;
+}
+
+.changelog-entry:last-child { padding-bottom: 0; }
+
+.changelog-entry::before {
+  content: "";
+  position: absolute;
+  left: -41px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--cloud);
+}
+
+.changelog-entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.changelog-version {
+  font-family: var(--font-display), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--accent-text);
+}
+
+.changelog-date {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate);
+}
+
+.changelog-changes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.changelog-changes li {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 8px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--graphite);
+}
+
+.changelog-changes li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 9px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--haze);
+}
+
+.changelog-empty {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--slate);
+}
+
+.changelog-empty code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: var(--mist);
+  padding: 2px 6px;
+  border-radius: 6px;
+  color: var(--ink);
+}
+
+.changelog-footer {
+  margin-top: 64px;
+  padding-top: 28px;
+  border-top: 1px solid var(--mist);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--slate);
+}
+
 /* ── Print ── */
 @media print {
   .sidebar, .copy-format-bar, .toast-container { display: none !important; }
@@ -1113,4 +1284,6 @@ body {
   .card-demo-grid, .dark-card-demo-grid, .a11y-grid { grid-template-columns: 1fr; }
   .voice-grid, .gradient-usage, .wordmark-display, .logo-grid { grid-template-columns: 1fr; }
   .type-row { grid-template-columns: 60px 1fr 140px; }
+  .changelog-page { padding: 48px 22px 64px; }
+  .changelog-title { font-size: 34px; }
 }

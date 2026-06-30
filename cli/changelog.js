@@ -1,0 +1,123 @@
+var fs = require('fs');
+var path = require('path');
+
+/**
+ * brandkit changelog — record a brand-guide revision.
+ *
+ * Prepends a `{ version, date, changes }` entry to config.changelog (newest
+ * first) and bumps brand.version. A fresh guide starts at 0.1; each call
+ * minor-bumps (0.1 → 0.2 → …); --lock jumps to 1.0 when the brand is finalized.
+ *
+ *   brandkit changelog "Added gradients" "Tuned contrast"
+ *   brandkit changelog --lock "Brand locked"
+ *   brandkit changelog --major "v2 redesign"
+ *   brandkit changelog --version 0.5 "Set explicitly"
+ *   brandkit changelog --dir example "Update the demo"
+ */
+module.exports = function changelog(args) {
+  var opts = parseArgs(args);
+
+  if (opts.help) {
+    printUsage();
+    return;
+  }
+
+  var targetDir = path.resolve(opts.dir || '.');
+  var configPath = path.join(targetDir, 'config.json');
+  if (!fs.existsSync(configPath)) {
+    console.error('');
+    console.error('  No config.json found in ' + targetDir);
+    console.error('  Run: brandkit init ' + path.relative(process.cwd(), targetDir));
+    console.error('');
+    process.exit(1);
+  }
+
+  if (!opts.messages.length) {
+    console.error('');
+    console.error('  Nothing to log — pass at least one change message.');
+    console.error('  Example: brandkit changelog "Added the gradient system"');
+    console.error('');
+    process.exit(1);
+  }
+
+  var config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  config.brand = config.brand || {};
+  if (!Array.isArray(config.changelog)) config.changelog = [];
+
+  var prevVersion = config.brand.version || '0.1';
+  var nextVersion = nextVersionFor(prevVersion, opts);
+  var date = opts.date || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  var entry = { version: nextVersion, date: date, changes: opts.messages.slice() };
+  config.changelog.unshift(entry);
+  config.brand.version = nextVersion;
+
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+
+  console.log('');
+  console.log('  brandkit changelog');
+  console.log('');
+  console.log('  v' + prevVersion + ' → v' + nextVersion + ' · ' + opts.messages.length +
+    ' change' + (opts.messages.length === 1 ? '' : 's') + ' (' + date + ')');
+  opts.messages.forEach(function (m) {
+    console.log('    • ' + m);
+  });
+  console.log('');
+  console.log('  Updated ' + path.relative(process.cwd(), configPath));
+  console.log('  Run `brandkit build` (or `export`) to refresh the deployed page and agent exports.');
+  console.log('');
+};
+
+/**
+ * Decide the next version string from the previous one + flags.
+ *  --version X.Y  → explicit
+ *  --lock         → 1.0
+ *  --major        → next whole major, minor reset to 0
+ *  default        → minor + 1
+ */
+function nextVersionFor(prev, opts) {
+  if (opts.version) return opts.version;
+  if (opts.lock) return '1.0';
+
+  var parsed = parseVersion(prev);
+  if (opts.major) return (parsed.major + 1) + '.0';
+  return parsed.major + '.' + (parsed.minor + 1);
+}
+
+// "0.3" → { major: 0, minor: 3 }; tolerant of junk → { 0, 1 }.
+function parseVersion(v) {
+  var m = String(v == null ? '' : v).match(/^(\d+)\.(\d+)/);
+  if (!m) return { major: 0, minor: 1 };
+  return { major: parseInt(m[1], 10), minor: parseInt(m[2], 10) };
+}
+
+function parseArgs(args) {
+  var opts = { messages: [], dir: '.', lock: false, major: false, version: null, date: null, help: false };
+  for (var i = 0; i < args.length; i++) {
+    var a = args[i];
+    if (a === '--help' || a === '-h') opts.help = true;
+    else if (a === '--lock') opts.lock = true;
+    else if (a === '--major') opts.major = true;
+    else if (a === '--version') { opts.version = args[++i]; }
+    else if (a === '--date') { opts.date = args[++i]; }
+    else if (a === '--dir') { opts.dir = args[++i]; }
+    else opts.messages.push(a);
+  }
+  return opts;
+}
+
+function printUsage() {
+  console.log('');
+  console.log('  brandkit changelog — record a brand-guide revision');
+  console.log('');
+  console.log('  Usage:');
+  console.log('    brandkit changelog "<message>" ["<message>" ...]');
+  console.log('');
+  console.log('  Options:');
+  console.log('    --lock           Mark the brand as finalized (version → 1.0)');
+  console.log('    --major          Bump the major version (e.g. 1.4 → 2.0)');
+  console.log('    --version X.Y    Set the version explicitly');
+  console.log('    --date "<text>"  Override the entry date (default: this month)');
+  console.log('    --dir <path>     Target guide directory (default: .)');
+  console.log('');
+}

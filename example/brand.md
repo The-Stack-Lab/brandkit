@@ -41,3 +41,18 @@ Clear, confident, and friendly. Brandkit speaks like a thoughtful teammate — i
 - **Brand gradient:** `linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)`
 - Use for: Hero and feature section backgrounds; Large display headlines (as gradient text); Key stat numbers and accent moments.
 - Don't use for: Body copy or small text; Behind dense UI or data tables; More than one focal area per screen.
+
+## Changelog
+When you change this brand — colors, type, logos, voice, spacing, or anything in `config.json` — record it so the guide keeps an accurate history: run `brandkit changelog "what changed"`. It prepends an entry and bumps the version (a fresh guide starts at 0.1 and climbs; add `--lock` to finalize the brand at 1.0).
+
+Revision history (newest first):
+
+- **v1.2.4** (June 2026): Added a basePath config option for serving the guide under a sub-path (e.g. /brand).
+- **v1.2.3** (June 2026): Sidebar "Using an AI agent?" callout with a copy-paste prompt pointing at the exports.
+- **v1.2.2** (May 2026): Optional web-font fallback stand-in for typefaces that are not web-available.
+- **v1.1.0** (May 2026):
+  - Accent fill/text split for safe contrast.
+  - Agent-native exports: brand.json, tokens.json, brand.md.
+- **v1.0** (April 2026): Brand locked — first stable release of the guide.
+- **v0.2** (April 2026): Added logo downloads, the type scale, voice & tone, and component patterns.
+- **v0.1** (March 2026): Initial brand guide scaffolded with brandkit.
