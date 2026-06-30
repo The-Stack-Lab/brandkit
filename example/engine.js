@@ -6,7 +6,13 @@
   /* ================================================================
      0. Load config
      ================================================================ */
-  var res = await fetch('./config.json');
+  // Base path the guide is served from. The build injects
+  // window.__BRANDKIT_BASE__ when config.basePath is set (e.g. "/brand"), so a
+  // guide served from a non-trailing-slash URL still resolves its assets.
+  // Default '.' keeps the original page-relative behavior (dev + root serving).
+  var BASE = (typeof window !== 'undefined' && window.__BRANDKIT_BASE__)
+    ? String(window.__BRANDKIT_BASE__).replace(/\/+$/, '') : '.';
+  var res = await fetch(BASE + '/config.json');
   var config = await res.json();
   init(config);
 
@@ -139,7 +145,10 @@
       // Clear any userinfo so basic-auth creds in the page URL don't leak into
       // the copied prompt (a relative path already drops the page query/hash).
       function exportUrl(file) {
-        var u = new URL(file, location.href);
+        // When served from a base path, resolve against it so the prompt
+        // carries the real export URLs (page URL may have no trailing slash).
+        var ref = (BASE && BASE !== '.') ? BASE + '/' + file : file;
+        var u = new URL(ref, location.href);
         u.username = ''; u.password = '';
         return u.href;
       }

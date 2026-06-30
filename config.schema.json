@@ -37,6 +37,7 @@
     }
   },
   "properties": {
+    "basePath": { "type": "string", "description": "Absolute base path the guide is served from (e.g. \"/brand\"). Empty = served at root / relative. Set this when serving from a non-trailing-slash URL (e.g. a framework rewrite)." },
     "brand": {
       "type": "object",
       "required": ["name"],

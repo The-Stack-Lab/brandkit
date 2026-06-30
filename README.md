@@ -73,10 +73,26 @@ export default {
 
 **Next.js / plain HTML**: run `brandkit build brand` and serve the resulting directory as a static route.
 
+### Serving from a base path
+
+brandkit emits page-relative paths, which resolve only when the guide is served from the root or a **trailing-slash** directory URL (`/brand/`). If you serve it at `/brand` with **no** trailing slash — e.g. a Next.js rewrite that maps `/brand` to the built `/brand/index.html` — every relative path resolves against `/` instead, so `styles.css`, `engine.js`, and `config.json` all 404 and the guide renders an empty shell.
+
+Set `basePath` in `config.json` to fix this:
+
+```json
+{
+  "basePath": "/brand",
+  "brand": { "name": "Acme" }
+}
+```
+
+On `brandkit build`, the generated `index.html` then points its stylesheet, engine, and `brand.json` link at `${basePath}/…`, and the engine fetches `${basePath}/config.json` — so the guide loads fully whether or not the serving URL has a trailing slash. The value is normalized (leading slash added, trailing slash stripped). Omitting `basePath` keeps the original page-relative behavior, so existing setups are unaffected.
+
 ## Config
 
 `config.json` is the single source of truth. Top-level keys:
 
+- `basePath` — absolute path the guide is served from (e.g. `/brand`). Omit (or leave empty) when serving at the root or from a trailing-slash directory URL — output stays page-relative and unchanged. See [Serving from a base path](#serving-from-a-base-path).
 - `brand` — name, tagline, description, version, date; optional `guideLabel` (renames the "Web Style Guide" header/footer label), `headerLogo` and `sidebarLogo` (logo image paths that replace the text wordmark in the header and left menu)
 - `fonts` — display + body with Google Fonts import; each font takes an optional `fallback` web stand-in for brands whose official typeface isn't web-available (the rendered font stack becomes `'family', 'fallback', sans-serif`, while labels keep the clean family name)
 - `theme` — CSS variable map (colors, gradients, font vars)
