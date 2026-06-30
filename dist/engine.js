@@ -11,7 +11,7 @@
   // guide served from a non-trailing-slash URL still resolves its assets.
   // Default '.' keeps the original page-relative behavior (dev + root serving).
   var BASE = (typeof window !== 'undefined' && window.__BRANDKIT_BASE__)
-    ? String(window.__BRANDKIT_BASE__).replace(/\/+$/, '') : '.';
+    ? (String(window.__BRANDKIT_BASE__).replace(/\/+$/, '') || '.') : '.';
   var res = await fetch(BASE + '/config.json');
   var config = await res.json();
   init(config);
