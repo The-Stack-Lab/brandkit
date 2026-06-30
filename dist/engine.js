@@ -136,18 +136,25 @@
 
       // Resolve export URLs relative to this page exactly as a link would, so
       // the pasted prompt carries absolute URLs the agent can fetch directly.
+      // Clear any userinfo so basic-auth creds in the page URL don't leak into
+      // the copied prompt (a relative path already drops the page query/hash).
+      function exportUrl(file) {
+        var u = new URL(file, location.href);
+        u.username = ''; u.password = '';
+        return u.href;
+      }
       var brandUrl, tokensUrl, mdUrl;
       try {
-        brandUrl = new URL('brand.json', location.href).href;
-        tokensUrl = new URL('tokens.json', location.href).href;
-        mdUrl = new URL('brand.md', location.href).href;
+        brandUrl = exportUrl('brand.json');
+        tokensUrl = exportUrl('tokens.json');
+        mdUrl = exportUrl('brand.md');
       } catch (_) {
         brandUrl = 'brand.json'; tokensUrl = 'tokens.json'; mdUrl = 'brand.md';
       }
       // Strip control chars / newlines and collapse whitespace so a hostile
       // brand name can't smuggle instructions into the paste-ready agent prompt.
       var name = ((cfg.brand && (cfg.brand.displayName || cfg.brand.name)) || 'this brand')
-        .replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim() || 'this brand';
+        .replace(/[\u0000-\u001F\u007F\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/g, ' ').replace(/\s+/g, ' ').trim() || 'this brand';
       var prompt =
         'This page is a brandkit brand guide for ' + name + '. It publishes ' +
         'machine-readable brand data — read these instead of scraping the page:\n\n' +
