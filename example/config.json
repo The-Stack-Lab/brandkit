@@ -6,7 +6,7 @@
     "description": "Brandkit turns a single config.json into a complete, living brand guide — colors, typography, logos, voice, and components, all driven by design tokens. This is the default guide; swap the config and assets to make it your own.",
     "url": "github.com/The-Stack-Lab/brandkit",
     "byline": "Open source · MIT",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "date": "June 2026",
     "guideLabel": "Web Style Guide",
     "headerLogo": "",
@@ -704,6 +704,13 @@
     ]
   },
   "changelog": [
+    {
+      "version": "1.3.1",
+      "date": "June 2026",
+      "changes": [
+        "Engine fixes from an ensemble review: dedupe the Google Fonts request when display and body share a typeface, sanitize theme values injected into the :root <style> block, guard config.json fetches on res.ok, and coerce the sidebar version to a string."
+      ]
+    },
     {
       "version": "1.3.0",
       "date": "June 2026",

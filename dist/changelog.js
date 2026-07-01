@@ -14,7 +14,9 @@
     ? (String(window.__BRANDKIT_BASE__).replace(/\/+$/, '') || '.') : '.';
 
   fetch(BASE + '/config.json')
-    .then(function (res) { return res.json(); })
+    // Guard before parsing: a non-200 response (e.g. a CDN/error page served
+    // with a JSON body) is routed to the error state instead of init().
+    .then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); })
     .then(function (config) { init(config); })
     .catch(function () { renderError(); });
 
@@ -34,14 +36,28 @@
     return stack + ', sans-serif';
   }
 
+  // Strip the characters a config value would need to break out of the
+  // injected <style> block ( < > ), the :root {…} rule ( { } ), or its own
+  // declaration to smuggle in another ( ; ). Mirrors cssVal() in
+  // dist/engine.js. A real CSS value never contains them.
+  function cssVal(v) { return String(v == null ? '' : v).replace(/[<>{};]/g, ''); }
+
   /* ================================================================
      Bootstrap — fonts + theme variables, mirroring engine.js
      ================================================================ */
   function bootstrap(cfg) {
     if (cfg.fonts) {
+      // Dedupe families: when display and body share a font, request it once.
+      var seen = {};
       var families = [];
-      if (cfg.fonts.display && cfg.fonts.display.googleImport) families.push(cfg.fonts.display.googleImport);
-      if (cfg.fonts.body && cfg.fonts.body.googleImport) families.push(cfg.fonts.body.googleImport);
+      function addFamily(f) {
+        if (f && f.googleImport && !seen[f.googleImport]) {
+          seen[f.googleImport] = 1;
+          families.push(f.googleImport);
+        }
+      }
+      addFamily(cfg.fonts.display);
+      addFamily(cfg.fonts.body);
       if (families.length) {
         var link = document.createElement('link');
         link.rel = 'stylesheet';
@@ -54,7 +70,7 @@
       var vars = [];
       var keys = Object.keys(cfg.theme);
       for (var i = 0; i < keys.length; i++) {
-        vars.push('  ' + keys[i] + ': ' + cfg.theme[keys[i]] + ';');
+        vars.push('  ' + cssVal(keys[i]) + ': ' + cssVal(cfg.theme[keys[i]]) + ';');
       }
       if (cfg.fonts) {
         if (cfg.fonts.display) vars.push('  --font-display: ' + fontStack(cfg.fonts.display) + ';');

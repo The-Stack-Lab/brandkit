@@ -13,6 +13,10 @@
   var BASE = (typeof window !== 'undefined' && window.__BRANDKIT_BASE__)
     ? (String(window.__BRANDKIT_BASE__).replace(/\/+$/, '') || '.') : '.';
   var res = await fetch(BASE + '/config.json');
+  // Guard before parsing: a non-200 response (e.g. a CDN/error page served
+  // with a JSON body) would otherwise flow straight into init() and render
+  // confusing output instead of failing cleanly.
+  if (!res.ok) throw new Error('Failed to load config.json: ' + res.status);
   var config = await res.json();
   init(config);
 
@@ -45,14 +49,35 @@
     }
 
     /* ==============================================================
+       CSS-value sanitizer — strips the characters a config value would
+       need to break out of the injected <style> block ( < > ), out of the
+       :root {…} rule ( { } ), or out of its own declaration to smuggle in
+       another one ( ; ). A legitimate custom-property token/value never
+       contains them, so real configs pass through unchanged; an
+       adversarial value like "}</style><script>..." or
+       "red; background-image:url(x)" is defanged.
+       ============================================================== */
+    function cssVal(v) { return String(v == null ? '' : v).replace(/[<>{};]/g, ''); }
+
+    /* ==============================================================
        BOOTSTRAP — inject fonts + CSS variables before any rendering
        ============================================================== */
     function bootstrap() {
       // Inject Google Fonts
       if (cfg.fonts) {
+        // Dedupe families: when display and body share a font (e.g. both
+        // Inter), requesting it once avoids a redundant URL + duplicate
+        // font CSS work.
+        var seen = {};
         var families = [];
-        if (cfg.fonts.display && cfg.fonts.display.googleImport) families.push(cfg.fonts.display.googleImport);
-        if (cfg.fonts.body && cfg.fonts.body.googleImport) families.push(cfg.fonts.body.googleImport);
+        function addFamily(f) {
+          if (f && f.googleImport && !seen[f.googleImport]) {
+            seen[f.googleImport] = 1;
+            families.push(f.googleImport);
+          }
+        }
+        addFamily(cfg.fonts.display);
+        addFamily(cfg.fonts.body);
         if (families.length) {
           var link = document.createElement('link');
           link.rel = 'stylesheet';
@@ -66,7 +91,7 @@
         var vars = [];
         var keys = Object.keys(cfg.theme);
         for (var i = 0; i < keys.length; i++) {
-          vars.push('  ' + keys[i] + ': ' + cfg.theme[keys[i]] + ';');
+          vars.push('  ' + cssVal(keys[i]) + ': ' + cssVal(cfg.theme[keys[i]]) + ';');
         }
         // Add font variables from config
         if (cfg.fonts) {
@@ -202,7 +227,7 @@
           '<circle cx="12" cy="12" r="9"/>' +
         '</svg>' +
         '<span class="sidebar-changelog-label">Changelog</span>' +
-        '<span class="sidebar-changelog-version">v' + esc(cfg.brand && cfg.brand.version) + '</span>';
+        '<span class="sidebar-changelog-version">v' + esc((cfg.brand && cfg.brand.version) || '') + '</span>';
       link.hidden = false;
     }
 
