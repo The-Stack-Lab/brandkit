@@ -407,7 +407,7 @@
 
         return (
           '<div class="logo-card ' + bgClass + '" style="' + bgStyle + '" data-logo-idx="' + idx + '">' +
-            '<img src="' + assetUrl(previewSrc) + '" alt="' + logo.name + '">' +
+            '<img src="' + esc(assetUrl(previewSrc)) + '" alt="' + logo.name + '">' +
             '<div class="logo-name">' + logo.name + '</div>' +
             '<div class="logo-description">' + (logo.description || '') + '</div>' +
             '<div class="logo-controls">' +
