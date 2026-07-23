@@ -47,6 +47,7 @@ When you change this brand — colors, type, logos, voice, spacing, or anything 
 
 Revision history (newest first):
 
+- **v1.3.2** (July 2026): Fixed a flash of the default theme on load: the guide now stays hidden until the real brand paints (with a failsafe reveal so a failed config fetch can never leave the page blank, and an instant reveal for reduced-motion users).
 - **v1.3.1** (June 2026): Engine fixes from an ensemble review: dedupe the Google Fonts request when display and body share a typeface, sanitize theme values injected into the :root <style> block, guard config.json fetches on res.ok, and coerce the sidebar version to a string.
 - **v1.3.0** (June 2026): Added a changelog: a standalone history page, the brandkit changelog command, version history in the agent exports, and a scaffolded AGENTS.md.
 - **v1.2.4** (June 2026): Added a basePath config option for serving the guide under a sub-path (e.g. /brand).
