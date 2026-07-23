@@ -13,6 +13,18 @@
   var BASE = (typeof window !== 'undefined' && window.__BRANDKIT_BASE__)
     ? (String(window.__BRANDKIT_BASE__).replace(/\/+$/, '') || '.') : '.';
 
+  // Resolve a config-relative asset path (logo variants, brand.headerLogo/
+  // sidebarLogo) against BASE. Without this, a guide served from a base path
+  // with no trailing slash (e.g. /brand, not /brand/) resolves "logos/x.svg"
+  // relative to /brand -> /logos/x.svg -> 404. Absolute and data: URIs pass
+  // through untouched. Used for every <img> src and download href built from a
+  // config path so previews and downloads behave the same under a basePath.
+  function assetUrl(file) {
+    if (!file) return file;
+    if (/^([a-z]+:)?\/\//i.test(file) || file.indexOf('data:') === 0) return file;
+    return (BASE && BASE !== '.') ? BASE + '/' + file.replace(/^\/+/, '') : file;
+  }
+
   // Reveal the FOUC-gated shell. index.html hides .layout (opacity:0) until this
   // runs, so the default theme never flashes before the real brand paints. The
   // class is added once the first render pass below completes. Idempotent.
@@ -395,7 +407,7 @@
 
         return (
           '<div class="logo-card ' + bgClass + '" style="' + bgStyle + '" data-logo-idx="' + idx + '">' +
-            '<img src="' + previewSrc + '" alt="' + logo.name + '">' +
+            '<img src="' + assetUrl(previewSrc) + '" alt="' + logo.name + '">' +
             '<div class="logo-name">' + logo.name + '</div>' +
             '<div class="logo-description">' + (logo.description || '') + '</div>' +
             '<div class="logo-controls">' +
@@ -436,6 +448,9 @@
 
           var filePath = logoData.variants[format];
           if (!filePath) return;
+          // Resolve against BASE so downloads work under a non-trailing-slash
+          // basePath, exactly as the previews above do.
+          filePath = assetUrl(filePath);
 
           var slug = cfg.brand.name || 'brand';
           var namePart = logoData.name.toLowerCase()
@@ -899,7 +914,7 @@
       var wordmark = document.getElementById('header-wordmark');
       if (wordmark) {
         if (cfg.brand.headerLogo) {
-          wordmark.innerHTML = '<img class="header-logo" src="' + esc(cfg.brand.headerLogo) +
+          wordmark.innerHTML = '<img class="header-logo" src="' + esc(assetUrl(cfg.brand.headerLogo)) +
             '" alt="' + esc(cfg.brand.name || 'Logo') + '">';
         } else {
           wordmark.textContent = cfg.brand.name;
@@ -1005,7 +1020,7 @@
       var sidebarBrand = document.querySelector('.sidebar-brand');
       if (sidebarBrand) {
         if (cfg.brand.sidebarLogo) {
-          sidebarBrand.innerHTML = '<img class="sidebar-logo" src="' + esc(cfg.brand.sidebarLogo) +
+          sidebarBrand.innerHTML = '<img class="sidebar-logo" src="' + esc(assetUrl(cfg.brand.sidebarLogo)) +
             '" alt="' + esc(cfg.brand.name || 'Logo') + '">';
         } else {
           sidebarBrand.textContent = cfg.brand.name || 'Brand';
