@@ -6,7 +6,7 @@
     "description": "Brandkit turns a single config.json into a complete, living brand guide — colors, typography, logos, voice, and components, all driven by design tokens. This is the default guide; swap the config and assets to make it your own.",
     "url": "github.com/The-Stack-Lab/brandkit",
     "byline": "Open source · MIT",
-    "version": "1.3.2",
+    "version": "1.3.3",
     "date": "July 2026",
     "guideLabel": "Web Style Guide",
     "headerLogo": "",
@@ -704,6 +704,13 @@
     ]
   },
   "changelog": [
+    {
+      "version": "1.3.3",
+      "date": "July 2026",
+      "changes": [
+        "Fixed logo assets (previews, downloads, and the header/sidebar logos) 404ing when the guide is served under a basePath with no trailing slash (e.g. /brand): every config-relative asset URL now resolves against the base, while absolute and data: URLs pass through untouched."
+      ]
+    },
     {
       "version": "1.3.2",
       "date": "July 2026",
