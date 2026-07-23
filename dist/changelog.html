@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Changelog</title>
+<!-- FOUC gate (mirrors index.html): hide the page until changelog.js finishes
+     its first render so the default theme never flashes. Inline so it applies
+     before first paint; changelog.js adds html.bk-ready (with a failsafe against
+     a failed config fetch). Reduced-motion users get an instant reveal. -->
+<style>.changelog-page{opacity:0;pointer-events:none}html.bk-ready .changelog-page{opacity:1;pointer-events:auto;transition:opacity 120ms ease-out}@media (prefers-reduced-motion:reduce){html.bk-ready .changelog-page{transition:none}}</style>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>

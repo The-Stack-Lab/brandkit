@@ -13,12 +13,24 @@
   var BASE = (typeof window !== 'undefined' && window.__BRANDKIT_BASE__)
     ? (String(window.__BRANDKIT_BASE__).replace(/\/+$/, '') || '.') : '.';
 
+  // Reveal the FOUC-gated page. changelog.html hides .changelog-page (opacity:0)
+  // until this runs, so the default theme never flashes before the real brand
+  // paints. Idempotent. See the matching gate in engine.js.
+  function reveal() { document.documentElement.classList.add('bk-ready'); }
+  // Failsafe registered BEFORE the fetch: never leave the page permanently blank
+  // if config.json is slow or fails — reveal after 1.5s regardless.
+  var revealFailsafe = setTimeout(reveal, 1500);
+  function done() { clearTimeout(revealFailsafe); reveal(); }
+
   fetch(BASE + '/config.json')
     // Guard before parsing: a non-200 response (e.g. a CDN/error page served
     // with a JSON body) is routed to the error state instead of init().
     .then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); })
     .then(function (config) { init(config); })
-    .catch(function () { renderError(); });
+    .catch(function () { renderError(); })
+    // Reveal after render (success) or after the error state is drawn (failure),
+    // so the page is always shown rather than stuck blank.
+    .then(done, done);
 
   /* ================================================================
      Helpers (kept in sync with dist/engine.js — no module system here)

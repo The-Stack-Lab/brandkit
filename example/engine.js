@@ -12,13 +12,31 @@
   // Default '.' keeps the original page-relative behavior (dev + root serving).
   var BASE = (typeof window !== 'undefined' && window.__BRANDKIT_BASE__)
     ? (String(window.__BRANDKIT_BASE__).replace(/\/+$/, '') || '.') : '.';
-  var res = await fetch(BASE + '/config.json');
-  // Guard before parsing: a non-200 response (e.g. a CDN/error page served
-  // with a JSON body) would otherwise flow straight into init() and render
-  // confusing output instead of failing cleanly.
-  if (!res.ok) throw new Error('Failed to load config.json: ' + res.status);
-  var config = await res.json();
-  init(config);
+
+  // Reveal the FOUC-gated shell. index.html hides .layout (opacity:0) until this
+  // runs, so the default theme never flashes before the real brand paints. The
+  // class is added once the first render pass below completes. Idempotent.
+  function reveal() { document.documentElement.classList.add('bk-ready'); }
+  // Failsafe registered BEFORE the fetch: if config.json is slow or fails, never
+  // leave the page permanently blank — reveal after 1.5s no matter what. The
+  // finally below clears this on the normal path so it doesn't fire twice.
+  var revealFailsafe = setTimeout(reveal, 1500);
+
+  try {
+    var res = await fetch(BASE + '/config.json');
+    // Guard before parsing: a non-200 response (e.g. a CDN/error page served
+    // with a JSON body) would otherwise flow straight into init() and render
+    // confusing output instead of failing cleanly.
+    if (!res.ok) throw new Error('Failed to load config.json: ' + res.status);
+    var config = await res.json();
+    init(config);
+  } finally {
+    // Reveal after init()'s synchronous render pass (or on error, so a failed
+    // load shows the page rather than a blank frame). The throw still surfaces
+    // as an unhandled rejection for debugging — finally doesn't swallow it.
+    clearTimeout(revealFailsafe);
+    reveal();
+  }
 
   function init(cfg) {
     var copyFormat = localStorage.getItem('brandkit-copy-format') || 'hex';
