@@ -37,8 +37,15 @@ lib/
   export.js           ← Project config → brand.json (semantic) / tokens.json (DTCG) / brand.md (LLM brief)
   agents-doc.js       ← AGENTS.md maintenance contract scaffolded by `init` (brand-agnostic)
   extract-tailwind.js ← Read tailwind.config for colors/fonts/spacing
-  extract-css.js      ← Parse CSS files for custom properties
+  extract-css.js      ← Parse CSS files for custom properties (skips brandkit guide dirs)
   extract-logos.js    ← Find logo/brand assets via glob
+  ingest/             ← `generate --from` : build a brand from a URL, archive, or files
+    index.js          ← Orchestrator + mapping onto brandkit theme tokens
+    png.js            ← Pure-Node PNG decode, dominant colors, color-presence test
+    source-dir.js     ← Scan a directory/import archive (screenshots, CSS, assets, claims)
+    source-url.js     ← Fetch a live URL (builtin fetch): stylesheets, custom props, fonts
+    render.js         ← Optional Playwright escalation — detected, never depended on
+    reconcile.js      ← Precedence, evidence, conflicts, rejections
   config-schema.js    ← Starter config template + merge logic
   resolve.js          ← Path to dist/ (swagger-ui-dist pattern)
 config.schema.json    ← JSON Schema for config.json (shipped in npm files)
@@ -119,6 +126,43 @@ brandkit changelog "<msg>" # Record a revision: prepend a changelog entry + bump
 ```
 
 `generate` merge strategy: extractable fields (colors, fonts, spacing, logos) overwrite; manual fields (voice, accessibility, components, typography samples) are preserved.
+
+### Building a brand from outside the codebase (`generate --from`)
+
+```bash
+brandkit generate brand --from ./context/source-site      # an import archive
+brandkit generate brand --from https://client.com         # a live site
+brandkit generate brand --from <dir> --from <url> --brand-name "GrayMeta"
+brandkit generate brand --from https://client.com --render   # measured computed styles
+```
+
+`--from` is repeatable and takes a **URL, a directory, or a file**. One pipeline,
+several front doors: each source becomes the same evidence shape, then `reconcile`
+decides what survives. Bare `generate` is unchanged.
+
+**Precedence** (high → low): `computed` (real browser, `--render`) → `css-var`
+(the site's own declared properties) → `pixel` (sampled from screenshots) →
+`declared` (a font-family rule with no render to confirm it) → `claimed` (a
+third-party tokens JSON — never sufficient alone; must survive a presence test).
+
+**The governing rule: a token with no evidence is not written.** Unmeasurable
+fields are reported as gaps for a human, never filled with a plausible guess. A
+brand board that is honestly incomplete is recoverable; a confidently wrong one
+is not. Every run writes `ingest-evidence.json` beside `config.json` — per-field
+source, confidence, conflicts resolved, and values rejected with the reason.
+Evidence stays *out* of `config.json`, which is the rendered source of truth.
+
+Why this exists: an LLM-extracted `branding.json` for GrayMeta reported a light
+color scheme for a site that is `#1C1C1E` on 26 of 27 pages, labelled the surface
+color as `textPrimary`, emitted Tailwind `sky-600`/`sky-500` as brand colors
+(present in 0.0026% / 0.0000% of sampled pixels), and returned a 1×1 lazy-load
+GIF as the logo — at a self-reported 92.5% confidence. Pixels and computed styles
+do not have opinions; extraction does.
+
+`--render` uses Playwright **if the host project already has it** (`require.resolve`),
+and degrades with a printed reason otherwise. brandkit takes no dependency on it.
+It is the only way to distinguish a font that *loaded* from one that *rendered* —
+GrayMeta self-hosts Epilogue while painting Roboto Condensed everywhere.
 
 ### Changelog (cli/changelog.js + dist/changelog.html + dist/changelog.js)
 

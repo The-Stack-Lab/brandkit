@@ -45,6 +45,11 @@ function printHelp() {
   console.log('  Usage:');
   console.log('    brandkit init [dir]        Scaffold a new brand guide');
   console.log('    brandkit generate [dir]    Auto-generate config from codebase');
+  console.log('      --from <url|dir|file>      Ingest a live site, an import archive, or files');
+  console.log('                                 (repeatable; measures tokens and records evidence)');
+  console.log('      --render                   Measure computed styles in a real browser');
+  console.log('                                 (uses Playwright if the project has it)');
+  console.log('      --brand-name <name>        Helps rank which asset is the brand logo');
   console.log('    brandkit dev [dir]         Start dev server with live reload');
   console.log('    brandkit build [dir]       Build static files for production');
   console.log('    brandkit export [dir]      Emit agent-native brand data (brand.json, tokens.json, brand.md)');

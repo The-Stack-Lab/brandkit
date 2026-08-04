@@ -5,14 +5,62 @@ var extractCSS = require('../lib/extract-css');
 var extractLogos = require('../lib/extract-logos');
 var helpers = require('../lib/generate-helpers');
 var schema = require('../lib/config-schema');
+var ingest = require('../lib/ingest');
+
+/**
+ * Split `generate`'s flags from its positional brand directory.
+ *
+ * `--from` is repeatable and takes a URL, a directory, or a file; without it
+ * `generate` behaves exactly as it always has (scan the host codebase), so
+ * existing callers are unaffected.
+ */
+function parseArgs(args) {
+  var opts = { dir: null, from: [], render: false, brandName: null };
+  for (var i = 0; i < args.length; i++) {
+    var a = args[i];
+    if (a === '--from' && args[i + 1]) { opts.from.push(args[++i]); }
+    else if (a.indexOf('--from=') === 0) { opts.from.push(a.slice(7)); }
+    else if (a === '--render') { opts.render = true; }
+    else if (a === '--brand-name' && args[i + 1]) { opts.brandName = args[++i]; }
+    else if (a.indexOf('--brand-name=') === 0) { opts.brandName = a.slice(13); }
+    else if (a.indexOf('-') !== 0 && !opts.dir) { opts.dir = a; }
+  }
+  return opts;
+}
 
 module.exports = function generate(args) {
-  var brandDir = path.resolve(args[0] || 'brand');
-  var projectDir = process.cwd();
+  var cli = parseArgs(args || []);
+
+  if (!cli.from.length) return run(cli, null);
 
   console.log('');
   console.log('  brandkit generate');
   console.log('');
+  console.log('  Ingesting ' + cli.from.length + ' source(s)...');
+
+  return ingest.ingest(cli.from, {
+    brandName: cli.brandName,
+    useRender: cli.render,
+    log: function (line) { console.log(line); }
+  }).then(function (result) {
+    reportEvidence(result);
+    run(cli, result);
+  }).catch(function (e) {
+    console.error('  Ingest failed: ' + (e && e.message ? e.message : String(e)));
+    process.exitCode = 1;
+  });
+};
+
+function run(cli, ingested) {
+  var args = [cli.dir].filter(Boolean);
+  var brandDir = path.resolve(args[0] || 'brand');
+  var projectDir = process.cwd();
+
+  if (!ingested) {
+    console.log('');
+    console.log('  brandkit generate');
+    console.log('');
+  }
   console.log('  Scanning project...');
 
   var extracted = {};
@@ -73,6 +121,25 @@ module.exports = function generate(args) {
   if (extracted.cssVars) {
     newFields.theme = extractCSS.mapToTheme(extracted.cssVars);
     ensureThemeDefaults(newFields.theme);
+  }
+
+  // Ingested sources (--from) outrank a host-codebase scan: they describe the
+  // brand as it actually renders, not whatever happens to sit in this repo.
+  if (ingested) {
+    var fromIngest = ingest.toConfigFields(ingested, { brandName: cli.brandName });
+    if (fromIngest.theme) {
+      newFields.theme = Object.assign({}, newFields.theme || {}, fromIngest.theme);
+      ensureThemeDefaults(newFields.theme);
+      summary.push('    Theme: ' + Object.keys(fromIngest.theme).length + ' token(s) from ingested sources');
+    }
+    if (fromIngest.fonts) {
+      newFields.fonts = Object.assign({}, newFields.fonts || {}, fromIngest.fonts);
+      summary.push('    Fonts: ' + Object.keys(fromIngest.fonts).join(', ') + ' from ingested sources');
+    }
+    if (fromIngest.logos) {
+      newFields.logos = fromIngest.logos;
+      summary.push('    Logos: ' + fromIngest.logos.length + ' ranked from ingested sources');
+    }
   }
 
   // Fonts from Tailwind
@@ -190,6 +257,24 @@ module.exports = function generate(args) {
 
   fs.writeFileSync(configPath, JSON.stringify(finalConfig, null, 2) + '\n');
 
+  // Evidence lives beside config.json, never inside it: config.json is the
+  // rendered source of truth and flows into the exports, while this is an
+  // audit trail for whoever has to trust these tokens later.
+  if (ingested) {
+    fs.writeFileSync(
+      path.join(brandDir, 'ingest-evidence.json'),
+      JSON.stringify({
+        sources: cli.from,
+        rendered: cli.render,
+        generatedAt: new Date().toISOString(),
+        evidence: ingested.evidence,
+        conflicts: ingested.conflicts,
+        rejected: ingested.rejected,
+        gaps: ingested.gaps,
+        notes: ingested.notes
+      }, null, 2) + '\n');
+  }
+
   // Count what needs TODO attention
   var todoCount = countTodos(finalConfig);
 
@@ -200,8 +285,51 @@ module.exports = function generate(args) {
   if (extracted.tailwindSpacing) console.log('    Spacing: ' + extracted.tailwindSpacing.length + ' tokens');
   if (extracted.logos) console.log('    Logos: ' + extracted.logos.length + ' files found');
   if (todoCount > 0) console.log('    TODO: ' + todoCount + ' fields need manual or AI attention');
+  if (ingested) console.log('    Evidence: ingest-evidence.json');
   console.log('');
-};
+}
+
+/**
+ * Print what was measured, what was thrown out, and what is still missing.
+ *
+ * Gaps are reported as loudly as findings on purpose. A token nobody could
+ * measure is a question for a human; silently filling it with a plausible
+ * guess is how a brand guide ends up confidently describing the wrong brand.
+ */
+function reportEvidence(result) {
+  var fields = Object.keys(result.evidence || {});
+  console.log('');
+  console.log('  Measured ' + fields.length + ' token(s):');
+  fields.forEach(function (f) {
+    var e = result.evidence[f];
+    console.log('    ' + f + ': ' + e.value + '  [' + e.source + '/' + e.confidence + ']');
+    console.log('      ' + e.detail);
+  });
+
+  if (result.conflicts && result.conflicts.length) {
+    console.log('');
+    console.log('  Conflicts resolved (measurement wins):');
+    result.conflicts.forEach(function (c) {
+      console.log('    ' + c.field + ': kept ' + c.chosen + ' (' + c.chosenSource +
+                  ') over ' + c.rejected + ' from ' + c.rejectedSource);
+    });
+  }
+
+  if (result.rejected && result.rejected.length) {
+    console.log('');
+    console.log('  Rejected:');
+    result.rejected.forEach(function (r) {
+      console.log('    ' + r.field + (r.value ? ' = ' + r.value : '') + ' — ' + r.reason);
+    });
+  }
+
+  if (result.gaps && result.gaps.length) {
+    console.log('');
+    console.log('  Not measurable from these sources (left for you, not guessed):');
+    result.gaps.forEach(function (g) { console.log('    ' + g); });
+  }
+  console.log('');
+}
 
 // Fill in the companion tokens styles.css consumes but a host stylesheet
 // rarely defines: the "r, g, b" variants used by rgba() tints, and the
