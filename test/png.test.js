@@ -161,5 +161,8 @@ var simg = png.decode(solid);
 check('presence() finds exact color', png.presence(simg, '#EF463B').share, 0.5);
 check('presence() rejects absent color', png.presence(simg, '#0284C7').hits, 0);
 
+// Tests must not leave artifacts behind in the temp directory.
+try { fs.unlinkSync(tmp); } catch (_) { /* already gone */ }
+
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

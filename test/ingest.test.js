@@ -238,5 +238,10 @@ var fine = ingest.toConfigFields(
   { tokens: { colors: {}, theme: { '--ink': '#222222' } } }, {});
 check('legible body text is kept', fine.theme['--ink'], '#222222');
 
+// Tests must not leave artifacts behind in the temp directory.
+[photo, cut].forEach(function (f) {
+  try { fs.unlinkSync(f); } catch (_) { /* already gone */ }
+});
+
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
