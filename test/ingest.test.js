@@ -238,6 +238,17 @@ var fine = ingest.toConfigFields(
   { tokens: { colors: {}, theme: { '--ink': '#222222' } } }, {});
 check('legible body text is kept', fine.theme['--ink'], '#222222');
 
+/* -- IPv6 short forms in the reserved ::/96 block ----------------------- */
+['http://[::a]/', 'http://[::]/', 'http://[::1]/'].forEach(function (u) {
+  check('blocked: ' + u, sourceUrl.safeUrl(u), null);
+});
+
+/* -- accent-text is dropped rather than shipped failing ----------------- */
+// darkenUntilReadable returns null when no darkened variant clears 4.5:1.
+check('darkenUntilReadable returns a passing color',
+  parseFloat(helpers.contrastRatio(
+    ingest.darkenUntilReadable('#FFFF00', '#FFFFFF', 4.5), '#FFFFFF')) >= 4.5, true);
+
 // Tests must not leave artifacts behind in the temp directory.
 [photo, cut].forEach(function (f) {
   try { fs.unlinkSync(f); } catch (_) { /* already gone */ }
