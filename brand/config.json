@@ -6,7 +6,7 @@
     "description": "Brandkit turns a single config.json into a complete, living brand guide — colors, typography, logos, voice, and components, all driven by design tokens. This is the default guide; swap the config and assets to make it your own.",
     "url": "github.com/The-Stack-Lab/brandkit",
     "byline": "Open source · MIT",
-    "version": "1.4.1",
+    "version": "0.1",
     "date": "August 2026",
     "guideLabel": "Web Style Guide",
     "headerLogo": "",
@@ -705,73 +705,8 @@
   },
   "changelog": [
     {
-      "version": "1.4.1",
-      "date": "August 2026",
-      "changes": [
-        "Hardened URL ingestion and fixed argument parsing, accent measurement cost, and contrast fallback — from an ensemble code review."
-      ]
-    },
-    {
-      "version": "1.4.0",
-      "date": "August 2026",
-      "changes": [
-        "Build a brand from outside the codebase: generate --from a URL, an import archive, or files, with optional --render for measured computed styles.",
-        "Every token now carries evidence; anything unmeasurable is reported as a gap instead of guessed."
-      ]
-    },
-    {
-      "version": "1.3.0",
-      "date": "July 2026",
-      "changes": [
-        "Added a changelog: a standalone history page, the brandkit changelog command, version history in the agent exports, and a scaffolded AGENTS.md."
-      ]
-    },
-    {
-      "version": "1.2.4",
-      "date": "June 2026",
-      "changes": [
-        "Added a basePath config option for serving the guide under a sub-path (e.g. /brand)."
-      ]
-    },
-    {
-      "version": "1.2.3",
-      "date": "June 2026",
-      "changes": [
-        "Sidebar \"Using an AI agent?\" callout with a copy-paste prompt pointing at the exports."
-      ]
-    },
-    {
-      "version": "1.2.2",
-      "date": "May 2026",
-      "changes": [
-        "Optional web-font fallback stand-in for typefaces that are not web-available."
-      ]
-    },
-    {
-      "version": "1.1.0",
-      "date": "May 2026",
-      "changes": [
-        "Accent fill/text split for safe contrast.",
-        "Agent-native exports: brand.json, tokens.json, brand.md."
-      ]
-    },
-    {
-      "version": "1.0",
-      "date": "April 2026",
-      "changes": [
-        "Brand locked — first stable release of the guide."
-      ]
-    },
-    {
-      "version": "0.2",
-      "date": "April 2026",
-      "changes": [
-        "Added logo downloads, the type scale, voice & tone, and component patterns."
-      ]
-    },
-    {
       "version": "0.1",
-      "date": "March 2026",
+      "date": "August 2026",
       "changes": [
         "Initial brand guide scaffolded with brandkit."
       ]
