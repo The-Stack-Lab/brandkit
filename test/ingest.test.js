@@ -151,5 +151,63 @@ var cut = path.join(tmp, 'brandkit-test-cut.png');
 fs.writeFileSync(cut, good.slice(0, good.length - 24));
 check('truncated IDAT decodes to null, not black', png.readFile(cut), null);
 
+/* -- URL safety --------------------------------------------------------- */
+// --from makes brandkit fetch on the operator's behalf, and a crawled page
+// controls the stylesheet URLs that follow.
+var sourceUrl = require('../lib/ingest/source-url');
+[
+  'http://169.254.169.254/latest/meta-data/',   // cloud metadata
+  'http://localhost:6379/', 'http://127.0.0.1/', 'http://10.0.0.5/',
+  'http://192.168.1.1/', 'http://172.16.0.1/', 'http://[::1]:9200/',
+  'http://[::ffff:127.0.0.1]/', 'http://foo.internal/', 'file:///etc/passwd'
+].forEach(function (u) {
+  check('blocked: ' + u, sourceUrl.safeUrl(u), null);
+});
+check('public host still allowed', typeof sourceUrl.safeUrl('https://example.com/x'), 'string');
+
+/* -- ReDoS -------------------------------------------------------------- */
+// A greedy [\w-]+ over a long dash run backtracked once per start position;
+// 300KB of dashes (well under the fetch cap) hung the CLI for minutes.
+var t0 = Date.now();
+var vars = {};
+var block = ':root{' + new Array(300001).join('-') + '}';
+var mm = /(?::root|html)\s*\{([^}]+)\}/g.exec(block);
+if (mm) {
+  var parts = mm[1].split(';');
+  for (var pi = 0; pi < parts.length; pi++) {
+    var ci = parts[pi].indexOf(':');
+    if (ci > 0) vars[parts[pi].slice(0, ci).trim()] = 1;
+  }
+}
+check('300k-dash declaration parses in under a second', Date.now() - t0 < 1000, true);
+
+/* -- computed colors ---------------------------------------------------- */
+// Scraping the first three integers turned oklch() into a different color and
+// labelled it computed/high.
+function onPrimaryFor(color) {
+  var s = {
+    kind: 'render', source: 'x', surfaces: [], cssVars: null, _imageFiles: [],
+    fontsRendered: [], fontsDeclared: [], logos: [], imageCandidates: [],
+    claims: null, notes: [],
+    pages: [{ ctas: [{ text: 'CTA', bg: 'rgb(1,2,3)', color: color, radius: '0', area: 900 }] }]
+  };
+  return reconciler.reconcile([s], {}).tokens.colors.onPrimary;
+}
+check('legacy rgb() parses', onPrimaryFor('rgb(239, 70, 59)'), '#EF463B');
+check('oklch() is a gap, not a wrong color', onPrimaryFor('oklch(0.55 0.22 264)'), undefined);
+check('lab() is a gap, not a wrong color', onPrimaryFor('lab(50% 40 59.5)'), undefined);
+check('display-p3 is a gap, not a wrong color',
+  onPrimaryFor('color(display-p3 0.31 0.27 0.9)'), undefined);
+
+/* -- remote logos are not silently "verified" --------------------------- */
+var rsrc = {
+  kind: 'render', source: 'x', surfaces: [], cssVars: null, _imageFiles: [],
+  fontsRendered: [], fontsDeclared: [], logos: [], claims: null, notes: [], pages: [],
+  imageCandidates: [{ file: 'https://cdn.example.com/acme-logo.png', rel: 'x', base: 'acme-logo.png' }]
+};
+var rres = reconciler.reconcile([rsrc], { brandName: 'Acme' });
+check('remote logo is flagged as unchecked',
+  /NOT checked for being a placeholder/.test((rres.evidence['logos'] || {}).detail || ''), true);
+
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

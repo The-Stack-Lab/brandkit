@@ -44,7 +44,14 @@ module.exports = function generate(args) {
     return;
   }
 
-  if (!cli.from.length) return run(cli, null);
+  if (!cli.from.length) {
+    try {
+      return run(cli, null);
+    } catch (e) {
+      // Without this the same fault escapes bin/brandkit.js as a raw stack.
+      return reportWriteFailure(e);
+    }
+  }
 
   console.log('');
   console.log('  brandkit generate');
@@ -70,9 +77,18 @@ module.exports = function generate(args) {
       return;
     }
     reportEvidence(result);
-    run(cli, result);
+    // Kept out of the ingest .catch: a failure writing config.json is not an
+    // ingest failure, and reporting it as one sends you looking in the wrong
+    // place. Same fault, same message, whether or not --from was used.
+    try {
+      run(cli, result);
+    } catch (e) {
+      reportWriteFailure(e);
+    }
   }).catch(function (e) {
+    console.error('');
     console.error('  Ingest failed: ' + (e && e.message ? e.message : String(e)));
+    console.error('');
     process.exitCode = 1;
   });
 };
@@ -313,6 +329,13 @@ function run(cli, ingested) {
   if (todoCount > 0) console.log('    TODO: ' + todoCount + ' fields need manual or AI attention');
   if (ingested) console.log('    Evidence: ingest-evidence.json');
   console.log('');
+}
+
+function reportWriteFailure(e) {
+  console.error('');
+  console.error('  Could not write the brand config: ' + (e && e.message ? e.message : String(e)));
+  console.error('');
+  process.exitCode = 1;
 }
 
 /**
