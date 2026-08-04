@@ -18,7 +18,10 @@ function parseArgs(args) {
   var opts = { dir: null, from: [], render: false, brandName: null };
   for (var i = 0; i < args.length; i++) {
     var a = args[i];
-    if (a === '--from' && args[i + 1]) { opts.from.push(args[++i]); }
+    if (a === '--from') {
+      if (!args[i + 1] || args[i + 1].indexOf('-') === 0) { opts.danglingFrom = true; }
+      else { opts.from.push(args[++i]); }
+    }
     else if (a.indexOf('--from=') === 0) { opts.from.push(a.slice(7)); }
     else if (a === '--render') { opts.render = true; }
     else if (a === '--brand-name' && args[i + 1]) { opts.brandName = args[++i]; }
@@ -30,6 +33,16 @@ function parseArgs(args) {
 
 module.exports = function generate(args) {
   var cli = parseArgs(args || []);
+
+  if (cli.danglingFrom) {
+    console.error('');
+    console.error('  --from needs a value: a URL, a directory, or a file.');
+    console.error('  e.g. brandkit generate brand --from ./context/source-site');
+    console.error('       brandkit generate brand --from https://client.com');
+    console.error('');
+    process.exitCode = 1;
+    return;
+  }
 
   if (!cli.from.length) return run(cli, null);
 
@@ -43,6 +56,19 @@ module.exports = function generate(args) {
     useRender: cli.render,
     log: function (line) { console.log(line); }
   }).then(function (result) {
+    // Every source failed. Writing a config here would look like success while
+    // measuring nothing — the exact silent-wrongness this feature exists to
+    // stop. Fail loudly and leave config.json alone.
+    if (!result.usable) {
+      console.error('');
+      console.error('  None of the ' + cli.from.length + ' source(s) yielded anything measurable.');
+      (result.notes || []).forEach(function (n) { console.error('    - ' + n); });
+      console.error('');
+      console.error('  config.json was NOT modified. Check the path or URL and try again.');
+      console.error('');
+      process.exitCode = 1;
+      return;
+    }
     reportEvidence(result);
     run(cli, result);
   }).catch(function (e) {

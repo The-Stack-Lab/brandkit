@@ -17,7 +17,8 @@
   "scripts": {
     "dev": "node bin/brandkit.js dev example",
     "build": "node bin/brandkit.js build example",
-    "example": "node bin/brandkit.js dev example"
+    "example": "node bin/brandkit.js dev example",
+    "test": "node test/png.test.js"
   },
   "keywords": [
     "brand",
