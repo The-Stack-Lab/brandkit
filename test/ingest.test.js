@@ -209,5 +209,34 @@ var rres = reconciler.reconcile([rsrc], { brandName: 'Acme' });
 check('remote logo is flagged as unchecked',
   /NOT checked for being a placeholder/.test((rres.evidence['logos'] || {}).detail || ''), true);
 
+/* -- measured backgrounds must not land on text tokens ------------------ */
+// A dark brand surface written to --ink made text and header identical:
+// 1.0:1, invisible. --ink is the primary TEXT color despite the name.
+var darkSrc = {
+  kind: 'dir', source: 'd', cssVars: null, fontsDeclared: [], logos: [],
+  imageCandidates: [], claims: null, notes: [], _imageFiles: [],
+  surfaces: [{ file: 'p.png', colors: [
+    { hex: '#1C1C1E', share: 0.62, count: 100 },
+    { hex: '#EF463B', share: 0.02, count: 10 }
+  ] }]
+};
+var dark = ingest.toConfigFields(reconciler.reconcile([darkSrc], {}), {});
+check('dark surface drives the hero', dark.theme['--header-bg'], '#1C1C1E');
+check('dark surface is NOT written to --ink', dark.theme['--ink'], undefined);
+// The header prints its own text in --white, so that is the pair to verify.
+check('hero text is readable on the measured hero',
+  parseFloat(helpers.contrastRatio('#FFFFFF', dark.theme['--header-bg'])) >= 4.5, true);
+
+// The guard drops any emitted pair styles.css really renders together —
+// here body text that would be near-white on the white page.
+var collide = ingest.toConfigFields(
+  { tokens: { colors: {}, theme: { '--ink': '#FEFEFE' } } }, {});
+check('unreadable body text is dropped to the default', collide.theme, null);
+
+// ...and leaves a legible one alone.
+var fine = ingest.toConfigFields(
+  { tokens: { colors: {}, theme: { '--ink': '#222222' } } }, {});
+check('legible body text is kept', fine.theme['--ink'], '#222222');
+
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
