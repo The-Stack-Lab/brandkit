@@ -415,13 +415,19 @@ schema.seedBrandIdentity(cleared, clearedDir);
 check('a deliberately emptied field stays empty', cleared.brand.tagline, '');
 check('the name is still seeded alongside it', cleared.brand.name, 'acme');
 
-// An absent name is as unseeded as the scaffold value. Assert the NAME, not
-// just the return value: this originally passed while brand.name stayed ''
-// because the other identity fields had changed and flipped the flag.
-var namelessCfg = schema.starterConfig();
-namelessCfg.brand.name = '';
-schema.seedBrandIdentity(namelessCfg, clearedDir);
-check('an empty name is actually seeded', namelessCfg.brand.name, 'acme');
+// '' means the same thing everywhere: the author cleared it on purpose. A
+// deliberately blank name blocks seeding rather than being rewritten on every
+// run, and a missing name is still seeded.
+var clearedName = schema.starterConfig();
+clearedName.brand.name = '';
+check('a deliberately cleared name blocks seeding',
+  schema.seedBrandIdentity(clearedName, clearedDir), false);
+check('a cleared name stays cleared', clearedName.brand.name, '');
+
+var missingName = schema.starterConfig();
+delete missingName.brand.name;
+schema.seedBrandIdentity(missingName, clearedDir);
+check('a missing name is still seeded', missingName.brand.name, 'acme');
 
 [repoDir, clearedDir].forEach(function (d) {
   try { fs.rmSync(d, { recursive: true, force: true }); } catch (_) { /* already gone */ }
@@ -443,16 +449,35 @@ check('an empty name is actually seeded', namelessCfg.brand.name, 'acme');
 });
 
 // The home boundary must be tested BEFORE its own manifest, or the walk
-// returns the very ~/package.json it exists to reject.
-var homeWalk = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-home-'));
+// returns the very ~/package.json it exists to reject. os.homedir() reads
+// $HOME on POSIX, so point it at a fixture for the duration — testing this
+// through the .git boundary instead would pass under the OLD ordering too,
+// which is exactly how the bug shipped.
+var homeWalk = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-home-')));
 fs.writeFileSync(path.join(homeWalk, 'package.json'), JSON.stringify({ name: 'stray-home-pkg' }));
 fs.mkdirSync(path.join(homeWalk, 'brand'));
-// Not the real home, so this asserts the ordering via the .git boundary
-// instead: a manifest at a repo root is still found, one above it is not.
+
+var realHome = process.env.HOME;
+var realUserProfile = process.env.USERPROFILE;
+process.env.HOME = homeWalk;
+process.env.USERPROFILE = homeWalk;
+var homeCfg = schema.starterConfig();
+var seededFromHome = schema.seedBrandIdentity(homeCfg, path.join(homeWalk, 'brand'));
+if (realHome === undefined) delete process.env.HOME; else process.env.HOME = realHome;
+if (realUserProfile === undefined) delete process.env.USERPROFILE; else process.env.USERPROFILE = realUserProfile;
+
+check('the walk stops at the home directory', seededFromHome, false);
+check('a stray ~/package.json never names a brand', homeCfg.brand.name, 'brandkit');
+
+// A repo-root manifest must still be found — the .git boundary is checked
+// after the manifest, unlike home.
 fs.mkdirSync(path.join(homeWalk, 'repo', 'brand'), { recursive: true });
 fs.mkdirSync(path.join(homeWalk, 'repo', '.git'), { recursive: true });
-check('the walk does not climb past a repo root to an outer manifest',
-  schema.seedBrandIdentity(schema.starterConfig(), path.join(homeWalk, 'repo', 'brand')), false);
+fs.writeFileSync(path.join(homeWalk, 'repo', 'package.json'), JSON.stringify({ name: 'repo-app' }));
+var repoRootCfg = schema.starterConfig();
+schema.seedBrandIdentity(repoRootCfg, path.join(homeWalk, 'repo', 'brand'));
+check('a manifest at the repo root is still found', repoRootCfg.brand.name, 'repo-app');
+
 try { fs.rmSync(homeWalk, { recursive: true, force: true }); } catch (_) { /* already gone */ }
 
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
