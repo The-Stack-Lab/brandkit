@@ -214,7 +214,8 @@ function run(cli, ingested) {
         fontSources[slot] = {
           family: cssFonts[slot].family,
           from: 'CSS custom properties',
-          inferred: cssFonts[slot].inferred
+          inferred: cssFonts[slot].inferred,
+          source: cssFonts[slot].source
         };
       }
     });
@@ -234,8 +235,9 @@ function run(cli, ingested) {
         family: picked.family,
         googleImport: picked.inferred ? '' : picked.family + ':wght@300;400;500;600;700',
         description: picked.inferred
-          ? '__TODO: Family inferred from the CSS variable name — confirm the real ' +
-            'typeface and set googleImport before publishing.'
+          ? '__TODO: Family name inferred from the CSS variable ' + picked.source +
+            ' — the variable names the binding, not necessarily the typeface. ' +
+            'Confirm the real family and set googleImport before publishing.'
           : '__TODO: Describe the ' + slot + ' font.'
       };
       fontNotes.push(slot + ' = ' + picked.family +

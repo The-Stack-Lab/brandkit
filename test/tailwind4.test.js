@@ -268,6 +268,10 @@ check('brandkit does not reseed itself', schema.seedBrandIdentity(selfCfg, selfD
 
 // A project with no package.json has nothing to seed from.
 var bareDir = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-bare-'));
+// Mark it as a repo root so the upward walk stops here. Without a boundary the
+// assertion would depend on whatever happens to sit above TMPDIR — which on CI
+// is often inside a checkout that does have a package.json.
+fs.mkdirSync(path.join(bareDir, '.git'));
 check('no package.json means no seeding', schema.seedBrandIdentity(schema.starterConfig(), bareDir), false);
 
 // Tests must not leave artifacts behind.
@@ -356,6 +360,68 @@ schema.seedBrandIdentity(monoCfg, path.join(monoRoot, 'packages', 'client', 'bra
 check('seeding walks up to the owning package', monoCfg.brand.name, 'client-app');
 
 [editDir, monoRoot].forEach(function (d) {
+  try { fs.rmSync(d, { recursive: true, force: true }); } catch (_) { /* already gone */ }
+});
+
+/* ------------------------------------------------------------------ *
+ * 10. Second-round ensemble findings (PR #12)
+ * ------------------------------------------------------------------ */
+
+// A CSS string cannot span lines. One unterminated quote used to put the whole
+// remainder of the file "inside a string", which stopped comment stripping and
+// handed a commented-out — deliberately disabled — declaration to the parser
+// as live. Ordered so that "last write wins" cannot mask the failure.
+var unterminated = '.a { content: "oops;\n}\n:root { --brand: #0000ff; /* --brand: #ff0000; */ }';
+check('a disabled declaration never beats the live one',
+  I.extractFromContent(unterminated)['--brand'], '#0000ff');
+check('a commented-out token does not leak in',
+  '--y' in I.extractFromContent('.a { content: "oops;\n}\n:root { --x: #111; /* --y: #222; */ }'), false);
+
+// Escapes outside a string hide the next character from the scanner too.
+check('an escaped brace does not close the block',
+  I.extractFromContent(':root { --text: \\}; --accent: #fff; }')['--accent'], '#fff');
+// The escaped `)` must not be read as the closing paren: the fallback is the
+// whole `foo\)bar`, not the truncated `foo\` the old scanner produced.
+check('an escaped paren does not truncate the fallback',
+  I.resolveVarRefs({ '--x': 'var(--missing, foo\\)bar)' })['--x'], 'foo\\)bar');
+// The quoted forms must keep working.
+check('a quoted brace still does not close the block',
+  I.extractFromContent(':root { --t: "}"; --a: #fff; }')['--a'], '#fff');
+
+// A family read off a next/font variable names the binding, not the typeface.
+// It must not ship a Google Fonts import, and it must say where it came from.
+var inferred = extractCSS.fontsFromVars({ '--font-sans': 'var(--font-geist-sans)' });
+check('the source variable is recorded', inferred.body.source, '--font-geist-sans');
+check('a literal family records no source',
+  extractCSS.fontsFromVars({ '--font-sans': "'Inter', sans-serif" }).body.source, null);
+
+// Seeding must not wander out of the project.
+var repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-repo-'));
+fs.mkdirSync(path.join(repoDir, '.git'));
+fs.mkdirSync(path.join(repoDir, 'brand'));
+check('the walk stops at a repo root with no package.json',
+  schema.seedBrandIdentity(schema.starterConfig(), path.join(repoDir, 'brand')), false);
+fs.writeFileSync(path.join(repoDir, 'package.json'), JSON.stringify({ name: 'in-repo-app' }));
+var repoCfg = schema.starterConfig();
+schema.seedBrandIdentity(repoCfg, path.join(repoDir, 'brand'));
+check('a package.json at the repo root is still found', repoCfg.brand.name, 'in-repo-app');
+
+// An author-cleared field is a decision, not an empty slot to refill.
+var clearedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-cleared-'));
+fs.writeFileSync(path.join(clearedDir, 'package.json'), JSON.stringify({ name: 'acme' }));
+var cleared = schema.starterConfig();
+cleared.brand.tagline = '';
+schema.seedBrandIdentity(cleared, clearedDir);
+check('a deliberately emptied field stays empty', cleared.brand.tagline, '');
+check('the name is still seeded alongside it', cleared.brand.name, 'acme');
+
+// An absent name is as unseeded as the scaffold value.
+var namelessCfg = schema.starterConfig();
+namelessCfg.brand.name = '';
+check('an empty name does not block seeding',
+  schema.seedBrandIdentity(namelessCfg, clearedDir), true);
+
+[repoDir, clearedDir].forEach(function (d) {
   try { fs.rmSync(d, { recursive: true, force: true }); } catch (_) { /* already gone */ }
 });
 
