@@ -102,6 +102,17 @@ var exact = ['#4F46E5', '#00FF00', '#0000FF', '#F9FAFB', '#111827', '#ABCDEF'].e
 });
 check('OKLab inverse is exact for sRGB colors', exact, true);
 
+// Short and alpha hex forms. A 4-digit value is #RGBA and an 8-digit one is
+// #RRGGBBAA; parsing either as a plain integer silently yields a DIFFERENT
+// color (#AABBCCDD once read as #BBCCDD, because the 8-digit parse overflows
+// 2^31 and `>>` then works on a negative signed value).
+check('#RGB expands', helpers.parseCssColor('#ABC').hex, '#AABBCC');
+check('#RGBA drops alpha, keeps the color', helpers.parseCssColor('#ABCD').hex, '#AABBCC');
+check('#RRGGBB is identity', helpers.parseCssColor('#AABBCC').hex, '#AABBCC');
+check('#RRGGBBAA drops alpha, keeps the color', helpers.parseCssColor('#AABBCCDD').hex, '#AABBCC');
+check('opaque white with alpha', helpers.parseCssColor('#FFFFFFFF').hex, '#FFFFFF');
+check('invalid hex digits are rejected', helpers.parseCssColor('#GGG'), null);
+
 // Things that are NOT a single color must never become one.
 check('gradient is not a color', helpers.parseCssColor('linear-gradient(135deg, #fff 0%, #000 100%)'), null);
 check('"r, g, b" triple is not a color', helpers.parseCssColor('79, 70, 229'), null);
@@ -120,6 +131,14 @@ check('rating of an unmeasured pair is null', helpers.rateContrast(null), null);
 check('oklch contrast is measured for real',
   helpers.contrastRatio('oklch(0 0 0)', '#FFFFFF'), '21.0:1');
 check('isLightColor is false for unparseable input', helpers.isLightColor('var(--x)'), false);
+
+// An unmeasurable pair must contribute no row at all. `rating !== 'Fail'` was
+// true for null, which published {ratio: null, rating: null} into the guide's
+// accessibility table as though it had been measured.
+var a11y = helpers.generateA11yPairs([{ hex: 'var(--x)', name: 'Broken' }, { hex: '#000000', name: 'Ink' }]);
+check('unmeasurable color contributes no a11y rows', a11y.length, 2);
+check('no null ratio reaches the a11y table',
+  a11y.some(function (p) { return p.ratio === null || p.rating === null; }), false);
 
 /* ------------------------------------------------------------------ *
  * 5. Theme mapping is 1:1 — no silent overwrite
@@ -206,6 +225,35 @@ check('tagline is an explicit TODO', cfg.brand.tagline.indexOf('__TODO') === 0, 
 check('description is an explicit TODO', cfg.brand.description.indexOf('__TODO') === 0, true);
 check('brandkit url is not shipped to a client', cfg.brand.url.indexOf('__TODO') === 0, true);
 check("brandkit's wordmark is not shipped to a client", cfg.brand.sidebarLogo, '');
+
+// package.json is untrusted — brandkit may run inside a repo someone else
+// wrote, and this value is rendered into the guide and written to brand.md.
+var evilDir = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-evil-'));
+fs.writeFileSync(path.join(evilDir, 'package.json'),
+  JSON.stringify({ name: 'evil<img src=x onerror=alert(1)>' }));
+var evilCfg = schema.starterConfig();
+schema.seedBrandIdentity(evilCfg, evilDir);
+check('markup is stripped from a seeded name',
+  /[<>]/.test(evilCfg.brand.name + evilCfg.brand.displayName), false);
+
+var longDir = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-long-'));
+fs.writeFileSync(path.join(longDir, 'package.json'),
+  JSON.stringify({ name: new Array(501).join('a') }));
+var longCfg = schema.starterConfig();
+schema.seedBrandIdentity(longCfg, longDir);
+check('an absurdly long name is bounded', longCfg.brand.name.length <= 64, true);
+
+var ctrlDir = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-ctrl-'));
+fs.writeFileSync(path.join(ctrlDir, 'package.json'),
+  JSON.stringify({ name: 'ab' + String.fromCharCode(10) + 'cd' + String.fromCharCode(7) }));
+var ctrlCfg = schema.starterConfig();
+schema.seedBrandIdentity(ctrlCfg, ctrlDir);
+check('control characters are stripped',
+  /[\x00-\x1F\x7F]/.test(ctrlCfg.brand.name), false);
+
+[evilDir, longDir, ctrlDir].forEach(function (d) {
+  try { fs.rmSync(d, { recursive: true, force: true }); } catch (_) { /* already gone */ }
+});
 
 // Re-running must never clobber a real edit.
 cfg.brand.name = 'edited-by-hand';

@@ -493,7 +493,10 @@ function buildColors(colorList) {
   var brand = [];
   var neutrals = [];
   var semantic = [];
-  var seen = {};
+  // Null-prototype: a bare {} inherits Object.prototype, so a token named
+  // --constructor or --toString would test as already-seen and be dropped
+  // before it was ever added.
+  var seen = Object.create(null);
 
   var semanticNames = ['success', 'warning', 'error', 'danger', 'info', 'destructive'];
   var neutralNames = ['gray', 'grey', 'slate', 'zinc', 'neutral', 'stone', 'black', 'white',
