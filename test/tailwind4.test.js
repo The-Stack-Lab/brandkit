@@ -415,15 +415,45 @@ schema.seedBrandIdentity(cleared, clearedDir);
 check('a deliberately emptied field stays empty', cleared.brand.tagline, '');
 check('the name is still seeded alongside it', cleared.brand.name, 'acme');
 
-// An absent name is as unseeded as the scaffold value.
+// An absent name is as unseeded as the scaffold value. Assert the NAME, not
+// just the return value: this originally passed while brand.name stayed ''
+// because the other identity fields had changed and flipped the flag.
 var namelessCfg = schema.starterConfig();
 namelessCfg.brand.name = '';
-check('an empty name does not block seeding',
-  schema.seedBrandIdentity(namelessCfg, clearedDir), true);
+schema.seedBrandIdentity(namelessCfg, clearedDir);
+check('an empty name is actually seeded', namelessCfg.brand.name, 'acme');
 
 [repoDir, clearedDir].forEach(function (d) {
   try { fs.rmSync(d, { recursive: true, force: true }); } catch (_) { /* already gone */ }
 });
+
+/* ------------------------------------------------------------------ *
+ * 11. Third-round ensemble findings (PR #12)
+ * ------------------------------------------------------------------ */
+
+// CSS treats CR and CRLF as newlines too. Checking only \n left a CR-only or
+// CRLF stylesheet "inside a string" for the rest of the file, so a
+// commented-out declaration was parsed as live.
+['\n', '\r', '\r\n'].forEach(function (nl) {
+  var label = nl === '\n' ? 'LF' : (nl === '\r' ? 'CR' : 'CRLF');
+  var css = '.a { content: "oops;' + nl + '}' + nl +
+            ':root { --brand: #0000ff; /* --brand: #ff0000; */ }';
+  check('unterminated string recovers on ' + label,
+    I.extractFromContent(css)['--brand'], '#0000ff');
+});
+
+// The home boundary must be tested BEFORE its own manifest, or the walk
+// returns the very ~/package.json it exists to reject.
+var homeWalk = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-home-'));
+fs.writeFileSync(path.join(homeWalk, 'package.json'), JSON.stringify({ name: 'stray-home-pkg' }));
+fs.mkdirSync(path.join(homeWalk, 'brand'));
+// Not the real home, so this asserts the ordering via the .git boundary
+// instead: a manifest at a repo root is still found, one above it is not.
+fs.mkdirSync(path.join(homeWalk, 'repo', 'brand'), { recursive: true });
+fs.mkdirSync(path.join(homeWalk, 'repo', '.git'), { recursive: true });
+check('the walk does not climb past a repo root to an outer manifest',
+  schema.seedBrandIdentity(schema.starterConfig(), path.join(homeWalk, 'repo', 'brand')), false);
+try { fs.rmSync(homeWalk, { recursive: true, force: true }); } catch (_) { /* already gone */ }
 
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
