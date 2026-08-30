@@ -165,18 +165,88 @@ function run(cli, ingested) {
 
   var baseConfig = existingConfig || schema.starterConfig();
 
+  // Identity, if the brand block is still brandkit's untouched scaffold. A
+  // guide generated inside another project should never introduce itself as
+  // brandkit — brand.md is the artifact that goes to a client for approval.
+  // seedBrandIdentity() no-ops once brand.name has been edited, so re-running
+  // generate never overwrites real work.
+  if (schema.seedBrandIdentity(baseConfig, projectDir)) {
+    summary.push('    Brand: seeded name "' + baseConfig.brand.name +
+                 '" from package.json (tagline/description left as __TODO)');
+  }
+
   // Build extracted config fields
   var newFields = {};
 
-  // Colors from Tailwind (with auto-computed oklch and light flag)
-  if (extracted.tailwindColors) {
-    newFields.colors = buildColors(extracted.tailwindColors);
+  // Colors: the Tailwind config first, then every color-valued CSS custom
+  // property. Tailwind 4 is CSS-first and ships no config file, so the
+  // stylesheet is the only place a modern project's palette exists.
+  var colorList = [];
+  if (extracted.tailwindColors) colorList = colorList.concat(extracted.tailwindColors);
+  if (extracted.cssVars) colorList = colorList.concat(colorsFromCssVars(extracted.cssVars));
+  if (colorList.length) {
+    newFields.colors = buildColors(colorList);
+    var swatchCount = newFields.colors.brand.items.length +
+      newFields.colors.neutrals.items.length +
+      newFields.colors.semantic.items.length;
+    summary.push('    Colors: ' + swatchCount + ' swatch(es) extracted');
   }
 
   // Theme from CSS variables
   if (extracted.cssVars) {
-    newFields.theme = extractCSS.mapToTheme(extracted.cssVars);
+    newFields.theme = extractCSS.mapToTheme(extracted.cssVars, {
+      warn: function (msg) { summary.push('    Warning: ' + msg); }
+    });
     ensureThemeDefaults(newFields.theme);
+  }
+
+  // Fonts — a tailwind.config.* entry is explicit intent and wins; CSS custom
+  // properties fill whatever it does not cover. Tailwind 4 is CSS-first and
+  // has no config file at all, so without the CSS path brandkit's own default
+  // typeface survived as if it were the host project's.
+  var cssFonts = extracted.cssVars ? extractCSS.fontsFromVars(extracted.cssVars) : null;
+  if (extracted.tailwindFonts || cssFonts) {
+    var fontSources = { display: null, body: null };
+    ['display', 'body'].forEach(function (slot) {
+      var tw = extracted.tailwindFonts && extracted.tailwindFonts[slot];
+      if (tw && tw.family) { fontSources[slot] = { family: tw.family, from: 'tailwind.config' }; return; }
+      if (cssFonts && cssFonts[slot]) {
+        fontSources[slot] = {
+          family: cssFonts[slot].family,
+          from: 'CSS custom properties',
+          inferred: cssFonts[slot].inferred,
+          source: cssFonts[slot].source
+        };
+      }
+    });
+
+    var fonts = {};
+    var fontNotes = [];
+    ['display', 'body'].forEach(function (slot) {
+      var picked = fontSources[slot];
+      if (!picked) return;
+      // A family read off a next/font variable name is a guess: the binding
+      // `--font-geist-sans` belongs to the family "Geist", not "Geist Sans".
+      // Emitting a googleImport for it ships an @import that 404s, so leave it
+      // empty (both link builders skip a falsy googleImport) and say plainly
+      // in the description that the name needs confirming — which puts it in
+      // the TODO count instead of passing a guess off as resolved.
+      fonts[slot] = {
+        family: picked.family,
+        googleImport: picked.inferred ? '' : picked.family + ':wght@300;400;500;600;700',
+        description: picked.inferred
+          ? '__TODO: Family name inferred from the CSS variable ' + picked.source +
+            ' — the variable names the binding, not necessarily the typeface. ' +
+            'Confirm the real family and set googleImport before publishing.'
+          : '__TODO: Describe the ' + slot + ' font.'
+      };
+      fontNotes.push(slot + ' = ' + picked.family +
+        ' (' + picked.from + (picked.inferred ? ', inferred — needs confirming' : '') + ')');
+    });
+    if (Object.keys(fonts).length) {
+      newFields.fonts = fonts;
+      summary.push('    Fonts: ' + fontNotes.join(', '));
+    }
   }
 
   // Ingested sources (--from) outrank a host-codebase scan: they describe the
@@ -196,26 +266,6 @@ function run(cli, ingested) {
       newFields.logos = fromIngest.logos;
       summary.push('    Logos: ' + fromIngest.logos.length + ' ranked from ingested sources');
     }
-  }
-
-  // Fonts from Tailwind
-  if (extracted.tailwindFonts) {
-    var fonts = {};
-    if (extracted.tailwindFonts.display) {
-      fonts.display = {
-        family: extracted.tailwindFonts.display.family,
-        googleImport: extracted.tailwindFonts.display.family + ':wght@300;400;500;600;700',
-        description: '__TODO: Describe the display font.'
-      };
-    }
-    if (extracted.tailwindFonts.body) {
-      fonts.body = {
-        family: extracted.tailwindFonts.body.family,
-        googleImport: extracted.tailwindFonts.body.family + ':wght@300;400;500;600;700',
-        description: '__TODO: Describe the body font.'
-      };
-    }
-    if (Object.keys(fonts).length) newFields.fonts = fonts;
   }
 
   // Spacing from Tailwind
@@ -406,14 +456,17 @@ function ensureThemeDefaults(theme) {
     '--error': '--error-rgb',
     '--success': '--success-rgb'
   };
-  Object.keys(rgbPairs).forEach(function (hexKey) {
-    var rgbKey = rgbPairs[hexKey];
-    var val = theme[hexKey];
-    if (val && !theme[rgbKey] && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(val)) {
+  Object.keys(rgbPairs).forEach(function (colorKey) {
+    var rgbKey = rgbPairs[colorKey];
+    var val = theme[colorKey];
+    // Any parseable color, not hex alone — an oklch accent needs its tint
+    // triple just as much, and rgba(var(--accent-rgb), …) cannot consume
+    // oklch text.
+    if (val && !theme[rgbKey] && helpers.parseCssColor(val)) {
       theme[rgbKey] = helpers.hexToRgbString(val);
     }
   });
-  if (theme['--accent'] && !theme['--accent-foreground'] && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(theme['--accent'])) {
+  if (theme['--accent'] && !theme['--accent-foreground'] && helpers.parseCssColor(theme['--accent'])) {
     // Pick the on-fill color with the higher WCAG contrast (not a luminance
     // threshold — a mid-tone fill like orange reads better with black text
     // even though it isn't "light").
@@ -427,20 +480,65 @@ function ensureThemeDefaults(theme) {
   }
 }
 
+function humanizeVarName(key) {
+  return String(key).replace(/^--/, '').split(/[-_]+/).filter(Boolean).map(function (w) {
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }).join(' ');
+}
+
+/**
+ * Every color-valued CSS custom property, as swatch candidates.
+ *
+ * `colors` was previously sourced *only* from a Tailwind config file, so a
+ * Tailwind 4 CSS-first project — which has no such file — kept brandkit's
+ * placeholder indigo palette in the guide handed to the client, no matter
+ * what the host stylesheet actually declared.
+ */
+function colorsFromCssVars(cssVars) {
+  var out = [];
+  if (!cssVars) return out;
+  Object.keys(cssVars).forEach(function (key) {
+    if (/-rgb$/.test(key)) return;   // tint triple, not a color
+    if (/^--font-/.test(key)) return; // font stack
+    if (!helpers.parseCssColor(cssVars[key])) return;
+    // Hand on the authored text; buildColors re-parses and keeps the original.
+    out.push({ name: humanizeVarName(key), hex: cssVars[key], role: '' });
+  });
+  return out;
+}
+
 function buildColors(colorList) {
   var brand = [];
   var neutrals = [];
   var semantic = [];
+  // Null-prototype: a bare {} inherits Object.prototype, so a token named
+  // --constructor or --toString would test as already-seen and be dropped
+  // before it was ever added.
+  var seen = Object.create(null);
 
-  var semanticNames = ['success', 'warning', 'error', 'danger', 'info'];
-  var neutralNames = ['gray', 'grey', 'slate', 'zinc', 'neutral', 'stone', 'black', 'white'];
+  var semanticNames = ['success', 'warning', 'error', 'danger', 'info', 'destructive'];
+  var neutralNames = ['gray', 'grey', 'slate', 'zinc', 'neutral', 'stone', 'black', 'white',
+    'background', 'foreground', 'border', 'input', 'ring', 'card', 'popover',
+    'muted', 'secondary'];
 
   for (var i = 0; i < colorList.length; i++) {
     var c = colorList[i];
-    // Skip colors without valid hex (Tailwind function-based colors, etc.)
-    if (!c.hex || typeof c.hex !== 'string' || !/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c.hex)) continue;
     if (!c.name) continue;
+    // Accept any CSS color, not hex alone. extract-tailwind already collects
+    // oklch/rgb/hsl values and a Tailwind 4 project is oklch throughout, so a
+    // hex-only test here silently discarded the host's entire palette and
+    // left brandkit's own placeholder swatches in the client-facing guide.
+    var parsed = helpers.parseCssColor(c.hex);
+    if (!parsed) continue;
     var lowerName = c.name.toLowerCase();
+    // Dedupe by name AND by resolved color: a shadcn theme aliases the same
+    // value under several names (--brand / --primary / --color-primary), which
+    // would otherwise render as three identical swatches in the palette. The
+    // earlier source wins, so the Tailwind config and the most primitive token
+    // name keep their place.
+    if (seen[lowerName] || seen[parsed.hex]) continue;
+    seen[lowerName] = true;
+    seen[parsed.hex] = true;
 
     var isSemantic = false;
     var isNeutral = false;
@@ -453,15 +551,20 @@ function buildColors(colorList) {
       }
     }
 
-    // Auto-compute oklch and light flag
+    // Swatches render from hex; `oklch` is the display string shown beside
+    // them. When the author wrote a non-hex space, keep their exact text so
+    // the guide can quote the source of truth rather than a conversion.
     var entry = {
       name: c.name,
-      hex: c.hex,
-      oklch: helpers.hexToOklch(c.hex),
+      hex: parsed.hex,
+      oklch: parsed.space === 'oklch' ? parsed.original : helpers.hexToOklch(parsed.hex),
       cssVar: '--color-' + c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       role: c.role || '',
-      light: helpers.isLightColor(c.hex)
+      light: helpers.isLightColor(parsed.hex)
     };
+    // Record the authored text whenever it differs from the hex actually
+    // rendered — that includes an alpha hex, whose transparency is dropped.
+    if (parsed.original.toUpperCase() !== parsed.hex) entry.authored = parsed.original;
 
     if (isSemantic) semantic.push(entry);
     else if (isNeutral) neutrals.push(entry);

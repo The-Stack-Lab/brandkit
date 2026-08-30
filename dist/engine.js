@@ -558,13 +558,13 @@
 
       voiceGrid.innerHTML =
         '<div class="voice-card do">' +
-          '<div class="voice-card-label">' + cfg.brand.displayName + ' says</div>' +
+          '<div class="voice-card-label">' + esc(cfg.brand.displayName) + ' says</div>' +
           cfg.voice.do.map(function (v) {
             return '<div class="voice-example">' + v + '</div>';
           }).join('') +
         '</div>' +
         '<div class="voice-card dont">' +
-          '<div class="voice-card-label">' + cfg.brand.displayName + ' never says</div>' +
+          '<div class="voice-card-label">' + esc(cfg.brand.displayName) + ' never says</div>' +
           cfg.voice.dont.map(function (v) {
             return '<div class="voice-example">' + v + '</div>';
           }).join('') +
