@@ -58,8 +58,16 @@ module.exports = function init(args) {
   var configPath = path.join(targetDir, 'config.json');
   if (!fs.existsSync(configPath) && !isUpdate) {
     var starter = schema.starterConfig();
+    // Name the guide after the host project rather than after brandkit. What
+    // can't be read from package.json is left as an explicit __TODO so it
+    // shows up in the TODO count instead of shipping brandkit's own copy.
+    var seeded = schema.seedBrandIdentity(starter, process.cwd());
     fs.writeFileSync(configPath, JSON.stringify(starter, null, 2) + '\n');
     console.log('    created config.json');
+    if (seeded) {
+      console.log('    seeded  brand.name = "' + starter.brand.name +
+                  '" from package.json (tagline/description left as __TODO)');
+    }
   } else if (isUpdate) {
     console.log('    kept    config.json (--update)');
   } else {
