@@ -47,6 +47,10 @@ When you change this brand — colors, type, logos, voice, spacing, or anything 
 
 Revision history (newest first):
 
+- **v1.5.0** (August 2026):
+  - Tailwind 4 CSS-first and shadcn/ui support: @theme inline blocks are parsed, var() token ladders resolved, and oklch/rgb/hsl colors converted for swatches, contrast, and the design-token export.
+  - generate now names the guide from the host project's package.json and marks what it cannot measure as __TODO, instead of leaving brandkit's own copy in a client's guide.
+  - A contrast pair that cannot be measured is reported as unmeasured rather than scored — an unparseable color no longer reads as a perfect 21:1.
 - **v1.4.1** (August 2026): Hardened URL ingestion and fixed argument parsing, accent measurement cost, and contrast fallback — from an ensemble code review.
 - **v1.4.0** (August 2026):
   - Build a brand from outside the codebase: generate --from a URL, an import archive, or files, with optional --render for measured computed styles.
