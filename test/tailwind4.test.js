@@ -275,5 +275,89 @@ check('no package.json means no seeding', schema.seedBrandIdentity(schema.starte
   try { fs.rmSync(d, { recursive: true, force: true }); } catch (_) { /* already gone */ }
 });
 
+/* ------------------------------------------------------------------ *
+ * 9. Ensemble-review findings (PR #12)
+ * ------------------------------------------------------------------ */
+
+// Quoted values are data, not structure. A brace inside a string closed the
+// block early and dropped every declaration after it (all of them, in fact).
+check('brace inside a quoted value does not close the block',
+  I.extractFromContent(':root { --text: "}"; --accent: #fff; }')['--accent'], '#fff');
+check('the quoted value itself survives',
+  I.extractFromContent(':root { --text: "}"; --accent: #fff; }')['--text'], '"}"');
+check('a comment opener inside a string is not a comment',
+  I.extractFromContent(':root { --q: "/* x */"; --a: #111; }')['--a'], '#111');
+
+// Parens and commas inside a quoted fallback were counted as structure and
+// rewrote the value into confident nonsense ("foobar")).
+check('paren inside a quoted fallback is preserved',
+  I.resolveVarRefs({ '--x': 'var(--missing, "foo)bar")' })['--x'], '"foo)bar"');
+
+// A fallback only counts if it resolves completely.
+check('unresolved nested fallback stays exactly as authored',
+  I.resolveVarRefs({ '--x': 'var(--missing, var(--also-missing))' })['--x'],
+  'var(--missing, var(--also-missing))');
+check('resolvable nested fallback still resolves',
+  I.resolveVarRefs({ '--b': '#123456', '--x': 'var(--missing, var(--b))' })['--x'], '#123456');
+
+// CSS angle units. Stripping only "deg" read `0.5turn` as 0.5 degrees — red
+// where the author wrote cyan.
+check('turn is converted', helpers.parseCssColor('hsl(0.5turn 100% 50%)').hex, '#00FFFF');
+check('grad is converted', helpers.parseCssColor('hsl(200grad 100% 50%)').hex, '#00FFFF');
+check('rad is converted', helpers.parseCssColor('hsl(3.14159265rad 100% 50%)').hex, '#00FFFF');
+check('deg is unchanged', helpers.parseCssColor('hsl(180deg 100% 50%)').hex, '#00FFFF');
+check('a bare number is degrees', helpers.parseCssColor('hsl(180 100% 50%)').hex, '#00FFFF');
+check('an unknown angle unit is rejected', helpers.parseCssColor('hsl(10px 100% 50%)'), null);
+
+// A keyword has no function head, so splitting on '(' returned the keyword.
+check('named color reports colorSpace "named"', helpers.parseCssColor('white').space, 'named');
+check('oklch still reports its own space', helpers.parseCssColor('oklch(0.5 0.1 200)').space, 'oklch');
+
+// The authored value must survive whenever it differs from the emitted hex —
+// an alpha hex included, since its transparency is dropped.
+var alphaTokens = exporter.buildTokensJson({
+  brand: { name: 'x' },
+  theme: { '--overlay': '#00000080', '--paper': 'white', '--ink': '#111827' }
+});
+check('alpha hex keeps its authored value',
+  alphaTokens.color.overlay.$extensions['app.stacklist.brandkit'].authored, '#00000080');
+check('named color keeps its authored value',
+  alphaTokens.color.paper.$extensions['app.stacklist.brandkit'].authored, 'white');
+check('a plain hex still carries no extensions', alphaTokens.color.ink.$extensions, undefined);
+
+// A family read off a next/font variable is a guess: --font-geist-sans is the
+// family "Geist". Publishing a googleImport for it ships an @import that 404s.
+var inferredFonts = extractCSS.fontsFromVars({ '--font-sans': 'var(--font-geist-sans)' });
+check('a var-derived family is flagged inferred', inferredFonts.body.inferred, true);
+var literalFonts = extractCSS.fontsFromVars({ '--font-sans': "'Inter', sans-serif" });
+check('a literal family is not flagged inferred', literalFonts.body.inferred, false);
+
+// Identity seeding is per-field: a hand edit must survive even while
+// brand.name is still the scaffold value.
+var editDir = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-edit-'));
+fs.writeFileSync(path.join(editDir, 'package.json'), JSON.stringify({ name: 'acme-corp' }));
+var edited = schema.starterConfig();
+edited.brand.tagline = 'We forge steel beams.';
+edited.brand.sidebarLogo = 'logos/acme.svg';
+schema.seedBrandIdentity(edited, editDir);
+check('seeding fills the untouched name', edited.brand.name, 'acme-corp');
+check('a hand-written tagline survives seeding', edited.brand.tagline, 'We forge steel beams.');
+check('a hand-set logo is not reset to empty', edited.brand.sidebarLogo, 'logos/acme.svg');
+
+// The guide dir is a child of the project it documents, so seeding must walk
+// up — not read the process cwd, which named a monorepo package after the root.
+var monoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-mono-'));
+fs.mkdirSync(path.join(monoRoot, 'packages', 'client', 'brand'), { recursive: true });
+fs.writeFileSync(path.join(monoRoot, 'package.json'), JSON.stringify({ name: 'monorepo-root' }));
+fs.writeFileSync(path.join(monoRoot, 'packages', 'client', 'package.json'),
+  JSON.stringify({ name: 'client-app' }));
+var monoCfg = schema.starterConfig();
+schema.seedBrandIdentity(monoCfg, path.join(monoRoot, 'packages', 'client', 'brand'));
+check('seeding walks up to the owning package', monoCfg.brand.name, 'client-app');
+
+[editDir, monoRoot].forEach(function (d) {
+  try { fs.rmSync(d, { recursive: true, force: true }); } catch (_) { /* already gone */ }
+});
+
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

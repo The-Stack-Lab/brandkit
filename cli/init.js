@@ -61,7 +61,10 @@ module.exports = function init(args) {
     // Name the guide after the host project rather than after brandkit. What
     // can't be read from package.json is left as an explicit __TODO so it
     // shows up in the TODO count instead of shipping brandkit's own copy.
-    var seeded = schema.seedBrandIdentity(starter, process.cwd());
+    // Seed from the project that owns the guide directory, not from wherever
+    // the command happened to be run: `init packages/client/brand` from a
+    // monorepo root must name the client, not the monorepo.
+    var seeded = schema.seedBrandIdentity(starter, targetDir);
     fs.writeFileSync(configPath, JSON.stringify(starter, null, 2) + '\n');
     console.log('    created config.json');
     if (seeded) {

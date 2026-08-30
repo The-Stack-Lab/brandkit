@@ -210,7 +210,13 @@ function run(cli, ingested) {
     ['display', 'body'].forEach(function (slot) {
       var tw = extracted.tailwindFonts && extracted.tailwindFonts[slot];
       if (tw && tw.family) { fontSources[slot] = { family: tw.family, from: 'tailwind.config' }; return; }
-      if (cssFonts && cssFonts[slot]) { fontSources[slot] = { family: cssFonts[slot].family, from: 'CSS custom properties' }; }
+      if (cssFonts && cssFonts[slot]) {
+        fontSources[slot] = {
+          family: cssFonts[slot].family,
+          from: 'CSS custom properties',
+          inferred: cssFonts[slot].inferred
+        };
+      }
     });
 
     var fonts = {};
@@ -218,12 +224,22 @@ function run(cli, ingested) {
     ['display', 'body'].forEach(function (slot) {
       var picked = fontSources[slot];
       if (!picked) return;
+      // A family read off a next/font variable name is a guess: the binding
+      // `--font-geist-sans` belongs to the family "Geist", not "Geist Sans".
+      // Emitting a googleImport for it ships an @import that 404s, so leave it
+      // empty (both link builders skip a falsy googleImport) and say plainly
+      // in the description that the name needs confirming — which puts it in
+      // the TODO count instead of passing a guess off as resolved.
       fonts[slot] = {
         family: picked.family,
-        googleImport: picked.family + ':wght@300;400;500;600;700',
-        description: '__TODO: Describe the ' + slot + ' font.'
+        googleImport: picked.inferred ? '' : picked.family + ':wght@300;400;500;600;700',
+        description: picked.inferred
+          ? '__TODO: Family inferred from the CSS variable name — confirm the real ' +
+            'typeface and set googleImport before publishing.'
+          : '__TODO: Describe the ' + slot + ' font.'
       };
-      fontNotes.push(slot + ' = ' + picked.family + ' (' + picked.from + ')');
+      fontNotes.push(slot + ' = ' + picked.family +
+        ' (' + picked.from + (picked.inferred ? ', inferred — needs confirming' : '') + ')');
     });
     if (Object.keys(fonts).length) {
       newFields.fonts = fonts;
@@ -544,7 +560,9 @@ function buildColors(colorList) {
       role: c.role || '',
       light: helpers.isLightColor(parsed.hex)
     };
-    if (parsed.space !== 'hex') entry.authored = parsed.original;
+    // Record the authored text whenever it differs from the hex actually
+    // rendered — that includes an alpha hex, whose transparency is dropped.
+    if (parsed.original.toUpperCase() !== parsed.hex) entry.authored = parsed.original;
 
     if (isSemantic) semantic.push(entry);
     else if (isNeutral) neutrals.push(entry);
