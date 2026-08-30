@@ -459,18 +459,34 @@ fs.mkdirSync(path.join(homeWalk, 'brand'));
 
 var realHome = process.env.HOME;
 var realUserProfile = process.env.USERPROFILE;
-process.env.HOME = homeWalk;
-process.env.USERPROFILE = homeWalk;
 var homeCfg = schema.starterConfig();
-var seededFromHome = schema.seedBrandIdentity(homeCfg, path.join(homeWalk, 'brand'));
-if (realHome === undefined) delete process.env.HOME; else process.env.HOME = realHome;
-if (realUserProfile === undefined) delete process.env.USERPROFILE; else process.env.USERPROFILE = realUserProfile;
+var seededFromHome;
+try {
+  process.env.HOME = homeWalk;
+  process.env.USERPROFILE = homeWalk;
+  seededFromHome = schema.seedBrandIdentity(homeCfg, path.join(homeWalk, 'brand'));
+} finally {
+  // finally, not straight-line: if the walk throws (an unreadable manifest,
+  // EACCES on a parent) a redirected HOME would leak into everything after.
+  if (realHome === undefined) delete process.env.HOME; else process.env.HOME = realHome;
+  if (realUserProfile === undefined) delete process.env.USERPROFILE;
+  else process.env.USERPROFILE = realUserProfile;
+}
 
 check('the walk stops at the home directory', seededFromHome, false);
 check('a stray ~/package.json never names a brand', homeCfg.brand.name, 'brandkit');
 
-// A repo-root manifest must still be found — the .git boundary is checked
-// after the manifest, unlike home.
+// The .git boundary needs its own negative case: a repo root WITHOUT a
+// manifest. Asserting only the positive case below would still pass with the
+// .git check deleted outright, since the walk would find repo/package.json
+// one level up regardless.
+fs.mkdirSync(path.join(homeWalk, 'bare-repo', 'brand'), { recursive: true });
+fs.mkdirSync(path.join(homeWalk, 'bare-repo', '.git'), { recursive: true });
+check('the walk stops at a repo root that has no manifest',
+  schema.seedBrandIdentity(schema.starterConfig(), path.join(homeWalk, 'bare-repo', 'brand')), false);
+
+// ...and a repo-root manifest must still be found: .git is checked AFTER the
+// manifest, unlike home.
 fs.mkdirSync(path.join(homeWalk, 'repo', 'brand'), { recursive: true });
 fs.mkdirSync(path.join(homeWalk, 'repo', '.git'), { recursive: true });
 fs.writeFileSync(path.join(homeWalk, 'repo', 'package.json'), JSON.stringify({ name: 'repo-app' }));
