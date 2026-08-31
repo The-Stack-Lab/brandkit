@@ -373,17 +373,51 @@ function run(cli, ingested) {
         if (group) {
           var items = group.items || group;
           if (Array.isArray(items)) {
-            allColors = allColors.concat(items);
+            // Carry the group so the pair generator can tell a text colour
+            // from a surface tone.
+            allColors = allColors.concat(items.map(function (it) {
+              var copy = {};
+              Object.keys(it).forEach(function (k) { copy[k] = it[k]; });
+              copy.group = key;
+              return copy;
+            }));
           }
         }
       });
     }
+    // Pair against the brand's OWN surfaces. Hard-coding white documented a
+    // background a dark brand never uses.
+    var surfaces = [];
+    function addSurface(token, label) {
+      var v = theme && theme[token];
+      if (!v) return;
+      var parsed = helpers.parseCssColor(v);
+      if (!parsed) return;
+      if (surfaces.some(function (s) { return s.hex === parsed.hex; })) return;
+      surfaces.push({ hex: parsed.hex, name: label });
+    }
+    addSurface('--white', 'White');
+    addSurface('--cloud', 'Page background');
+    addSurface('--ink', 'Ink');
+
     if (allColors.length) {
-      var a11y = helpers.generateA11yPairs(allColors);
+      var a11y = helpers.generateA11yPairs(allColors, { surfaces: surfaces });
       if (a11y.length) {
         newFields.accessibility = a11y;
-        summary.push('    Accessibility: ' + a11y.length + ' contrast pairs auto-computed');
+        var failing = a11y.filter(function (x) { return !x.passes; }).length;
+        summary.push('    Accessibility: ' + a11y.length + ' pair(s) computed against ' +
+          (surfaces.length || 1) + ' surface(s)' +
+          (failing ? ', ' + failing + ' below AA' : ''));
+      } else {
+        // The derive path used to end here with no else, so a palette that
+        // produced no pairs left brandkit's scaffold table standing — the fix
+        // silently doing nothing. An empty table is honest; a borrowed one is not.
+        newFields.accessibility = [];
+        summary.push('    Accessibility: no measurable pairs — table left empty');
       }
+    } else if (documentsAnotherBrand) {
+      newFields.accessibility = [];
+      summary.push('    Accessibility: no colours to measure — table left empty');
     }
   }
 
