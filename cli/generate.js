@@ -553,12 +553,21 @@ function run(cli, ingested) {
       finalConfig.colors._hexMatches.join(', '));
     delete finalConfig.colors._hexMatches;
   }
+  if (finalConfig.colors && finalConfig.colors._ambiguousColours) {
+    console.log('    Several authored swatches share one colour, so their prose ' +
+      'could not be matched: ' + finalConfig.colors._ambiguousColours.join(', '));
+    delete finalConfig.colors._ambiguousColours;
+  }
   if (finalConfig.colors && finalConfig.colors._unmatchedAuthored) {
     // Loud, because this is authored work that could not be carried forward.
     console.log('    Could NOT carry forward prose for: ' +
       finalConfig.colors._unmatchedAuthored.join(', '));
-    console.log('      their colour values changed, so they cannot be matched — ' +
-      'recover from config.json.bak');
+    // Only name the backup when one exists. Directing someone at a file that
+    // was never written — or at a stale one from an earlier run — is a recovery
+    // instruction that cannot work.
+    console.log(wroteBackup
+      ? '      recover it from config.json.bak'
+      : '      recover it from version control (no new backup was written)');
     delete finalConfig.colors._unmatchedAuthored;
   }
 
@@ -574,7 +583,10 @@ function run(cli, ingested) {
   // that did the removing. Zero dependencies; a plain copy is enough.
   var backupPath = configPath + '.bak';
   var wroteBackup = false;
-  if (existingConfig && (stripped.length || rederived.length) && !fs.existsSync(backupPath)) {
+  var proseLost = !!(finalConfig.colors &&
+    (finalConfig.colors._unmatchedAuthored || finalConfig.colors._ambiguousColours));
+  if (existingConfig && (stripped.length || rederived.length || proseLost) &&
+      !fs.existsSync(backupPath)) {
     var before = JSON.stringify(existingConfig, null, 2) + '\n';
     var after = JSON.stringify(finalConfig, null, 2) + '\n';
     if (before !== after) {
@@ -795,19 +807,30 @@ function themeFromColors(colors) {
     var items = (colors[group] && colors[group].items) || [];
     return items.length ? items[0] : null;
   }
+  // Whole words, and an exact name beats a word inside a longer one. A plain
+  // substring scan let a swatch called "Greenhouse" claim `--success` ahead of
+  // the swatch actually named "Success".
   function bySemanticName(names) {
     var items = (colors.semantic && colors.semantic.items) || [];
-    for (var i = 0; i < items.length; i++) {
-      var n = String(items[i].name || '').toLowerCase();
-      for (var j = 0; j < names.length; j++) {
-        if (n.indexOf(names[j]) !== -1) return items[i];
-      }
-    }
-    return null;
+    var exact = null;
+    var worded = null;
+    items.forEach(function (item) {
+      if (!helpers.parseCssColor(item.hex)) return;
+      var n = String(item.name || '').toLowerCase().trim();
+      var words = n.split(/[^a-z0-9]+/).filter(Boolean);
+      names.forEach(function (want) {
+        if (!exact && n === want) exact = item;
+        if (!worded && words.indexOf(want) !== -1) worded = item;
+      });
+    });
+    return exact || worded;
   }
 
+  // The accent gets the same parse guard as the neutrals below. Checking only
+  // truthiness wrote an undeterminable value — a swatch whose hex is still
+  // `var(--brand)` — into theme, where it was published as this brand's accent.
   var accent = firstOf('brand');
-  if (accent && accent.hex) theme['--accent'] = accent.hex;
+  if (accent && helpers.parseCssColor(accent.hex)) theme['--accent'] = accent.hex;
 
   // Neutrals sorted by luminance give the ink/paper ends of the ramp.
   var neutrals = ((colors.neutrals && colors.neutrals.items) || []).filter(function (n) {

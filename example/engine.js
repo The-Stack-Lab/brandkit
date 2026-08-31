@@ -715,7 +715,13 @@
         return;
       }
 
-      grid.innerHTML = cfg.accessibility.filter(function (a) { return a.textPairing !== false; }).map(function (a) {
+      grid.innerHTML = cfg.accessibility.filter(function (a) {
+          // Suppress surface-on-surface pairs, but never a FAILURE: the
+          // generator keeps `textPairing || !passes` precisely so a problem
+          // can be reported, and filtering on textPairing alone hid every
+          // recorded failure from the page while brand.md still listed it.
+          return a.textPairing !== false || a.passes === false;
+        }).map(function (a) {
         // Field aliases
         var bg = a.bg || a.background || '#FFFFFF';
         var fg = a.fg || a.foreground || '#000000';

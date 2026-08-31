@@ -310,5 +310,50 @@ var trimmed = helpers.generateA11yPairs(
 check('a passing surface-on-surface row is trimmed',
   trimmed.every(function (p) { return p.textPairing || !p.passes; }), true);
 
+/* ---------------- 9. Ensemble round 2 on 1.6.0 ---------------- */
+
+function group(items, g) {
+  var o = { brand: { label: 'B', items: [] }, neutrals: { label: 'N', items: [] },
+            semantic: { label: 'S', items: [] } };
+  o[g || 'brand'].items = items;
+  return { colors: o };
+}
+
+// Prose carried across by NAME was still reported as lost — a false claim in
+// the release built to stop false claims.
+var named = schema.mergeConfigs(
+  group([{ name: 'Navy', role: 'Our navy', hex: '#0A2A5E' }]),
+  group([{ name: 'Navy', role: '', hex: '#123456', sourceVar: '--navy' }])).colors;
+check('a name-matched role is preserved', named.brand.items[0].role, 'Our navy');
+check('and is not reported as lost', (named._unmatchedAuthored || []).length, 0);
+
+// Two authored swatches sharing one colour: the value cannot identify which is
+// which, so neither may be guessed at.
+var shared = schema.mergeConfigs(
+  { colors: { brand: { label: 'B', items: [{ name: 'Barone Blue', role: 'Structural navy', hex: '#1F2F8F' }] },
+      neutrals: { label: 'N', items: [] },
+      semantic: { label: 'S', items: [{ name: 'Link Blue', role: 'Links only', hex: '#1F2F8F' }] } } },
+  { colors: { brand: { label: 'B', items: [{ name: 'A', hex: '#1F2F8F', sourceVar: '--a' }] },
+      neutrals: { label: 'N', items: [] },
+      semantic: { label: 'S', items: [{ name: 'B', hex: '#1F2F8F', sourceVar: '--b' }] } } }).colors;
+check('an ambiguous colour is not stamped with one swatch\'s prose',
+  [shared.brand.items[0].name, shared.semantic.items[0].name], ['A', 'B']);
+check('and the ambiguity is reported', (shared._ambiguousColours || []).length, 2);
+
+// #00A and #0000AA are the same colour.
+var shortHex = schema.mergeConfigs(
+  group([{ name: 'Barone Blue', role: 'Structural steel blue', hex: '#00A' }]),
+  group([{ name: 'Brand', role: '', hex: '#0000AA', sourceVar: '--brand' }])).colors;
+check('a 3-digit hex bridges to its 6-digit form', shortHex.brand.items[0].name, 'Barone Blue');
+
+// A scoped client package must not identify AS brandkit — that would disable
+// every provenance check for it.
+var scoped = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-scoped-'));
+fs.writeFileSync(path.join(scoped, 'package.json'), JSON.stringify({ name: '@client/brandkit' }));
+check('@client/brandkit is not brandkit', schema.isBrandkitRepo(scoped), false);
+fs.writeFileSync(path.join(scoped, 'package.json'), JSON.stringify({ name: '@stacklist-app/brandkit' }));
+check('the real published name is brandkit', schema.isBrandkitRepo(scoped), true);
+try { fs.rmSync(scoped, { recursive: true, force: true }); } catch (_) { /* gone */ }
+
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
