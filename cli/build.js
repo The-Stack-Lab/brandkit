@@ -56,6 +56,26 @@ module.exports = function build(args) {
   var blocking = findTodos(config).filter(function (p) {
     return BLOCKING_SECTIONS.indexOf(p.split(/[.[]/)[0]) !== -1;
   });
+
+  // Emptiness counts too. `generate` clears a section that only ever held
+  // brandkit's scaffold — `logos: []`, `voice.do: []` — and those carry no
+  // marker, so a marker-only gate waved through a guide with no logos and no
+  // voice at all. Both are in BLOCKING_SECTIONS precisely because a client
+  // should not be shown a guide missing them.
+  function isBlank(v) {
+    if (v === undefined || v === null) return true;
+    if (typeof v === 'string') return v.trim() === '' || v.trim().indexOf('__TODO') === 0;
+    if (Array.isArray(v)) return v.length === 0;
+    if (typeof v === 'object') {
+      var keys = Object.keys(v);
+      if (!keys.length) return true;
+      return keys.every(function (k) { return isBlank(v[k]); });
+    }
+    return false;
+  }
+  BLOCKING_SECTIONS.forEach(function (section) {
+    if (isBlank(config[section])) blocking.push(section + ' (empty)');
+  });
   if (blocking.length && !force) {
     console.error('  ' + blocking.length + ' essential field(s) are still undefined:');
     blocking.slice(0, 8).forEach(function (p) { console.error('      ' + p); });

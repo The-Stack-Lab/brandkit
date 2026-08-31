@@ -172,11 +172,15 @@ function run(cli, ingested) {
   // content this is.
   var documentsAnotherBrand = schema.hostBrandIdentity(projectDir) !== null;
   var scaffold = schema.starterConfig();
-  var stripped = [];
+  var stripped = [];   // content removed because it was brandkit's
+  var rederived = [];  // content recomputed from this project's own theme
   function needsRegeneration(field, key) {
     if (isEmptyOrScaffold(field)) return true;
     if (documentsAnotherBrand && isStillScaffold(field, scaffold[key])) {
-      stripped.push(key);
+      // Reported as re-derived, not removed: these fields get a real
+      // replacement computed from the host's theme. Calling that "removed" sent
+      // people looking for content that is present and correct.
+      rederived.push(key);
       return true;
     }
     return false;
@@ -195,6 +199,18 @@ function run(cli, ingested) {
   // Build extracted config fields
   var newFields = {};
 
+  // Extraction can come back empty — no Tailwind config, no parseable custom
+  // properties. `mergeConfigs` only touches colours and fonts when there is
+  // something to merge, so the starter's indigo palette and Space Grotesk
+  // survived as the client's own, marker-free and therefore invisible to both
+  // the TODO report and the build gate. Mark them unfilled instead.
+  function clearIfScaffold(key, replacement, label) {
+    if (!documentsAnotherBrand) return;
+    if (!isStillScaffold(baseConfig[key], scaffold[key])) return;
+    newFields[key] = replacement;
+    stripped.push(label || key);
+  }
+
   // Colors: the Tailwind config first, then every color-valued CSS custom
   // property. Tailwind 4 is CSS-first and ships no config file, so the
   // stylesheet is the only place a modern project's palette exists.
@@ -212,6 +228,15 @@ function run(cli, ingested) {
     summary.push('    Colors: ' + swatchCount + ' swatch(es) extracted' +
       (vizSkipped ? ' (' + vizSkipped + ' data-viz token(s) kept in the theme, ' +
                     'not shown as brand swatches)' : ''));
+  }
+
+  // Nothing extractable for colours or fonts → the scaffold must not stand in.
+  if (!colorList.length) {
+    clearIfScaffold('colors', {
+      brand: { label: 'Brand', items: [] },
+      neutrals: { label: 'Neutrals', items: [] },
+      semantic: { label: 'Semantic', items: [] }
+    }, 'colors (nothing extractable)');
   }
 
   // Theme from CSS variables
@@ -310,6 +335,13 @@ function run(cli, ingested) {
       newFields.logos = fromIngest.logos;
       summary.push('    Logos: ' + fromIngest.logos.length + ' ranked from ingested sources');
     }
+  }
+
+  if (!extracted.tailwindFonts && !cssFonts) {
+    clearIfScaffold('fonts', {
+      display: { family: '__TODO: Display typeface.', googleImport: '', description: '__TODO: Describe the display font.' },
+      body: { family: '__TODO: Body typeface.', googleImport: '', description: '__TODO: Describe the body font.' }
+    }, 'fonts (nothing extractable)');
   }
 
   // Spacing from Tailwind
@@ -482,6 +514,17 @@ function run(cli, ingested) {
   // Merge
   var finalConfig = schema.mergeConfigs(baseConfig, newFields);
 
+  // Prose carried across an upgrade by position rather than provenance. Worth
+  // saying out loud: pre-1.6.0 configs have no `sourceVar`, so a renamed
+  // swatch shares no key with its replacement and the pairing is inferred.
+  if (finalConfig.colors && finalConfig.colors._positionalMatches) {
+    console.log('    Carried ' + finalConfig.colors._positionalMatches.length +
+      ' swatch name(s) across by position (this config predates sourceVar): ' +
+      finalConfig.colors._positionalMatches.join(', '));
+    console.log('      check them against config.json.bak if any look misplaced');
+    delete finalConfig.colors._positionalMatches;
+  }
+
   // Ensure brand dir exists
   if (!fs.existsSync(brandDir)) {
     fs.mkdirSync(brandDir, { recursive: true });
@@ -489,7 +532,7 @@ function run(cli, ingested) {
 
   // Removing content is not reversible from the CLI, so leave one undo behind
   // the first time it happens. Zero dependencies; a plain copy is enough.
-  if (stripped.length && existingConfig) {
+  if ((stripped.length || rederived.length) && existingConfig) {
     try {
       fs.writeFileSync(configPath + '.bak', JSON.stringify(existingConfig, null, 2) + '\n');
     } catch (_) { /* a failed backup must not block the write */ }
@@ -523,11 +566,17 @@ function run(cli, ingested) {
   if (extracted.tailwindFonts) console.log('    Fonts: ' + Object.keys(extracted.tailwindFonts).length + ' detected');
   if (extracted.tailwindSpacing) console.log('    Spacing: ' + extracted.tailwindSpacing.length + ' tokens');
   if (extracted.logos) console.log('    Logos: ' + extracted.logos.length + ' files found');
+  function uniq(list) {
+    return list.filter(function (v, i) { return list.indexOf(v) === i; });
+  }
+  if (rederived.length) {
+    console.log('    Recomputed from this project (replacing brandkit\'s scaffold): ' +
+      uniq(rederived).join(', '));
+  }
   if (stripped.length) {
-    var unique = stripped.filter(function (v, i) { return stripped.indexOf(v) === i; });
-    console.log('    Removed brandkit scaffold content (never extracted from this project):');
-    unique.forEach(function (k) { console.log('      ' + k); });
-    console.log('      a backup of the previous config is at config.json.bak');
+    console.log('    Removed brandkit scaffold content — not derivable, needs a human:');
+    uniq(stripped).forEach(function (k) { console.log('      ' + k); });
+    console.log('      previous config saved to config.json.bak');
   }
   if (todoCount > 0) reportTodos(finalConfig);
   if (ingested) console.log('    Evidence: ingest-evidence.json');
@@ -611,8 +660,16 @@ function ensureThemeDefaults(theme) {
   // choose. 4.5:1 is the bar because this colour is advised for TEXT — 3:1
   // would let a 3.5:1 pair through and print it as "AA Large".
   if (theme['--accent'] && theme['--accent-foreground']) {
-    var pairRatio = parseFloat(helpers.contrastRatio(theme['--accent-foreground'], theme['--accent'])) || 0;
-    if (theme['--accent-foreground'] === theme['--accent'] || pairRatio < 4.5) {
+    var pairRatio = helpers.contrastRatio(theme['--accent-foreground'], theme['--accent']);
+    var measured = pairRatio === null ? null : parseFloat(pairRatio);
+    // `parseFloat(null) || 0` read an UNMEASURABLE pair as 0 — below the bar —
+    // so an authored token brandkit simply could not parse (a color-mix(), an
+    // unresolved var()) was deleted and the block below invented #FFFFFF in its
+    // place. Publishing a colour the product never declared is the exact
+    // failure this release exists to remove. Only a pair that was actually
+    // measured, and actually failed, is dropped.
+    if (theme['--accent-foreground'] === theme['--accent'] ||
+        (measured !== null && measured < 4.5)) {
       delete theme['--accent-foreground'];
     }
   }
@@ -821,14 +878,23 @@ function reportTodos(config) {
 function isStillScaffold(value, scaffoldValue) {
   if (value === undefined || value === null) return true;
   if (Array.isArray(value) && Array.isArray(scaffoldValue)) {
-    var scaffoldSet = {};
-    scaffoldValue.forEach(function (v) { scaffoldSet[JSON.stringify(v)] = true; });
-    // Still scaffold if nothing in it came from anywhere else.
-    return value.length > 0 && value.every(function (v) {
-      return scaffoldSet[JSON.stringify(v)] === true;
-    });
+    // Per item, and NOT a subset test. A subset test got both directions
+    // wrong: deleting one scaffold row left the rest a subset, so the array
+    // read as untouched and the deletion was undone on the next run; while
+    // editing one row made the whole array "authored" and left the other five
+    // brandkit rows standing. Scaffold only when nothing the author put there
+    // survives.
+    return authoredItems(value, scaffoldValue).length === 0;
   }
   return JSON.stringify(value) === JSON.stringify(scaffoldValue);
+}
+
+/** The entries in `value` that did not come from the scaffold. */
+function authoredItems(value, scaffoldValue) {
+  if (!Array.isArray(value)) return [];
+  var scaffoldSet = {};
+  (scaffoldValue || []).forEach(function (v) { scaffoldSet[JSON.stringify(v)] = true; });
+  return value.filter(function (v) { return scaffoldSet[JSON.stringify(v)] !== true; });
 }
 
 /**
