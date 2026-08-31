@@ -157,13 +157,30 @@ function run(cli, ingested) {
   if (fs.existsSync(configPath)) {
     try {
       existingConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      console.log('    Found existing config.json \u2014 preserving manual fields');
+      console.log('    Found existing config.json');
     } catch (_) {
       console.log('    Existing config.json is invalid \u2014 creating fresh');
     }
   }
 
   var baseConfig = existingConfig || schema.starterConfig();
+
+  // brandkit's own repo legitimately carries brandkit's content — the demo IS
+  // the brand. Provenance stripping applies only where the guide documents
+  // somebody else. hostBrandIdentity() is the right signal; seedBrandIdentity()
+  // returns false on every run after the first, so it says nothing about whose
+  // content this is.
+  var documentsAnotherBrand = schema.hostBrandIdentity(projectDir) !== null;
+  var scaffold = schema.starterConfig();
+  var stripped = [];
+  function needsRegeneration(field, key) {
+    if (isEmptyOrScaffold(field)) return true;
+    if (documentsAnotherBrand && isStillScaffold(field, scaffold[key])) {
+      stripped.push(key);
+      return true;
+    }
+    return false;
+  }
 
   // Identity, if the brand block is still brandkit's untouched scaffold. A
   // guide generated inside another project should never introduce itself as
@@ -324,22 +341,30 @@ function run(cli, ingested) {
   var theme = newFields.theme || baseConfig.theme;
 
   // Auto-generate gradients from theme
-  if (theme && isEmptyOrScaffold(baseConfig.gradients)) {
+  if (theme && needsRegeneration(baseConfig.gradients, 'gradients')) {
     var gradients = helpers.buildGradientsFromTheme(theme);
     if (gradients.length) {
       newFields.gradients = gradients;
       summary.push('    Gradients: ' + gradients.length + ' auto-generated from theme');
+    } else if (documentsAnotherBrand) {
+      // Nothing derivable and the field still holds brandkit's own indigo →
+      // violet gradient, labelled "Brand". Leaving it because the builder
+      // found nothing is how a navy steel fabricator's guide ended up
+      // presenting a purple gradient as its brand. Most projects have no
+      // gradient at all; none is the honest answer.
+      newFields.gradients = [];
+      summary.push('    Gradients: none found in this project — brandkit\'s placeholder removed');
     }
   }
 
   // Auto-generate hierarchy from theme
-  if (theme && isEmptyOrScaffold(baseConfig.hierarchy)) {
+  if (theme && needsRegeneration(baseConfig.hierarchy, 'hierarchy')) {
     newFields.hierarchy = helpers.buildHierarchyFromTheme(theme);
     summary.push('    Hierarchy: 4 levels auto-generated from theme colors');
   }
 
   // Auto-generate accessibility pairs from all extracted colors
-  if (isEmptyOrScaffold(baseConfig.accessibility)) {
+  if (needsRegeneration(baseConfig.accessibility, 'accessibility')) {
     var allColors = [];
     var colorSource = newFields.colors || baseConfig.colors;
     if (colorSource) {
@@ -362,8 +387,48 @@ function run(cli, ingested) {
     }
   }
 
+  // Prose brandkit wrote about itself. None of it is derivable from a codebase,
+  // so it becomes explicitly unfilled rather than shipping as the client's own
+  // words. Phase 0 keeps markers out of the rendered guide and the exports.
+  if (documentsAnotherBrand) {
+    if (isStillScaffold(baseConfig.voice, scaffold.voice)) {
+      newFields.voice = {
+        description: '__TODO: How does this brand sound? One or two sentences.',
+        do: [],
+        dont: []
+      };
+      stripped.push('voice');
+    }
+    if (isStillScaffold(baseConfig.gradientUsage, scaffold.gradientUsage)) {
+      newFields.gradientUsage = { do: [], dont: [] };
+      stripped.push('gradientUsage');
+    }
+    if (isStillScaffold(baseConfig.sections, scaffold.sections)) {
+      // Section intros are brandkit describing brandkit ("One config, every
+      // token."). An empty intro renders as no intro, which is honest.
+      newFields.sections = {};
+      stripped.push('sections');
+    }
+    if (isStillScaffold(baseConfig.components, scaffold.components)) {
+      // Cards and stats are brandkit's own marketing copy. The component
+      // PATTERNS still render from the theme; only the words are removed.
+      newFields.components = Object.assign({}, baseConfig.components || {}, {
+        cards: [],
+        stats: []
+      });
+      stripped.push('components');
+    }
+    // brandkit's own marks are not the client's logo. init copies them as
+    // placeholders; listing them as this brand's assets is the same lie as
+    // shipping brandkit's tagline.
+    if (isStillScaffold(baseConfig.logos, scaffold.logos) && !extracted.logos) {
+      newFields.logos = [];
+      stripped.push('logos');
+    }
+  }
+
   // Auto-generate cssVariables from theme
-  if (theme && isEmptyOrScaffold(baseConfig.cssVariables)) {
+  if (theme && needsRegeneration(baseConfig.cssVariables, 'cssVariables')) {
     var cssVarSections = helpers.buildCssVariablesFromTheme(theme);
     if (cssVarSections.length) {
       newFields.cssVariables = cssVarSections;
@@ -372,7 +437,7 @@ function run(cli, ingested) {
   }
 
   // Auto-scaffold typography if empty or missing
-  if (isEmptyOrScaffold(baseConfig.typography)) {
+  if (needsRegeneration(baseConfig.typography, 'typography')) {
     newFields.typography = helpers.scaffoldTypography();
     summary.push('    Typography: standard type scale scaffolded');
   }
@@ -388,6 +453,13 @@ function run(cli, ingested) {
     fs.mkdirSync(brandDir, { recursive: true });
   }
 
+  // Removing content is not reversible from the CLI, so leave one undo behind
+  // the first time it happens. Zero dependencies; a plain copy is enough.
+  if (stripped.length && existingConfig) {
+    try {
+      fs.writeFileSync(configPath + '.bak', JSON.stringify(existingConfig, null, 2) + '\n');
+    } catch (_) { /* a failed backup must not block the write */ }
+  }
   fs.writeFileSync(configPath, JSON.stringify(finalConfig, null, 2) + '\n');
 
   // Evidence lives beside config.json, never inside it: config.json is the
@@ -417,6 +489,12 @@ function run(cli, ingested) {
   if (extracted.tailwindFonts) console.log('    Fonts: ' + Object.keys(extracted.tailwindFonts).length + ' detected');
   if (extracted.tailwindSpacing) console.log('    Spacing: ' + extracted.tailwindSpacing.length + ' tokens');
   if (extracted.logos) console.log('    Logos: ' + extracted.logos.length + ' files found');
+  if (stripped.length) {
+    var unique = stripped.filter(function (v, i) { return stripped.indexOf(v) === i; });
+    console.log('    Removed brandkit scaffold content (never extracted from this project):');
+    unique.forEach(function (k) { console.log('      ' + k); });
+    console.log('      a backup of the previous config is at config.json.bak');
+  }
   if (todoCount > 0) reportTodos(finalConfig);
   if (ingested) console.log('    Evidence: ingest-evidence.json');
   console.log('');
@@ -691,6 +769,32 @@ function reportTodos(config) {
       (isBlocking ? '  — needed before this guide is client-ready' : ''));
   });
   return blocking;
+}
+
+/**
+ * Is this field still exactly what brandkit scaffolded?
+ *
+ * `isEmptyOrScaffold` only ever looked for `__TODO`, but the starter ships
+ * populated, marker-free content — so the check was always false and twelve
+ * sections were never regenerated. A client's guide therefore showed brandkit's
+ * indigo gradient labelled "Brand", brandkit's voice ("Brandkit speaks like a
+ * thoughtful teammate"), and cards reading "One config — A single config.json
+ * drives every colour…". Nothing flagged it, because none of it is a marker.
+ *
+ * Compared per item where the field is a list: editing one of six accessibility
+ * rows must not make the other five count as the author's work.
+ */
+function isStillScaffold(value, scaffoldValue) {
+  if (value === undefined || value === null) return true;
+  if (Array.isArray(value) && Array.isArray(scaffoldValue)) {
+    var scaffoldSet = {};
+    scaffoldValue.forEach(function (v) { scaffoldSet[JSON.stringify(v)] = true; });
+    // Still scaffold if nothing in it came from anywhere else.
+    return value.length > 0 && value.every(function (v) {
+      return scaffoldSet[JSON.stringify(v)] === true;
+    });
+  }
+  return JSON.stringify(value) === JSON.stringify(scaffoldValue);
 }
 
 /**
