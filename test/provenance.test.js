@@ -468,5 +468,15 @@ var oneToMany = schema.mergeConfigs(
 check('one prior shared by several targets is reported ambiguous',
   (oneToMany._ambiguousColours || []).indexOf('Brand Blue') !== -1, true);
 
+// mergeLogos buckets on asset paths from the host filesystem. On a bare {} a
+// path of `__proto__` made the lookup truthy via inheritance, so the entry was
+// never recorded and the authored prose was dropped — silently, unlike the
+// colour buckets which threw.
+check('an asset path of "__proto__" does not lose authored logo prose',
+  schema.mergeConfigs(
+    { logos: [{ name: 'Real wordmark', description: 'Min 140px', variants: { svg: '__proto__' } }] },
+    { logos: [{ name: 'X', variants: { svg: '__proto__' } }] }).logos[0].name,
+  'Real wordmark');
+
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
