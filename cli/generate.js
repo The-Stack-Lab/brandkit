@@ -382,7 +382,7 @@ function run(cli, ingested) {
   }
 
   // Count what needs TODO attention
-  var todoCount = countTodos(finalConfig);
+  var todoCount = findTodos(finalConfig).length;
 
   console.log('');
   console.log('  Generated ' + path.relative(process.cwd(), configPath));
@@ -390,7 +390,7 @@ function run(cli, ingested) {
   if (extracted.tailwindFonts) console.log('    Fonts: ' + Object.keys(extracted.tailwindFonts).length + ' detected');
   if (extracted.tailwindSpacing) console.log('    Spacing: ' + extracted.tailwindSpacing.length + ' tokens');
   if (extracted.logos) console.log('    Logos: ' + extracted.logos.length + ' files found');
-  if (todoCount > 0) console.log('    TODO: ' + todoCount + ' fields need manual or AI attention');
+  if (todoCount > 0) reportTodos(finalConfig);
   if (ingested) console.log('    Evidence: ingest-evidence.json');
   console.log('');
 }
@@ -578,12 +578,58 @@ function buildColors(colorList) {
   };
 }
 
-function countTodos(obj) {
-  var count = 0;
-  var str = JSON.stringify(obj);
-  var regex = /__TODO/g;
-  while (regex.exec(str) !== null) count++;
-  return count;
+/**
+ * Locate every unfilled marker, with the path that holds it.
+ *
+ * A bare integer ("TODO: 12 fields") is not actionable once it climbs past a
+ * handful — people stop reading it. Reporting *where* each one is lets an
+ * agency clear them, and lets `build` refuse to ship a guide that still has
+ * blocking gaps.
+ */
+function findTodos(obj, prefix, out) {
+  out = out || [];
+  prefix = prefix || '';
+  if (typeof obj === 'string') {
+    if (obj.trim().indexOf('__TODO') === 0) out.push(prefix);
+    return out;
+  }
+  if (!obj || typeof obj !== 'object') return out;
+  if (Array.isArray(obj)) {
+    obj.forEach(function (v, i) { findTodos(v, prefix + '[' + i + ']', out); });
+    return out;
+  }
+  Object.keys(obj).forEach(function (k) {
+    findTodos(obj[k], prefix ? prefix + '.' + k : k, out);
+  });
+  return out;
+}
+
+// The top-level sections whose absence makes a guide unfit to send to a client.
+// Everything else is a nice-to-have that shouldn't block a build.
+var BLOCKING_SECTIONS = ['brand', 'voice', 'logos', 'colors', 'fonts'];
+
+function groupTodos(paths) {
+  var groups = {};
+  paths.forEach(function (p) {
+    var section = p.split(/[.[]/)[0];
+    (groups[section] = groups[section] || []).push(p);
+  });
+  return groups;
+}
+
+function reportTodos(config) {
+  var paths = findTodos(config);
+  if (!paths.length) return 0;
+  var groups = groupTodos(paths);
+  var blocking = 0;
+  console.log('    Not yet defined — ' + paths.length + ' item(s):');
+  Object.keys(groups).sort().forEach(function (section) {
+    var isBlocking = BLOCKING_SECTIONS.indexOf(section) !== -1;
+    if (isBlocking) blocking += groups[section].length;
+    console.log('      ' + section + ' (' + groups[section].length + ')' +
+      (isBlocking ? '  — needed before this guide is client-ready' : ''));
+  });
+  return blocking;
 }
 
 /**

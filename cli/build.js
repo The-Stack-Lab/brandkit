@@ -3,7 +3,34 @@ var path = require('path');
 var resolve = require('../lib/resolve');
 var template = require('../lib/template');
 
+/**
+ * Locate unfilled markers. Mirrors findTodos() in cli/generate.js — build must
+ * not require generate, so the walk is duplicated rather than shared.
+ */
+function findTodos(obj, prefix, out) {
+  out = out || [];
+  prefix = prefix || '';
+  if (typeof obj === 'string') {
+    if (obj.trim().indexOf('__TODO') === 0) out.push(prefix);
+    return out;
+  }
+  if (!obj || typeof obj !== 'object') return out;
+  if (Array.isArray(obj)) {
+    obj.forEach(function (v, i) { findTodos(v, prefix + '[' + i + ']', out); });
+    return out;
+  }
+  Object.keys(obj).forEach(function (k) {
+    findTodos(obj[k], prefix ? prefix + '.' + k : k, out);
+  });
+  return out;
+}
+
+// Sections whose gaps make a guide unfit to put in front of a client.
+var BLOCKING_SECTIONS = ['brand', 'voice', 'logos', 'colors', 'fonts'];
+
 module.exports = function build(args) {
+  var force = args.indexOf('--force') !== -1;
+  args = args.filter(function (a) { return a !== '--force'; });
   var targetDir = path.resolve(args[0] || '.');
   var distDir = resolve.getDistPath();
 
@@ -22,6 +49,27 @@ module.exports = function build(args) {
   console.log('  Reading ' + path.relative(process.cwd(), configPath) + '...');
 
   var config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+  // A guide with unfilled essentials is not ready to send. Building it anyway
+  // is how brandkit's own placeholder content reached client approval
+  // documents — so say so plainly, and make shipping it a deliberate act.
+  var blocking = findTodos(config).filter(function (p) {
+    return BLOCKING_SECTIONS.indexOf(p.split(/[.[]/)[0]) !== -1;
+  });
+  if (blocking.length && !force) {
+    console.error('  ' + blocking.length + ' essential field(s) are still undefined:');
+    blocking.slice(0, 8).forEach(function (p) { console.error('      ' + p); });
+    if (blocking.length > 8) console.error('      … and ' + (blocking.length - 8) + ' more');
+    console.error('');
+    console.error('  Fill them in, or run `brandkit build --force` to build a draft anyway.');
+    console.error('');
+    process.exitCode = 1;
+    return;
+  }
+  if (blocking.length) {
+    console.log('  Building with ' + blocking.length + ' essential field(s) still undefined (--force).');
+    console.log('');
+  }
 
   var exported = template.build(distDir, targetDir, config);
 
