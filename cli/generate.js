@@ -186,10 +186,15 @@ function run(cli, ingested) {
   if (extracted.cssVars) colorList = colorList.concat(colorsFromCssVars(extracted.cssVars));
   if (colorList.length) {
     newFields.colors = buildColors(colorList);
+    // Internal tally only — never written into config.json as a colour group.
+    var vizSkipped = newFields.colors._vizSkipped || 0;
+    delete newFields.colors._vizSkipped;
     var swatchCount = newFields.colors.brand.items.length +
       newFields.colors.neutrals.items.length +
       newFields.colors.semantic.items.length;
-    summary.push('    Colors: ' + swatchCount + ' swatch(es) extracted');
+    summary.push('    Colors: ' + swatchCount + ' swatch(es) extracted' +
+      (vizSkipped ? ' (' + vizSkipped + ' data-viz token(s) kept in the theme, ' +
+                    'not shown as brand swatches)' : ''));
   }
 
   // Theme from CSS variables
@@ -466,6 +471,17 @@ function ensureThemeDefaults(theme) {
       theme[rgbKey] = helpers.hexToRgbString(val);
     }
   });
+  // A foreground that cannot be read on its fill is worse than none: brand.md
+  // renders it as "put `X` text/icons on it", so an illegible pair becomes
+  // published advice. Drop it and let the contrast-maximizing default below
+  // choose. 4.5:1 is the bar because this colour is advised for TEXT — 3:1
+  // would let a 3.5:1 pair through and print it as "AA Large".
+  if (theme['--accent'] && theme['--accent-foreground']) {
+    var pairRatio = parseFloat(helpers.contrastRatio(theme['--accent-foreground'], theme['--accent'])) || 0;
+    if (theme['--accent-foreground'] === theme['--accent'] || pairRatio < 4.5) {
+      delete theme['--accent-foreground'];
+    }
+  }
   if (theme['--accent'] && !theme['--accent-foreground'] && helpers.parseCssColor(theme['--accent'])) {
     // Pick the on-fill color with the higher WCAG contrast (not a luminance
     // threshold — a mid-tone fill like orange reads better with black text
@@ -475,8 +491,17 @@ function ensureThemeDefaults(theme) {
     var contrastBlack = (lum + 0.05) / 0.05;
     theme['--accent-foreground'] = contrastBlack >= contrastWhite ? '#000000' : '#FFFFFF';
   }
+  // --accent-text is the accent used AS text on a light surface. Copying the
+  // fill verbatim published a caution-grade pair as guidance — a mid-tone
+  // accent reads at 1.3:1 on white. Darken until it clears AA, and emit
+  // nothing if it never does rather than advising an unreadable colour.
   if (theme['--accent'] && !theme['--accent-text']) {
-    theme['--accent-text'] = theme['--accent'];
+    var onPaper = theme['--white'] || '#FFFFFF';
+    var accentHex = helpers.parseCssColor(theme['--accent']);
+    if (accentHex) {
+      var readable = ingest.darkenUntilReadable(accentHex.hex, onPaper, 4.5);
+      if (readable) theme['--accent-text'] = readable;
+    }
   }
 }
 
@@ -521,9 +546,17 @@ function buildColors(colorList) {
     'background', 'foreground', 'border', 'input', 'ring', 'card', 'popover',
     'muted', 'secondary'];
 
+  // Data-viz colours belong to the design system but are not brand identity,
+  // and there is no swatch group for them. Listing chart-4 as a brand colour
+  // misrepresents the palette; they stay in `theme` and the CSS-variable
+  // reference, which is where a developer looks for them.
+  var VIZ_RE = /\b(chart|graph|viz|series|dataviz)\b|^chart[- ]?\d/i;
+  var vizSkipped = 0;
+
   for (var i = 0; i < colorList.length; i++) {
     var c = colorList[i];
     if (!c.name) continue;
+    if (VIZ_RE.test(c.name)) { vizSkipped++; continue; }
     // Accept any CSS color, not hex alone. extract-tailwind already collects
     // oklch/rgb/hsl values and a Tailwind 4 project is oklch throughout, so a
     // hex-only test here silently discarded the host's entire palette and
@@ -574,7 +607,8 @@ function buildColors(colorList) {
   return {
     brand: { label: 'Brand', items: brand },
     neutrals: { label: 'Neutrals', items: neutrals },
-    semantic: { label: 'Semantic', items: semantic }
+    semantic: { label: 'Semantic', items: semantic },
+    _vizSkipped: vizSkipped
   };
 }
 
