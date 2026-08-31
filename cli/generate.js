@@ -544,47 +544,32 @@ function run(cli, ingested) {
   // Merge
   var finalConfig = schema.mergeConfigs(baseConfig, newFields);
 
-  // Prose carried across an upgrade by position rather than provenance. Worth
-  // saying out loud: pre-1.6.0 configs have no `sourceVar`, so a renamed
-  // swatch shares no key with its replacement and the pairing is inferred.
-  if (finalConfig.colors && finalConfig.colors._hexMatches) {
-    console.log('    Carried ' + finalConfig.colors._hexMatches.length +
-      ' swatch name(s) across by colour value (this config predates sourceVar): ' +
-      finalConfig.colors._hexMatches.join(', '));
-    delete finalConfig.colors._hexMatches;
-  }
-  if (finalConfig.colors && finalConfig.colors._ambiguousColours) {
-    console.log('    Several authored swatches share one colour, so their prose ' +
-      'could not be matched: ' + finalConfig.colors._ambiguousColours.join(', '));
-    delete finalConfig.colors._ambiguousColours;
-  }
-  if (finalConfig.colors && finalConfig.colors._unmatchedAuthored) {
-    // Loud, because this is authored work that could not be carried forward.
-    console.log('    Could NOT carry forward prose for: ' +
-      finalConfig.colors._unmatchedAuthored.join(', '));
-    // Only name the backup when one exists. Directing someone at a file that
-    // was never written — or at a stale one from an earlier run — is a recovery
-    // instruction that cannot work.
-    console.log(wroteBackup
-      ? '      recover it from config.json.bak'
-      : '      recover it from version control (no new backup was written)');
-    delete finalConfig.colors._unmatchedAuthored;
-  }
-
   // Ensure brand dir exists
   if (!fs.existsSync(brandDir)) {
     fs.mkdirSync(brandDir, { recursive: true });
   }
 
+  // Read the prose-loss flags BEFORE anything deletes them. The backup guard
+  // used to consult them after the reporting block had already removed them, so
+  // `proseLost` was always false and a run whose only destructive change was
+  // dropping an authored swatch's writing wrote no backup at all.
+  var carriedByValue = (finalConfig.colors && finalConfig.colors._carriedByValue) || null;
+  var ambiguousColours = (finalConfig.colors && finalConfig.colors._ambiguousColours) || null;
+  var unmatchedAuthored = (finalConfig.colors && finalConfig.colors._unmatchedAuthored) || null;
+  if (finalConfig.colors) {
+    delete finalConfig.colors._carriedByValue;
+    delete finalConfig.colors._ambiguousColours;
+    delete finalConfig.colors._unmatchedAuthored;
+  }
+  var proseLost = !!(unmatchedAuthored || ambiguousColours);
+
   // Removing content is not reversible from the CLI, so leave an undo behind.
-  // Written only when this run actually changes something AND no backup exists
-  // yet: overwriting it on every run meant a later no-op re-run replaced the
-  // backup with a copy of the stripped config, destroying the undo for the run
-  // that did the removing. Zero dependencies; a plain copy is enough.
+  // Written once, only when this run actually changes something and no backup
+  // exists yet: overwriting it every run meant a later no-op replaced the backup
+  // with a copy of the stripped config, destroying the undo for the run that did
+  // the removing. Zero dependencies; a plain copy is enough.
   var backupPath = configPath + '.bak';
   var wroteBackup = false;
-  var proseLost = !!(finalConfig.colors &&
-    (finalConfig.colors._unmatchedAuthored || finalConfig.colors._ambiguousColours));
   if (existingConfig && (stripped.length || rederived.length || proseLost) &&
       !fs.existsSync(backupPath)) {
     var before = JSON.stringify(existingConfig, null, 2) + '\n';
@@ -595,6 +580,26 @@ function run(cli, ingested) {
         wroteBackup = true;
       } catch (_) { /* a failed backup must not block the write */ }
     }
+  }
+
+  // Reported after the backup decision, so the recovery advice can name a file
+  // that actually exists. It used to read `wroteBackup` before assignment and
+  // therefore always claimed none had been written.
+  if (carriedByValue) {
+    console.log('    Carried ' + carriedByValue.length +
+      ' swatch name(s) across by colour value (this config predates sourceVar): ' +
+      carriedByValue.join(', '));
+  }
+  if (ambiguousColours) {
+    console.log('    Several authored swatches share one colour, so their prose ' +
+      'could not be matched: ' + ambiguousColours.join(', '));
+  }
+  if (unmatchedAuthored) {
+    // Loud, because this is authored work that could not be carried forward.
+    console.log('    Could NOT carry forward prose for: ' + unmatchedAuthored.join(', '));
+    console.log(wroteBackup
+      ? '      recover it from config.json.bak'
+      : '      recover it from version control (no new backup was written)');
   }
 
   fs.writeFileSync(configPath, JSON.stringify(finalConfig, null, 2) + '\n');

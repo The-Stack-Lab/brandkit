@@ -202,7 +202,7 @@ var upgraded = schema.mergeConfigs(
 ).colors;
 check('a pre-1.6.0 config keeps its authored name', upgraded.brand.items[0].name, 'Barone Blue');
 check('and its authored role', upgraded.brand.items[0].role, 'Structural steel blue');
-check('the value-based pairing is reported', (upgraded._hexMatches || []).length, 1);
+check('the value-based pairing is reported', (upgraded._carriedByValue || []).length, 1);
 
 // Position must NEVER be used. Config order is not the host's declaration
 // order, so pairing by index swapped two swatches' names AND roles onto each
@@ -354,6 +354,56 @@ check('@client/brandkit is not brandkit', schema.isBrandkitRepo(scoped), false);
 fs.writeFileSync(path.join(scoped, 'package.json'), JSON.stringify({ name: '@stacklist-app/brandkit' }));
 check('the real published name is brandkit', schema.isBrandkitRepo(scoped), true);
 try { fs.rmSync(scoped, { recursive: true, force: true }); } catch (_) { /* gone */ }
+
+/* ---------------- 10. Ensemble round 3 — the multi-pass resolver ---------------- */
+
+function C(b, n, sm) {
+  return { colors: { brand: { label: 'B', items: b || [] },
+                     neutrals: { label: 'N', items: n || [] },
+                     semantic: { label: 'S', items: sm || [] } } };
+}
+
+// A greedy single pass let one prior supply prose to TWO swatches — claimed by
+// colour, then again by name — so the guide showed two identical names.
+var twice = schema.mergeConfigs(
+  C([{ name: 'Barone Blue', role: 'Structural navy', hex: '#1F2F8F' }]),
+  C([{ name: 'Steel', hex: '#1F2F8F', sourceVar: '--steel' },
+     { name: 'Barone Blue', hex: '#22308F', sourceVar: '--barone' }])).colors;
+check('a prior is never claimed twice',
+  twice.brand.items[0].name === twice.brand.items[1].name, false);
+
+// Ambiguity decided before later evidence arrived reported a swatch unmatched
+// that in fact matched on a stronger pass.
+var settled = schema.mergeConfigs(
+  C([{ name: 'Barone Blue', role: 'Structural navy', hex: '#1F2F8F', sourceVar: '--a' },
+     { name: 'Link Blue', role: 'Links only', hex: '#1F2F8F', sourceVar: '--b' }]),
+  C([{ name: 'X', hex: '#1F2F8F', sourceVar: '--x' },
+     { name: 'Barone Blue', hex: '#1F2F8F', sourceVar: '--a' }])).colors;
+check('ambiguity a later pass resolves is not reported',
+  (settled._ambiguousColours || []).length, 0);
+check('and nothing is falsely reported lost', (settled._unmatchedAuthored || []).length, 0);
+
+// A duplicate name must not beat a colour that identifies its swatch uniquely.
+var unique = schema.mergeConfigs(
+  C([{ name: 'Blue', role: 'Brand', hex: '#111111' }], [],
+    [{ name: 'Blue', role: 'Links', hex: '#222222' }]),
+  C([{ name: 'Blue', hex: '#222222', sourceVar: '--new' }])).colors;
+check('a unique colour beats an ambiguous name', unique.brand.items[0].role, 'Links');
+
+// An alpha hex is a different colour, and a malformed one is not a colour.
+check('alpha is not folded onto opaque',
+  schema.mergeConfigs(C([{ name: 'Half Red', role: 'overlay', hex: '#FF000080' }]),
+    C([{ name: 'Red', hex: '#FF0000', sourceVar: '--red' }])).colors.brand.items[0].name, 'Red');
+check('a 7-digit hex is not truncated into a match',
+  schema.mergeConfigs(C([{ name: 'Typo', role: 'x', hex: '#1234567' }]),
+    C([{ name: 'Real', hex: '#123456', sourceVar: '--r' }])).colors.brand.items[0].name, 'Real');
+
+// Authored prose on an otherwise-scaffold-shaped item must not vanish silently.
+var scaffoldish = JSON.parse(JSON.stringify(schema.starterConfig().colors.brand.items[0]));
+scaffoldish.description = 'Client approved 2026-04-02';
+check('an authored description on a scaffold-shaped item is reported if lost',
+  (schema.mergeConfigs(C([scaffoldish]), C([{ name: 'Other', hex: '#ABCDEF', sourceVar: '--o' }]))
+    .colors._unmatchedAuthored || []).length > 0, true);
 
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
