@@ -146,10 +146,14 @@
         addFamily(cfg.fonts.display);
         addFamily(cfg.fonts.body);
         if (families.length) {
-          var link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = 'https://fonts.googleapis.com/css2?family=' + families.join('&family=') + '&display=swap';
-          document.head.appendChild(link);
+          // One <link> per family: a single unsatisfiable family would
+          // otherwise 400 the combined request and drop BOTH fonts.
+          families.forEach(function (fam) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://fonts.googleapis.com/css2?family=' + fam + '&display=swap';
+            document.head.appendChild(link);
+          });
         }
       }
 

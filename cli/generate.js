@@ -227,6 +227,7 @@ function run(cli, ingested) {
 
     var fonts = {};
     var fontNotes = [];
+    var unresolvedImports = [];
     ['display', 'body'].forEach(function (slot) {
       var picked = fontSources[slot];
       if (!picked) return;
@@ -238,19 +239,40 @@ function run(cli, ingested) {
       // the TODO count instead of passing a guess off as resolved.
       fonts[slot] = {
         family: picked.family,
-        googleImport: picked.inferred ? '' : picked.family + ':wght@300;400;500;600;700',
+        // Never invent a Google Fonts request. `family + ':wght@300;…'` emitted
+        // a live URL for any family at all — including "Nexa-bold", a
+        // commercial Fontfabric face that is not on Google Fonts, producing an
+        // @import that 404s. The weight list made it worse: Google's css2
+        // endpoint rejects weights a family does not carry, so even a real
+        // Google family (Anton, Lobster — 400 only) got a dead URL.
+        //
+        // brandkit cannot check without a network call, and it has no
+        // dependencies and makes none. So it does not guess: the import is left
+        // for a human, `fallback` keeps the specimen honest in the meantime,
+        // and the merge in Phase 2 preserves a hand-written import across runs.
+        googleImport: '',
+        // A stand-in so the specimen renders in a real face rather than
+        // silently falling back to the browser default while the label claims
+        // the brand typeface. fonts.*.fallback has been in the schema since
+        // 1.2.2 and generate never populated it.
+        fallback: slot === 'display' ? 'Georgia' : 'Helvetica Neue',
         description: picked.inferred
           ? '__TODO: Family name inferred from the CSS variable ' + picked.source +
             ' — the variable names the binding, not necessarily the typeface. ' +
             'Confirm the real family and set googleImport before publishing.'
           : '__TODO: Describe the ' + slot + ' font.'
       };
+      unresolvedImports.push(slot + ' (' + picked.family + ')');
       fontNotes.push(slot + ' = ' + picked.family +
         ' (' + picked.from + (picked.inferred ? ', inferred — needs confirming' : '') + ')');
     });
     if (Object.keys(fonts).length) {
       newFields.fonts = fonts;
       summary.push('    Fonts: ' + fontNotes.join(', '));
+      if (unresolvedImports.length) {
+        summary.push('    Fonts: no webfont import emitted for ' + unresolvedImports.join(', ') +
+          ' — set googleImport (or a @font-face) by hand; a fallback is in place meanwhile');
+      }
     }
   }
 
