@@ -164,5 +164,71 @@ check('an unfilled value is dropped from a font projection',
     fonts: { display: { family: 'Archivo', googleImport: '', description: '__TODO: x' } } })
     .type.display, { family: 'Archivo' });
 
+/* ---------------- 7. Ensemble-review findings on 1.6.0 ---------------- */
+
+// An unmeasurable pair read as 0 via `parseFloat(null) || 0`, so an authored
+// token brandkit could not parse was deleted and #FFFFFF invented for it.
+check('an unmeasurable pair is null, not 0',
+  helpers.contrastRatio('color-mix(in oklab, #fff 90%, #000)', '#1F2F8F'), null);
+
+// isTextCandidate used a signed difference, so light text on a dark surface was
+// never treated as type and its failures were filtered out of the cautions.
+var darkPairs = helpers.generateA11yPairs(
+  [{ hex: '#F2F2F7', name: 'Paper', group: 'neutrals' }],
+  { surfaces: [{ hex: '#1C1C1E', name: 'Void' }] });
+check('light text on a dark surface counts as a text pairing',
+  darkPairs.every(function (p) { return p.textPairing === true; }), true);
+
+// A colour that is both a surface and a swatch was reached twice.
+var dupePairs = helpers.generateA11yPairs(
+  [{ hex: '#FFFFFF', name: 'White', group: 'neutrals' },
+   { hex: '#111827', name: 'Ink', group: 'neutrals' }],
+  { surfaces: [{ hex: '#FFFFFF', name: 'White' }, { hex: '#111827', name: 'Ink' }] });
+var dupeKeys = dupePairs.map(function (p) { return p.fg + '|' + p.bg; });
+check('no duplicate rows when a surface is also a swatch',
+  dupeKeys.length, dupeKeys.filter(function (k, i) { return dupeKeys.indexOf(k) === i; }).length);
+
+// sourceVar was introduced in 1.6.0, so the first run over an older config
+// found no prior item and reverted every author-renamed swatch.
+var upgraded = schema.mergeConfigs(
+  { colors: { brand: { label: 'B', items: [
+      { name: 'Barone Blue', role: 'Structural steel blue', hex: '#000000' }] },
+      neutrals: { label: 'N', items: [] }, semantic: { label: 'S', items: [] } } },
+  { colors: { brand: { label: 'B', items: [
+      { name: 'Brand', role: '', hex: '#1F2F8F', sourceVar: '--brand' }] },
+      neutrals: { label: 'N', items: [] }, semantic: { label: 'S', items: [] } } }
+).colors;
+check('a pre-1.6.0 config keeps its authored name', upgraded.brand.items[0].name, 'Barone Blue');
+check('and its authored role', upgraded.brand.items[0].role, 'Structural steel blue');
+check('the positional pairing is reported, not silent',
+  (upgraded._positionalMatches || []).length, 1);
+
+// Position is only trusted when the group length is unchanged: pairing one
+// colour's prose onto a different colour would be confidently wrong.
+var ambiguous = schema.mergeConfigs(
+  { colors: { brand: { label: 'B', items: [{ name: 'A', hex: '#000' }, { name: 'B', hex: '#111' }] },
+      neutrals: { label: 'N', items: [] }, semantic: { label: 'S', items: [] } } },
+  { colors: { brand: { label: 'B', items: [{ name: 'X', hex: '#222', sourceVar: '--x' }] },
+      neutrals: { label: 'N', items: [] }, semantic: { label: 'S', items: [] } } }
+).colors;
+check('a length mismatch is not paired by position', ambiguous.brand.items[0].name, 'X');
+
+// An ordinary brand colour name that the starter happens to use.
+var slate = schema.mergeConfigs(
+  { colors: { brand: { label: 'B', items: [] },
+      neutrals: { label: 'N', items: [{ name: 'Slate', role: 'Our grey', hex: '#000', sourceVar: '--grey' }] },
+      semantic: { label: 'S', items: [] } } },
+  { colors: { brand: { label: 'B', items: [] },
+      neutrals: { label: 'N', items: [{ name: 'Grey', role: '', hex: '#6B7280', sourceVar: '--grey' }] },
+      semantic: { label: 'S', items: [] } } }
+).colors;
+check('an author may name a colour "Slate"', slate.neutrals.items[0].name, 'Slate');
+
+// An element whose every field was unfilled must not survive as {}.
+check('an array element pruned to {} is dropped',
+  exporter.buildBrandJson({ brand: { name: 'x' },
+    accessibility: [{ fg: '__TODO', bg: '__TODO', ratio: '__TODO', rating: '__TODO' }] }).accessibility,
+  undefined);
+
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
