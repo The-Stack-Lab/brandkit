@@ -527,7 +527,10 @@ function colorsFromCssVars(cssVars) {
     if (/^--font-/.test(key)) return; // font stack
     if (!helpers.parseCssColor(cssVars[key])) return;
     // Hand on the authored text; buildColors re-parses and keeps the original.
-    out.push({ name: humanizeVarName(key), hex: cssVars[key], role: '' });
+    // sourceVar is the stable identity: the token this colour came from.
+    // cssVar is derived from the human name, so keying a merge on it means a
+    // rename orphans the very prose the merge exists to preserve.
+    out.push({ name: humanizeVarName(key), hex: cssVars[key], role: '', sourceVar: key });
   });
   return out;
 }
@@ -598,6 +601,8 @@ function buildColors(colorList) {
     // Record the authored text whenever it differs from the hex actually
     // rendered — that includes an alpha hex, whose transparency is dropped.
     if (parsed.original.toUpperCase() !== parsed.hex) entry.authored = parsed.original;
+    // Origin of this swatch, for a stable per-item merge on re-generate.
+    entry.sourceVar = c.sourceVar || ('name:' + lowerName);
 
     if (isSemantic) semantic.push(entry);
     else if (isNeutral) neutrals.push(entry);
