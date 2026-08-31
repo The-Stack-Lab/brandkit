@@ -441,5 +441,32 @@ var byValue = schema.mergeConfigs(
 check('a real value bridge is reported as such',
   (byValue._carriedByValue || []).indexOf('Barone Blue') !== -1, true);
 
+/* ---------------- 12. Ensemble round 5 ---------------- */
+
+// Colour names come from a client's stylesheet. A bucket map on a bare {} meant
+// a swatch named `__proto__` or `constructor` reached an inherited member and
+// `.push` threw, aborting the entire merge.
+['__proto__', 'constructor', 'toString', 'hasOwnProperty'].forEach(function (n) {
+  var threw = false;
+  var role;
+  try {
+    role = schema.mergeConfigs(
+      C([{ name: n, role: 'x', hex: '#112233' }]),
+      C([{ name: n, hex: '#112233', sourceVar: '--c' }])).colors.brand.items[0].role;
+  } catch (_) { threw = true; }
+  check('a colour named "' + n + '" does not break the merge', threw, false);
+  check('  and its prose survives', role, 'x');
+});
+
+// Indeterminate in either direction. Reporting only prior-side ambiguity told
+// the user a colour was "not found" when it could not be told apart — the wrong
+// cause for someone deciding whether to re-approve a brand.
+var oneToMany = schema.mergeConfigs(
+  C([{ name: 'Brand Blue', role: 'Primary CTA', hex: '#0055FF' }]),
+  C([{ name: 'Blue', hex: '#0055FF', sourceVar: '--blue' },
+     { name: 'Blue Alt', hex: '#0055FF', sourceVar: '--blue-alt' }])).colors;
+check('one prior shared by several targets is reported ambiguous',
+  (oneToMany._ambiguousColours || []).indexOf('Brand Blue') !== -1, true);
+
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
