@@ -478,5 +478,17 @@ check('an asset path of "__proto__" does not lose authored logo prose',
     { logos: [{ name: 'X', variants: { svg: '__proto__' } }] }).logos[0].name,
   'Real wordmark');
 
+// An unfilled FAMILY is a marker too. fontLine guarded only the description, so
+// "__TODO: Display typeface." printed into brand.md as the typeface's own name.
+var noFamily = exporter.buildBrandMarkdown({
+  brand: { name: 'x', displayName: 'Acme' },
+  theme: { '--accent': '#111827' },
+  fonts: { display: { family: '', googleImport: '', description: '__TODO: which face?' },
+           body: { family: 'Inter', description: 'Workhorse.' } }
+});
+check('an unfilled family is never printed', (noFamily.match(/__TODO/g) || []).length, 0);
+check('and is reported as a gap', noFamily.indexOf('Display typeface') !== -1, true);
+check('a real family still prints', noFamily.indexOf('**Body:** Inter') !== -1, true);
+
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

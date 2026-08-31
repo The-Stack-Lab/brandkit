@@ -362,9 +362,12 @@ function run(cli, ingested) {
   // Gothic, observed on 53 elements) was overwritten with a __TODO marker, and
   // the measurement survived only in ingest-evidence.json.
   if (!extracted.tailwindFonts && !cssFonts && !newFields.fonts) {
+    // The gap is carried in `description`, not in `family`. A marker in
+    // `family` becomes a CSS font stack and printed straight into brand.md's
+    // Typography section as the typeface's name.
     clearIfScaffold('fonts', {
-      display: { family: '__TODO: Display typeface.', googleImport: '', description: '__TODO: Describe the display font.' },
-      body: { family: '__TODO: Body typeface.', googleImport: '', description: '__TODO: Describe the body font.' }
+      display: { family: '', googleImport: '', description: '__TODO: Which display typeface does this brand use?' },
+      body: { family: '', googleImport: '', description: '__TODO: Which body typeface does this brand use?' }
     }, 'fonts (nothing extractable)');
   }
 
