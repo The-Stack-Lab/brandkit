@@ -125,7 +125,37 @@ brandkit export [dir]      # Emit only the agent exports (--format json|dtcg|md|
 brandkit changelog "<msg>" # Record a revision: prepend a changelog entry + bump brand.version
 ```
 
-`generate` merge strategy: extractable fields (colors, fonts, spacing, logos) overwrite; manual fields (voice, accessibility, components, typography samples) are preserved.
+`generate` merge strategy (1.6.0):
+
+| Fields | Behavior |
+|---|---|
+| `theme`, `spacing`, `logoSizes` | overwritten from source every run |
+| `colors`, `fonts` | **merged per item.** Values (`hex`, `oklch`, `family`) re-derive; `name`, `role`, `description`, `googleImport`, `fallback` are preserved once authored. Swatches match on `sourceVar` — the token they came from — because `cssVar` is derived from the name, so keying on it would orphan the prose a rename was meant to keep |
+| `gradients`, `hierarchy`, `cssVariables`, `accessibility`, `typography` | derived from `theme` **while they still hold brandkit's scaffold**; yours once edited |
+| `brand`, `voice`, `components`, `sections`, `logos` | cleared **once** if they still hold brandkit's own placeholder content, so a guide never ships brandkit's tagline, voice or marks as the client's; untouched after that |
+| `changelog`, `nav` | never touched |
+
+**Scaffold provenance.** `isEmptyOrScaffold()` only ever looked for `__TODO`, but
+the starter ships populated, marker-free content — so it was always false and
+twelve fields survived byte-identical into client guides (an indigo gradient
+labelled "Brand", brandkit's voice, cards reading "One config"). `isStillScaffold()`
+compares against a fresh `starterConfig()`, per item for lists, gated on
+`hostBrandIdentity(projectDir) !== null` so brandkit's own repo — where the demo
+*is* the brand — is exempt. A run that removes content leaves `config.json.bak`.
+
+**`__TODO` is a marker, not content.** `isUnset()` (`lib/export.js`, mirrored in
+`dist/engine.js`) omits it from `brand.json`/`tokens.json`/`brand.md` and renders
+it as a muted `[data-brandkit-unset]` placeholder. Before 1.6.0 nothing knew what
+the marker meant and it rendered verbatim, so a client-approval document carried
+maintainer instructions as body copy. `brandkit build` refuses while an essential
+section (`brand`, `voice`, `logos`, `colors`, `fonts`) is unfilled; `--force`
+builds a draft.
+
+**Fonts are never invented.** `googleImport` is not auto-emitted — `family +
+':wght@300;…'` produced live URLs for commercial faces (Nexa) and dead ones for
+400-only Google families (Anton). `fonts.*.fallback` is populated instead so the
+specimen renders honestly, and one `<link>` per family stops a single bad import
+taking both fonts down.
 
 ### Building a brand from outside the codebase (`generate --from`)
 
