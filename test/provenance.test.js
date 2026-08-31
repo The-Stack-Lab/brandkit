@@ -405,5 +405,41 @@ check('an authored description on a scaffold-shaped item is reported if lost',
   (schema.mergeConfigs(C([scaffoldish]), C([{ name: 'Other', hex: '#ABCDEF', sourceVar: '--o' }]))
     .colors._unmatchedAuthored || []).length > 0, true);
 
+/* ---------------- 11. Ensemble round 4 — two-sided uniqueness ---------------- */
+
+// Provenance claims must be honest about HOW a pairing was made. Inferring
+// "carried by colour value" from differing sourceVars labelled every name match
+// that way — essentially every swatch in any pre-1.6.0 upgrade.
+var byNameOnly = schema.mergeConfigs(
+  C([{ name: 'Barone Blue', role: 'Structural navy', hex: '#1F2F8F' }]),
+  C([{ name: 'Barone Blue', hex: '#22308F', sourceVar: '--barone' }])).colors;
+check('a name match carries the prose', byNameOnly.brand.items[0].role, 'Structural navy');
+check('and is NOT reported as carried by colour value',
+  (byNameOnly._carriedByValue || []).length, 0);
+
+// A key claims a prior only when it identifies exactly one on BOTH sides.
+var dupSource = schema.mergeConfigs(
+  C([{ name: 'One', role: 'first', hex: '#111111', sourceVar: '--x' },
+     { name: 'Two', role: 'second', hex: '#222222', sourceVar: '--x' }]),
+  C([{ name: 'Two', hex: '#222222', sourceVar: '--x' }])).colors;
+check('a duplicated sourceVar does not claim by array order',
+  dupSource.brand.items[0].role, 'second');
+
+var dupTargetName = schema.mergeConfigs(
+  C([{ name: 'Client Blue', role: 'Links', hex: '#222222' }]),
+  C([{ name: 'Client Blue', hex: '#111111', sourceVar: '--a' },
+     { name: 'Client Blue', hex: '#222222', sourceVar: '--b' }])).colors;
+check('two targets sharing a name do not consume the prior',
+  dupTargetName.brand.items[0].role, undefined);
+check('and the one its colour identifies gets the prose',
+  dupTargetName.brand.items[1].role, 'Links');
+
+// A genuine value bridge is still labelled as one.
+var byValue = schema.mergeConfigs(
+  C([{ name: 'Barone Blue', role: 'Structural steel blue', hex: '#1F2F8F' }]),
+  C([{ name: 'Brand', hex: '#1F2F8F', sourceVar: '--brand' }])).colors;
+check('a real value bridge is reported as such',
+  (byValue._carriedByValue || []).indexOf('Barone Blue') !== -1, true);
+
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
