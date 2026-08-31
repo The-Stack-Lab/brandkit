@@ -135,8 +135,13 @@ check('isLightColor is false for unparseable input', helpers.isLightColor('var(-
 // An unmeasurable pair must contribute no row at all. `rating !== 'Fail'` was
 // true for null, which published {ratio: null, rating: null} into the guide's
 // accessibility table as though it had been measured.
-var a11y = helpers.generateA11yPairs([{ hex: 'var(--x)', name: 'Broken' }, { hex: '#000000', name: 'Ink' }]);
+// Surfaces must be supplied — assuming white fabricated rows against a
+// background the brand may never use.
+var a11y = helpers.generateA11yPairs(
+  [{ hex: 'var(--x)', name: 'Broken' }, { hex: '#000000', name: 'Ink' }],
+  { surfaces: [{ hex: '#FFFFFF', name: 'White' }] });
 check('unmeasurable color contributes no a11y rows', a11y.length, 2);
+check('no surfaces means no table', helpers.generateA11yPairs([{ hex: '#000000', name: 'Ink' }], {}).length, 0);
 check('no null ratio reaches the a11y table',
   a11y.some(function (p) { return p.ratio === null || p.rating === null; }), false);
 

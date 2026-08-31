@@ -4,76 +4,183 @@
   "title": "brandkit config",
   "description": "Configuration for a brandkit brand guide. The single source of truth — drives the rendered guide and the agent-native exports (brand.json, tokens.json, brand.md).",
   "type": "object",
-  "required": ["brand", "fonts", "theme"],
+  "required": [
+    "brand",
+    "fonts",
+    "theme"
+  ],
   "additionalProperties": true,
   "definitions": {
     "font": {
       "type": "object",
-      "required": ["family"],
+      "required": [
+        "family"
+      ],
       "properties": {
-        "family": { "type": "string", "minLength": 1, "description": "Font family name (matches the Google Fonts family)." },
-        "fallback": { "type": "string", "minLength": 1, "description": "Optional web-available stand-in for brands whose official typeface isn't on the web. When set, the rendered CSS font stack becomes 'family', 'fallback', sans-serif everywhere the font renders; labels still show 'family' alone." },
-        "googleImport": { "type": "string", "description": "Google Fonts css2 query segment, e.g. 'Inter:wght@300;400;700'." },
-        "description": { "type": "string" }
+        "family": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Font family name (matches the Google Fonts family)."
+        },
+        "fallback": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional web-available stand-in for brands whose official typeface isn't on the web. When set, the rendered CSS font stack becomes 'family', 'fallback', sans-serif everywhere the font renders; labels still show 'family' alone."
+        },
+        "googleImport": {
+          "type": "string",
+          "description": "Google Fonts css2 query segment, e.g. 'Inter:wght@300;400;700'."
+        },
+        "description": {
+          "type": "string"
+        }
       }
     },
     "colorItem": {
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "hex": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
-        "oklch": { "type": "string" },
-        "cssVar": { "type": "string" },
-        "role": { "type": "string" },
-        "light": { "type": "boolean", "description": "Hint that the swatch needs a border on light backgrounds." }
+        "name": {
+          "type": "string"
+        },
+        "hex": {
+          "type": "string",
+          "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
+        },
+        "oklch": {
+          "type": "string"
+        },
+        "cssVar": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "light": {
+          "type": "boolean",
+          "description": "Hint that the swatch needs a border on light backgrounds."
+        },
+        "sourceVar": {
+          "type": "string",
+          "description": "The token this swatch was extracted from. Stable identity for the per-item merge on re-generate — unlike cssVar, which is derived from the name."
+        },
+        "authored": {
+          "type": "string",
+          "description": "The colour exactly as written in the source, when it differs from the emitted hex (an oklch value, a keyword, an alpha hex)."
+        }
       }
     },
     "colorGroup": {
       "type": "object",
       "properties": {
-        "label": { "type": "string" },
-        "items": { "type": "array", "items": { "$ref": "#/definitions/colorItem" } }
+        "label": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/colorItem"
+          }
+        }
       }
     }
   },
   "properties": {
-    "basePath": { "type": "string", "description": "Absolute base path the guide is served from (e.g. \"/brand\"). Empty = served at root / relative. Set this when serving from a non-trailing-slash URL (e.g. a framework rewrite)." },
+    "basePath": {
+      "type": "string",
+      "description": "Absolute base path the guide is served from (e.g. \"/brand\"). Empty = served at root / relative. Set this when serving from a non-trailing-slash URL (e.g. a framework rewrite)."
+    },
     "brand": {
       "type": "object",
-      "required": ["name"],
+      "required": [
+        "name"
+      ],
       "properties": {
-        "name": { "type": "string", "description": "Short brand/slug name; shown as the header wordmark when no headerLogo is set." },
-        "displayName": { "type": "string" },
-        "tagline": { "type": "string" },
-        "description": { "type": "string" },
-        "url": { "type": "string" },
-        "byline": { "type": "string" },
-        "version": { "type": "string", "description": "The brand guide's own revision (shown in the banner/footer) — not the brandkit package version." },
-        "date": { "type": "string" },
-        "guideLabel": { "type": "string", "description": "Renames the 'Web Style Guide' label in the header and footer." },
-        "headerLogo": { "type": "string", "description": "Path to a logo image shown in the header instead of the text wordmark (use a light/reversed logo)." },
-        "sidebarLogo": { "type": "string", "description": "Path to a logo image shown at the top of the left menu instead of the brand name (use a dark logo)." },
-        "agentCallout": { "type": "boolean", "description": "Show the 'Using an AI agent?' callout under the sidebar nav — a copy-paste prompt pointing an agent at the brand.json / tokens.json / brand.md exports. Defaults to true; set false to hide it." }
+        "name": {
+          "type": "string",
+          "description": "Short brand/slug name; shown as the header wordmark when no headerLogo is set."
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "tagline": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "byline": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string",
+          "description": "The brand guide's own revision (shown in the banner/footer) — not the brandkit package version."
+        },
+        "date": {
+          "type": "string"
+        },
+        "guideLabel": {
+          "type": "string",
+          "description": "Renames the 'Web Style Guide' label in the header and footer."
+        },
+        "headerLogo": {
+          "type": "string",
+          "description": "Path to a logo image shown in the header instead of the text wordmark (use a light/reversed logo)."
+        },
+        "sidebarLogo": {
+          "type": "string",
+          "description": "Path to a logo image shown at the top of the left menu instead of the brand name (use a dark logo)."
+        },
+        "agentCallout": {
+          "type": "boolean",
+          "description": "Show the 'Using an AI agent?' callout under the sidebar nav — a copy-paste prompt pointing an agent at the brand.json / tokens.json / brand.md exports. Defaults to true; set false to hide it."
+        }
       }
     },
     "fonts": {
       "type": "object",
       "properties": {
-        "display": { "$ref": "#/definitions/font" },
-        "body": { "$ref": "#/definitions/font" }
+        "display": {
+          "$ref": "#/definitions/font"
+        },
+        "body": {
+          "$ref": "#/definitions/font"
+        }
       }
     },
     "theme": {
       "type": "object",
       "description": "CSS custom property map. Keys are token names (e.g. '--accent'). The engine only needs to OVERRIDE the baseline defaults shipped in styles.css.",
-      "additionalProperties": { "type": "string" },
+      "additionalProperties": {
+        "type": "string"
+      },
       "properties": {
-        "--accent": { "type": "string", "description": "Accent fill color (buttons, active states)." },
-        "--accent-foreground": { "type": "string", "description": "Text/icon color ON the accent fill (must meet contrast against --accent)." },
-        "--accent-text": { "type": "string", "description": "Accent used AS text/links on a light surface (must meet AA)." },
-        "--primary": { "type": "string", "description": "Primary action fill (primary buttons / CTAs). Defaults to --accent; override to separate the primary action from the accent (e.g. a black CTA with an orange accent)." },
-        "--primary-foreground": { "type": "string", "description": "Text/icon color ON the primary fill (must meet contrast against --primary). Defaults to --accent-foreground." },
-        "--header-bg": { "type": "string", "description": "Header/hero background behind the wordmark or logo. Defaults to --gradient-brand; override (e.g. a flat dark color) for a hero that shouldn't carry the accent." }
+        "--accent": {
+          "type": "string",
+          "description": "Accent fill color (buttons, active states)."
+        },
+        "--accent-foreground": {
+          "type": "string",
+          "description": "Text/icon color ON the accent fill (must meet contrast against --accent)."
+        },
+        "--accent-text": {
+          "type": "string",
+          "description": "Accent used AS text/links on a light surface (must meet AA)."
+        },
+        "--primary": {
+          "type": "string",
+          "description": "Primary action fill (primary buttons / CTAs). Defaults to --accent; override to separate the primary action from the accent (e.g. a black CTA with an orange accent)."
+        },
+        "--primary-foreground": {
+          "type": "string",
+          "description": "Text/icon color ON the primary fill (must meet contrast against --primary). Defaults to --accent-foreground."
+        },
+        "--header-bg": {
+          "type": "string",
+          "description": "Header/hero background behind the wordmark or logo. Defaults to --gradient-brand; override (e.g. a flat dark color) for a hero that shouldn't carry the accent."
+        }
       }
     },
     "nav": {
@@ -81,12 +188,21 @@
       "items": {
         "type": "object",
         "properties": {
-          "group": { "type": "string" },
+          "group": {
+            "type": "string"
+          },
           "items": {
             "type": "array",
             "items": {
               "type": "object",
-              "properties": { "label": { "type": "string" }, "id": { "type": "string" } }
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              }
             }
           }
         }
@@ -95,9 +211,15 @@
     "colors": {
       "type": "object",
       "properties": {
-        "brand": { "$ref": "#/definitions/colorGroup" },
-        "neutrals": { "$ref": "#/definitions/colorGroup" },
-        "semantic": { "$ref": "#/definitions/colorGroup" }
+        "brand": {
+          "$ref": "#/definitions/colorGroup"
+        },
+        "neutrals": {
+          "$ref": "#/definitions/colorGroup"
+        },
+        "semantic": {
+          "$ref": "#/definitions/colorGroup"
+        }
       }
     },
     "gradients": {
@@ -105,17 +227,29 @@
       "items": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "css": { "type": "string" },
-          "description": { "type": "string" },
+          "name": {
+            "type": "string"
+          },
+          "css": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
           "stops": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "color": { "type": "string" },
-                "position": { "type": "string" },
-                "name": { "type": "string" }
+                "color": {
+                  "type": "string"
+                },
+                "position": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -125,25 +259,49 @@
     "gradientUsage": {
       "type": "object",
       "properties": {
-        "do": { "type": "array", "items": { "type": "string" } },
-        "dont": { "type": "array", "items": { "type": "string" } }
+        "do": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dont": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "sections": {
       "type": "object",
-      "additionalProperties": { "type": "string" }
+      "additionalProperties": {
+        "type": "string"
+      }
     },
     "hierarchy": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "class": { "type": "string" },
-          "label": { "type": "string" },
-          "colorVar": { "type": "string" },
-          "colorName": { "type": "string" },
-          "hex": { "type": "string" },
-          "description": { "type": "string" }
+          "class": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "colorVar": {
+            "type": "string"
+          },
+          "colorName": {
+            "type": "string"
+          },
+          "hex": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
         }
       }
     },
@@ -151,16 +309,32 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["name", "variants"],
+        "required": [
+          "name",
+          "variants"
+        ],
         "properties": {
-          "name": { "type": "string" },
-          "description": { "type": "string" },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
           "variants": {
             "type": "object",
             "description": "Map of format → file path, e.g. { \"svg\": \"logos/mark.svg\" }.",
-            "additionalProperties": { "type": "string" }
+            "additionalProperties": {
+              "type": "string"
+            }
           },
-          "background": { "type": "string", "enum": ["light", "dark", "gradient"] }
+          "background": {
+            "type": "string",
+            "enum": [
+              "light",
+              "dark",
+              "gradient"
+            ]
+          }
         }
       }
     },
@@ -169,8 +343,15 @@
       "items": {
         "type": "object",
         "properties": {
-          "label": { "type": "string" },
-          "width": { "type": ["integer", "null"] }
+          "label": {
+            "type": "string"
+          },
+          "width": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
         }
       }
     },
@@ -179,23 +360,58 @@
       "items": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "font": { "type": "string", "enum": ["display", "body"] },
-          "size": { "type": "string" },
-          "weight": { "type": ["integer", "string"] },
-          "tracking": { "type": "string" },
-          "leading": { "type": "string" },
-          "sample": { "type": "string" },
-          "uppercase": { "type": "boolean" }
+          "name": {
+            "type": "string"
+          },
+          "font": {
+            "type": "string",
+            "enum": [
+              "display",
+              "body"
+            ]
+          },
+          "size": {
+            "type": "string"
+          },
+          "weight": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "tracking": {
+            "type": "string"
+          },
+          "leading": {
+            "type": "string"
+          },
+          "sample": {
+            "type": "string"
+          },
+          "uppercase": {
+            "type": "boolean"
+          }
         }
       }
     },
     "voice": {
       "type": "object",
       "properties": {
-        "description": { "type": "string" },
-        "do": { "type": "array", "items": { "type": "string" } },
-        "dont": { "type": "array", "items": { "type": "string" } }
+        "description": {
+          "type": "string"
+        },
+        "do": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dont": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "accessibility": {
@@ -203,14 +419,44 @@
       "items": {
         "type": "object",
         "properties": {
-          "fg": { "type": "string" },
-          "bg": { "type": "string" },
-          "fgName": { "type": "string" },
-          "bgName": { "type": "string" },
-          "ratio": { "type": "string" },
-          "rating": { "type": "string", "enum": ["AAA", "AA", "AA Large", "Fail"] },
-          "border": { "type": "boolean" },
-          "largeText": { "type": "boolean" }
+          "fg": {
+            "type": "string"
+          },
+          "bg": {
+            "type": "string"
+          },
+          "fgName": {
+            "type": "string"
+          },
+          "bgName": {
+            "type": "string"
+          },
+          "ratio": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "string",
+            "enum": [
+              "AAA",
+              "AA",
+              "AA Large",
+              "Fail"
+            ]
+          },
+          "border": {
+            "type": "boolean"
+          },
+          "largeText": {
+            "type": "boolean"
+          },
+          "passes": {
+            "type": "boolean",
+            "description": "Whether this pair clears AA. Failures are kept in the table deliberately — a contrast table that can only show passes cannot report a problem."
+          },
+          "textPairing": {
+            "type": "boolean",
+            "description": "Whether this is a pair someone would actually set as text. Surface-on-surface pairs are excluded from the cautions."
+          }
         }
       }
     },
@@ -219,15 +465,23 @@
       "items": {
         "type": "object",
         "properties": {
-          "section": { "type": "string" },
+          "section": {
+            "type": "string"
+          },
           "vars": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "prop": { "type": "string" },
-                "value": { "type": "string" },
-                "comment": { "type": "string" }
+                "prop": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "comment": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -239,17 +493,27 @@
       "items": {
         "type": "object",
         "properties": {
-          "px": { "type": "number" },
-          "token": { "type": "string" }
+          "px": {
+            "type": "number"
+          },
+          "token": {
+            "type": "string"
+          }
         }
       }
     },
     "components": {
       "type": "object",
       "properties": {
-        "buttons": { "type": "array" },
-        "cards": { "type": "array" },
-        "stats": { "type": "array" }
+        "buttons": {
+          "type": "array"
+        },
+        "cards": {
+          "type": "array"
+        },
+        "stats": {
+          "type": "array"
+        }
       }
     },
     "changelog": {
@@ -258,9 +522,21 @@
       "items": {
         "type": "object",
         "properties": {
-          "version": { "type": "string", "description": "Revision label, e.g. '0.2'. Starts at 0.1 on a fresh guide; 1.0 = locked/finalized." },
-          "date": { "type": "string", "description": "Human-readable date, e.g. 'June 2026'." },
-          "changes": { "type": "array", "items": { "type": "string" }, "description": "Bullet list of what changed in this revision." }
+          "version": {
+            "type": "string",
+            "description": "Revision label, e.g. '0.2'. Starts at 0.1 on a fresh guide; 1.0 = locked/finalized."
+          },
+          "date": {
+            "type": "string",
+            "description": "Human-readable date, e.g. 'June 2026'."
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Bullet list of what changed in this revision."
+          }
         }
       }
     }

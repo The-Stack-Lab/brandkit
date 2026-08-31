@@ -92,6 +92,8 @@
         el.hidden = false;
         return;
       }
+      // Every current call site passes a label; kept so a future caller can
+      // hide an element outright rather than showing an empty placeholder.
       if (!label) { el.hidden = true; return; }
       el.textContent = label;
       el.setAttribute('data-brandkit-unset', '');
@@ -713,7 +715,7 @@
         return;
       }
 
-      grid.innerHTML = cfg.accessibility.map(function (a) {
+      grid.innerHTML = cfg.accessibility.filter(function (a) { return a.textPairing !== false; }).map(function (a) {
         // Field aliases
         var bg = a.bg || a.background || '#FFFFFF';
         var fg = a.fg || a.foreground || '#000000';

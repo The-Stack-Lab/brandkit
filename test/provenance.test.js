@@ -12,6 +12,7 @@ var extractCSS = require('../lib/extract-css');
 var helpers = require('../lib/generate-helpers');
 var exporter = require('../lib/export');
 var schema = require('../lib/config-schema');
+var unfilled = require('../lib/unfilled');
 
 var pass = 0, fail = 0;
 function check(name, got, want) {
@@ -188,11 +189,12 @@ var dupeKeys = dupePairs.map(function (p) { return p.fg + '|' + p.bg; });
 check('no duplicate rows when a surface is also a swatch',
   dupeKeys.length, dupeKeys.filter(function (k, i) { return dupeKeys.indexOf(k) === i; }).length);
 
-// sourceVar was introduced in 1.6.0, so the first run over an older config
-// found no prior item and reverted every author-renamed swatch.
+// sourceVar was introduced in 1.6.0, so the first run over an older config has
+// no provenance key. The bridge is the COLOUR VALUE, which identifies the same
+// swatch regardless of order, count, or what it was renamed to.
 var upgraded = schema.mergeConfigs(
   { colors: { brand: { label: 'B', items: [
-      { name: 'Barone Blue', role: 'Structural steel blue', hex: '#000000' }] },
+      { name: 'Barone Blue', role: 'Structural steel blue', hex: '#1F2F8F' }] },
       neutrals: { label: 'N', items: [] }, semantic: { label: 'S', items: [] } } },
   { colors: { brand: { label: 'B', items: [
       { name: 'Brand', role: '', hex: '#1F2F8F', sourceVar: '--brand' }] },
@@ -200,18 +202,40 @@ var upgraded = schema.mergeConfigs(
 ).colors;
 check('a pre-1.6.0 config keeps its authored name', upgraded.brand.items[0].name, 'Barone Blue');
 check('and its authored role', upgraded.brand.items[0].role, 'Structural steel blue');
-check('the positional pairing is reported, not silent',
-  (upgraded._positionalMatches || []).length, 1);
+check('the value-based pairing is reported', (upgraded._hexMatches || []).length, 1);
 
-// Position is only trusted when the group length is unchanged: pairing one
-// colour's prose onto a different colour would be confidently wrong.
-var ambiguous = schema.mergeConfigs(
-  { colors: { brand: { label: 'B', items: [{ name: 'A', hex: '#000' }, { name: 'B', hex: '#111' }] },
+// Position must NEVER be used. Config order is not the host's declaration
+// order, so pairing by index swapped two swatches' names AND roles onto each
+// other — and the viz-token skip changed the extracted count, disabling the
+// length guard on exactly the shadcn projects that ship --chart-1..5.
+var swapped = schema.mergeConfigs(
+  { colors: { brand: { label: 'B', items: [
+      { name: 'Barone Blue', role: 'The corporate navy', hex: '#0A2A5E' },
+      { name: 'Safety Orange', role: 'Accent only', hex: '#F97316' }] },
       neutrals: { label: 'N', items: [] }, semantic: { label: 'S', items: [] } } },
-  { colors: { brand: { label: 'B', items: [{ name: 'X', hex: '#222', sourceVar: '--x' }] },
+  { colors: { brand: { label: 'B', items: [
+      { name: 'Sunburst', role: '', hex: '#F97316', sourceVar: '--sunburst' },
+      { name: 'Barone Navy', role: '', hex: '#0A2A5E', sourceVar: '--barone-navy' }] },
       neutrals: { label: 'N', items: [] }, semantic: { label: 'S', items: [] } } }
 ).colors;
-check('a length mismatch is not paired by position', ambiguous.brand.items[0].name, 'X');
+check('prose follows the colour, not the index',
+  swapped.brand.items.map(function (i) { return i.hex + '=' + i.name; }),
+  ['#F97316=Safety Orange', '#0A2A5E=Barone Blue']);
+check('and so does the role', swapped.brand.items[0].role, 'Accent only');
+
+// When the value ALSO changed there is no honest bridge. The prose is not
+// guessed onto another swatch — the loss is reported instead.
+var lostProse = schema.mergeConfigs(
+  { colors: { brand: { label: 'B', items: [
+      { name: 'Barone Blue', role: 'Structural steel blue', hex: '#000000' }] },
+      neutrals: { label: 'N', items: [] }, semantic: { label: 'S', items: [] } } },
+  { colors: { brand: { label: 'B', items: [
+      { name: 'Brand', role: '', hex: '#1F2F8F', sourceVar: '--brand' }] },
+      neutrals: { label: 'N', items: [] }, semantic: { label: 'S', items: [] } } }
+).colors;
+check('an unbridgeable rename is not guessed', lostProse.brand.items[0].name, 'Brand');
+check('and the loss is reported, not silent',
+  (lostProse._unmatchedAuthored || []).indexOf('Barone Blue') !== -1, true);
 
 // An ordinary brand colour name that the starter happens to use.
 var slate = schema.mergeConfigs(
@@ -229,6 +253,62 @@ check('an array element pruned to {} is dropped',
   exporter.buildBrandJson({ brand: { name: 'x' },
     accessibility: [{ fg: '__TODO', bg: '__TODO', ratio: '__TODO', rating: '__TODO' }] }).accessibility,
   undefined);
+
+/* ---------------- 8. Team-review findings on 1.6.0 ---------------- */
+
+// Provenance must fail CLOSED. Keyed on `hostBrandIdentity() !== null` it failed
+// OPEN: no package.json meant no stripping, and brandkit's voice and tagline
+// shipped to the client with `build` reporting "Ready to deploy".
+check('brandkit recognises its own repo', schema.isBrandkitRepo('.'), true);
+var noPkg = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-nopkg-'));
+check('a project with no package.json is NOT brandkit', schema.isBrandkitRepo(noPkg), false);
+fs.writeFileSync(path.join(noPkg, 'package.json'), '{}');
+check('a package.json with no name is NOT brandkit', schema.isBrandkitRepo(noPkg), false);
+try { fs.rmSync(noPkg, { recursive: true, force: true }); } catch (_) { /* gone */ }
+
+// The a11y table assumed #FFFFFF when no surface was supplied, fabricating a
+// failure against a background a dark brand never uses.
+check('no surfaces means no table',
+  helpers.generateA11yPairs([{ hex: '#F5F5F7', name: 'Text', group: 'neutrals' }], {}).length, 0);
+check('a real surface still measures',
+  helpers.generateA11yPairs([{ hex: '#F5F5F7', name: 'Text', group: 'neutrals' }],
+    { surfaces: [{ hex: '#1C1C1E', name: 'Surface' }] }).length > 0, true);
+
+// A colour group with a label and no swatches is empty, not content.
+check('a labelled but empty colour group is blank',
+  unfilled.isBlank({ brand: { label: 'Brand', items: [] },
+                     neutrals: { label: 'Neutrals', items: [] },
+                     semantic: { label: 'Semantic', items: [] } }), true);
+check('a group with a swatch is not blank',
+  unfilled.isBlank({ brand: { label: 'Brand', items: [{ name: 'Navy', hex: '#0A2A5E' }] } }), false);
+
+// Blocking is per FIELD, not per section: a missing footer URL must not
+// hard-fail a build that worked on 1.5.0.
+check('a missing tagline blocks', unfilled.isBlocking('brand.tagline'), true);
+check('a missing url does not', unfilled.isBlocking('brand.url'), false);
+check('a missing byline does not', unfilled.isBlocking('brand.byline'), false);
+check('theme is blocking', unfilled.isBlocking('theme'), true);
+
+// Authored logo prose survives a filesystem rescan, keyed on the asset path.
+var logosMerged = schema.mergeConfigs(
+  { logos: [{ name: 'Barone Steel primary wordmark', description: 'Minimum width 140px.',
+              variants: { svg: 'logos/wordmark.svg' } }] },
+  { logos: [{ name: 'Wordmark', description: '', variants: { svg: 'logos/wordmark.svg' } }] }
+).logos;
+check('authored logo name survives a rescan', logosMerged[0].name, 'Barone Steel primary wordmark');
+check('and its usage note', logosMerged[0].description, 'Minimum width 140px.');
+
+// An explicit `logos: []` from provenance stripping is a decision, not an
+// absence, and must not be re-merged away.
+check('a deliberately empty logo list passes through',
+  schema.mergeConfigs({ logos: [{ name: 'X', variants: {} }] }, { logos: [] }).logos, []);
+
+// The table keeps meaningful rows only: a plausible text pairing, or a failure.
+var trimmed = helpers.generateA11yPairs(
+  [{ hex: '#FAFAFA', name: 'Paper Tint', group: 'neutrals' }],
+  { surfaces: [{ hex: '#FFFFFF', name: 'White' }] });
+check('a passing surface-on-surface row is trimmed',
+  trimmed.every(function (p) { return p.textPairing || !p.passes; }), true);
 
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

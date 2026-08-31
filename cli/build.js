@@ -2,31 +2,7 @@ var fs = require('fs');
 var path = require('path');
 var resolve = require('../lib/resolve');
 var template = require('../lib/template');
-
-/**
- * Locate unfilled markers. Mirrors findTodos() in cli/generate.js — build must
- * not require generate, so the walk is duplicated rather than shared.
- */
-function findTodos(obj, prefix, out) {
-  out = out || [];
-  prefix = prefix || '';
-  if (typeof obj === 'string') {
-    if (obj.trim().indexOf('__TODO') === 0) out.push(prefix);
-    return out;
-  }
-  if (!obj || typeof obj !== 'object') return out;
-  if (Array.isArray(obj)) {
-    obj.forEach(function (v, i) { findTodos(v, prefix + '[' + i + ']', out); });
-    return out;
-  }
-  Object.keys(obj).forEach(function (k) {
-    findTodos(obj[k], prefix ? prefix + '.' + k : k, out);
-  });
-  return out;
-}
-
-// Sections whose gaps make a guide unfit to put in front of a client.
-var BLOCKING_SECTIONS = ['brand', 'voice', 'logos', 'colors', 'fonts'];
+var unfilled = require('../lib/unfilled');
 
 module.exports = function build(args) {
   var force = args.indexOf('--force') !== -1;
@@ -53,33 +29,27 @@ module.exports = function build(args) {
   // A guide with unfilled essentials is not ready to send. Building it anyway
   // is how brandkit's own placeholder content reached client approval
   // documents — so say so plainly, and make shipping it a deliberate act.
-  var blocking = findTodos(config).filter(function (p) {
-    return BLOCKING_SECTIONS.indexOf(p.split(/[.[]/)[0]) !== -1;
+  var blocking = unfilled.findTodos(config).filter(unfilled.isBlocking);
+
+  // Structural emptiness counts too: `generate` clears a section that only held
+  // brandkit's scaffold, and that carries no marker. Reported per blocking
+  // field, and only when no marker path already covers it — listing
+  // `voice.description` and `voice (empty)` separately inflated the count.
+  unfilled.BLOCKING_PATHS.forEach(function (fieldPath) {
+    var already = blocking.some(function (p) {
+      return p === fieldPath || p.indexOf(fieldPath + '.') === 0 || p.indexOf(fieldPath + '[') === 0;
+    });
+    if (already) return;
+    var parts = fieldPath.split('.');
+    var v = config;
+    for (var i = 0; i < parts.length && v !== undefined && v !== null; i++) v = v[parts[i]];
+    if (unfilled.isBlank(v)) blocking.push(fieldPath + ' (not yet defined)');
   });
 
-  // Emptiness counts too. `generate` clears a section that only ever held
-  // brandkit's scaffold — `logos: []`, `voice.do: []` — and those carry no
-  // marker, so a marker-only gate waved through a guide with no logos and no
-  // voice at all. Both are in BLOCKING_SECTIONS precisely because a client
-  // should not be shown a guide missing them.
-  function isBlank(v) {
-    if (v === undefined || v === null) return true;
-    if (typeof v === 'string') return v.trim() === '' || v.trim().indexOf('__TODO') === 0;
-    if (Array.isArray(v)) return v.length === 0;
-    if (typeof v === 'object') {
-      var keys = Object.keys(v);
-      if (!keys.length) return true;
-      return keys.every(function (k) { return isBlank(v[k]); });
-    }
-    return false;
-  }
-  BLOCKING_SECTIONS.forEach(function (section) {
-    if (isBlank(config[section])) blocking.push(section + ' (empty)');
-  });
   if (blocking.length && !force) {
-    console.error('  ' + blocking.length + ' essential field(s) are still undefined:');
+    console.error('  ' + blocking.length + ' essential field(s) are not yet defined:');
     blocking.slice(0, 8).forEach(function (p) { console.error('      ' + p); });
-    if (blocking.length > 8) console.error('      … and ' + (blocking.length - 8) + ' more');
+    if (blocking.length > 8) console.error('      \u2026 and ' + (blocking.length - 8) + ' more');
     console.error('');
     console.error('  Fill them in, or run `brandkit build --force` to build a draft anyway.');
     console.error('');
@@ -87,7 +57,7 @@ module.exports = function build(args) {
     return;
   }
   if (blocking.length) {
-    console.log('  Building with ' + blocking.length + ' essential field(s) still undefined (--force).');
+    console.log('  Building with ' + blocking.length + ' essential field(s) not yet defined (--force).');
     console.log('');
   }
 
