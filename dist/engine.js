@@ -61,6 +61,45 @@
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    /**
+     * Is this value still unfilled? Mirrors isUnset() in lib/export.js.
+     *
+     * `__TODO:` markers are internal signals written by `generate`. Rendering
+     * one puts a maintainer instruction on the page a client is asked to
+     * approve, so an unfilled value is shown as an explicit empty state instead.
+     */
+    function isUnset(v) {
+      if (v === null || v === undefined) return true;
+      if (typeof v !== 'string') return false;
+      var t = v.trim();
+      return t === '' || t.indexOf('__TODO') === 0;
+    }
+
+    /** Text if filled, else '' — for inline use where an empty string is fine. */
+    function orBlank(v) {
+      return isUnset(v) ? '' : v;
+    }
+
+    /**
+     * Fill a text node, or show a muted "not yet defined" placeholder. The
+     * element is hidden entirely when there is nothing to say and no label.
+     */
+    function setOrPlaceholder(el, value, label) {
+      if (!el) return;
+      if (!isUnset(value)) {
+        el.textContent = value;
+        el.removeAttribute('data-brandkit-unset');
+        el.hidden = false;
+        return;
+      }
+      // Every current call site passes a label; kept so a future caller can
+      // hide an element outright rather than showing an empty placeholder.
+      if (!label) { el.hidden = true; return; }
+      el.textContent = label;
+      el.setAttribute('data-brandkit-unset', '');
+      el.hidden = false;
+    }
+
     /* ==============================================================
        Font stack helper — weaves in an optional `fallback` web stand-in
        for brands whose official typeface isn't web-available:
@@ -109,10 +148,14 @@
         addFamily(cfg.fonts.display);
         addFamily(cfg.fonts.body);
         if (families.length) {
-          var link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = 'https://fonts.googleapis.com/css2?family=' + families.join('&family=') + '&display=swap';
-          document.head.appendChild(link);
+          // One <link> per family: a single unsatisfiable family would
+          // otherwise 400 the combined request and drop BOTH fonts.
+          families.forEach(function (fam) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://fonts.googleapis.com/css2?family=' + fam + '&display=swap';
+            document.head.appendChild(link);
+          });
         }
       }
 
@@ -409,7 +452,7 @@
           '<div class="logo-card ' + bgClass + '" style="' + bgStyle + '" data-logo-idx="' + idx + '">' +
             '<img src="' + esc(assetUrl(previewSrc)) + '" alt="' + logo.name + '">' +
             '<div class="logo-name">' + logo.name + '</div>' +
-            '<div class="logo-description">' + (logo.description || '') + '</div>' +
+            '<div class="logo-description">' + esc(orBlank(logo.description)) + '</div>' +
             '<div class="logo-controls">' +
               '<div class="logo-format-toggle">' + formatToggles + '</div>' +
               sizePicker +
@@ -559,13 +602,13 @@
       voiceGrid.innerHTML =
         '<div class="voice-card do">' +
           '<div class="voice-card-label">' + esc(cfg.brand.displayName) + ' says</div>' +
-          cfg.voice.do.map(function (v) {
+          cfg.voice.do.filter(function (v) { return !isUnset(v); }).map(function (v) {
             return '<div class="voice-example">' + v + '</div>';
           }).join('') +
         '</div>' +
         '<div class="voice-card dont">' +
           '<div class="voice-card-label">' + esc(cfg.brand.displayName) + ' never says</div>' +
-          cfg.voice.dont.map(function (v) {
+          cfg.voice.dont.filter(function (v) { return !isUnset(v); }).map(function (v) {
             return '<div class="voice-example">' + v + '</div>';
           }).join('') +
         '</div>';
@@ -607,7 +650,7 @@
         html += '<div class="card-demo-grid">';
         cfg.components.cards.forEach(function (card) {
           var cardTitle = card.title || card.label || '';
-          var cardDesc = card.description || '';
+          var cardDesc = orBlank(card.description);
           var cardTag = card.tag || '';
           html +=
             '<div class="card-demo">' +
@@ -672,7 +715,13 @@
         return;
       }
 
-      grid.innerHTML = cfg.accessibility.map(function (a) {
+      grid.innerHTML = cfg.accessibility.filter(function (a) {
+          // Suppress surface-on-surface pairs, but never a FAILURE: the
+          // generator keeps `textPairing || !passes` precisely so a problem
+          // can be reported, and filtering on textPairing alone hid every
+          // recorded failure from the page while brand.md still listed it.
+          return a.textPairing !== false || a.passes === false;
+        }).map(function (a) {
         // Field aliases
         var bg = a.bg || a.background || '#FFFFFF';
         var fg = a.fg || a.foreground || '#000000';
@@ -925,11 +974,11 @@
 
       // Intro
       var intro = document.getElementById('intro');
-      if (intro) intro.textContent = cfg.brand.description;
+      setOrPlaceholder(intro, cfg.brand.description, 'Description not yet defined.');
 
       // Voice intro
       var voiceIntro = document.getElementById('voice-intro');
-      if (voiceIntro && cfg.voice) voiceIntro.textContent = cfg.voice.description;
+      if (cfg.voice) setOrPlaceholder(voiceIntro, cfg.voice.description, 'Voice and tone not yet defined.');
 
       // Footer
       var footer = document.getElementById('footer');
@@ -941,14 +990,14 @@
       var typeDisplayName = document.getElementById('type-display-name');
       if (typeDisplayName && cfg.fonts) typeDisplayName.textContent = cfg.fonts.display.family;
       var typeDisplayDesc = document.getElementById('type-display-desc');
-      if (typeDisplayDesc && cfg.fonts && cfg.fonts.display.description) {
+      if (typeDisplayDesc && cfg.fonts && !isUnset(cfg.fonts.display.description)) {
         typeDisplayDesc.textContent = cfg.fonts.display.description;
       }
 
       var typeBodyName = document.getElementById('type-body-name');
       if (typeBodyName && cfg.fonts) typeBodyName.textContent = cfg.fonts.body.family;
       var typeBodyDesc = document.getElementById('type-body-desc');
-      if (typeBodyDesc && cfg.fonts && cfg.fonts.body.description) {
+      if (typeBodyDesc && cfg.fonts && !isUnset(cfg.fonts.body.description)) {
         typeBodyDesc.textContent = cfg.fonts.body.description;
       }
 

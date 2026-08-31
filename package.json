@@ -1,6 +1,6 @@
 {
   "name": "@stacklist-app/brandkit",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Config-driven brand guide that bolts onto any website. Zero dependencies.",
   "main": "lib/resolve.js",
   "bin": {
@@ -18,7 +18,7 @@
     "dev": "node bin/brandkit.js dev example",
     "build": "node bin/brandkit.js build example",
     "example": "node bin/brandkit.js dev example",
-    "test": "node test/png.test.js && node test/ingest.test.js && node test/tailwind4.test.js"
+    "test": "node test/png.test.js && node test/ingest.test.js && node test/tailwind4.test.js && node test/provenance.test.js"
   },
   "keywords": [
     "brand",

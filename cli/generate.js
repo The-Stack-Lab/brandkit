@@ -6,6 +6,7 @@ var extractLogos = require('../lib/extract-logos');
 var helpers = require('../lib/generate-helpers');
 var schema = require('../lib/config-schema');
 var ingest = require('../lib/ingest');
+var unfilled = require('../lib/unfilled');
 
 /**
  * Split `generate`'s flags from its positional brand directory.
@@ -157,13 +158,38 @@ function run(cli, ingested) {
   if (fs.existsSync(configPath)) {
     try {
       existingConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      console.log('    Found existing config.json \u2014 preserving manual fields');
+      console.log('    Found existing config.json');
     } catch (_) {
       console.log('    Existing config.json is invalid \u2014 creating fresh');
     }
   }
 
   var baseConfig = existingConfig || schema.starterConfig();
+
+  // brandkit's own repo legitimately carries brandkit's content — the demo IS
+  // the brand. Provenance stripping applies only where the guide documents
+  // somebody else. hostBrandIdentity() is the right signal; seedBrandIdentity()
+  // returns false on every run after the first, so it says nothing about whose
+  // content this is.
+  // Fails CLOSED: anything not demonstrably brandkit's own repo is treated as
+  // documenting somebody else's brand. The previous signal
+  // (`hostBrandIdentity() !== null`) failed OPEN — no package.json meant no
+  // stripping at all, so brandkit's voice and tagline shipped to the client.
+  var documentsAnotherBrand = !schema.isBrandkitRepo(projectDir);
+  var scaffold = schema.starterConfig();
+  var stripped = [];   // content removed because it was brandkit's
+  var rederived = [];  // content recomputed from this project's own theme
+  function needsRegeneration(field, key) {
+    if (isEmptyOrScaffold(field)) return true;
+    if (documentsAnotherBrand && isStillScaffold(field, scaffold[key])) {
+      // Reported as re-derived, not removed: these fields get a real
+      // replacement computed from the host's theme. Calling that "removed" sent
+      // people looking for content that is present and correct.
+      rederived.push(key);
+      return true;
+    }
+    return false;
+  }
 
   // Identity, if the brand block is still brandkit's untouched scaffold. A
   // guide generated inside another project should never introduce itself as
@@ -178,6 +204,18 @@ function run(cli, ingested) {
   // Build extracted config fields
   var newFields = {};
 
+  // Extraction can come back empty — no Tailwind config, no parseable custom
+  // properties. `mergeConfigs` only touches colours and fonts when there is
+  // something to merge, so the starter's indigo palette and Space Grotesk
+  // survived as the client's own, marker-free and therefore invisible to both
+  // the TODO report and the build gate. Mark them unfilled instead.
+  function clearIfScaffold(key, replacement, label) {
+    if (!documentsAnotherBrand) return;
+    if (!isStillScaffold(baseConfig[key], scaffold[key])) return;
+    newFields[key] = replacement;
+    stripped.push(label || key);
+  }
+
   // Colors: the Tailwind config first, then every color-valued CSS custom
   // property. Tailwind 4 is CSS-first and ships no config file, so the
   // stylesheet is the only place a modern project's palette exists.
@@ -186,18 +224,47 @@ function run(cli, ingested) {
   if (extracted.cssVars) colorList = colorList.concat(colorsFromCssVars(extracted.cssVars));
   if (colorList.length) {
     newFields.colors = buildColors(colorList);
+    // Internal tally only — never written into config.json as a colour group.
+    var vizSkipped = newFields.colors._vizSkipped || 0;
+    delete newFields.colors._vizSkipped;
     var swatchCount = newFields.colors.brand.items.length +
       newFields.colors.neutrals.items.length +
       newFields.colors.semantic.items.length;
-    summary.push('    Colors: ' + swatchCount + ' swatch(es) extracted');
+    summary.push('    Colors: ' + swatchCount + ' swatch(es) extracted' +
+      (vizSkipped ? ' (' + vizSkipped + ' data-viz token(s) kept in the theme, ' +
+                    'not shown as brand swatches)' : ''));
   }
 
-  // Theme from CSS variables
+  // Nothing extractable for colours or fonts → the scaffold must not stand in.
+  if (!colorList.length) {
+    clearIfScaffold('colors', {
+      brand: { label: 'Brand', items: [] },
+      neutrals: { label: 'Neutrals', items: [] },
+      semantic: { label: 'Semantic', items: [] }
+    }, 'colors (nothing extractable)');
+  }
+
+  // Theme from CSS variables, else synthesised from the extracted palette.
   if (extracted.cssVars) {
     newFields.theme = extractCSS.mapToTheme(extracted.cssVars, {
       warn: function (msg) { summary.push('    Warning: ' + msg); }
     });
     ensureThemeDefaults(newFields.theme);
+  } else if (newFields.colors) {
+    var synthesised = themeFromColors(newFields.colors);
+    if (synthesised) {
+      newFields.theme = synthesised;
+      ensureThemeDefaults(newFields.theme);
+      summary.push('    Theme: ' + Object.keys(synthesised).length +
+        ' token(s) derived from the extracted palette (no CSS custom properties found)');
+    }
+  }
+
+  // Nothing yielded a theme and the existing one is still brandkit's. Keeping
+  // it would publish brandkit's palette as this brand's — the exact failure
+  // this release removes — so it is cleared and `build` will block on it.
+  if (!newFields.theme) {
+    clearIfScaffold('theme', {}, 'theme (nothing extractable)');
   }
 
   // Fonts — a tailwind.config.* entry is explicit intent and wins; CSS custom
@@ -222,6 +289,7 @@ function run(cli, ingested) {
 
     var fonts = {};
     var fontNotes = [];
+    var unresolvedImports = [];
     ['display', 'body'].forEach(function (slot) {
       var picked = fontSources[slot];
       if (!picked) return;
@@ -233,19 +301,40 @@ function run(cli, ingested) {
       // the TODO count instead of passing a guess off as resolved.
       fonts[slot] = {
         family: picked.family,
-        googleImport: picked.inferred ? '' : picked.family + ':wght@300;400;500;600;700',
+        // Never invent a Google Fonts request. `family + ':wght@300;…'` emitted
+        // a live URL for any family at all — including "Nexa-bold", a
+        // commercial Fontfabric face that is not on Google Fonts, producing an
+        // @import that 404s. The weight list made it worse: Google's css2
+        // endpoint rejects weights a family does not carry, so even a real
+        // Google family (Anton, Lobster — 400 only) got a dead URL.
+        //
+        // brandkit cannot check without a network call, and it has no
+        // dependencies and makes none. So it does not guess: the import is left
+        // for a human, `fallback` keeps the specimen honest in the meantime,
+        // and the merge in Phase 2 preserves a hand-written import across runs.
+        googleImport: '',
+        // A stand-in so the specimen renders in a real face rather than
+        // silently falling back to the browser default while the label claims
+        // the brand typeface. fonts.*.fallback has been in the schema since
+        // 1.2.2 and generate never populated it.
+        fallback: slot === 'display' ? 'Georgia' : 'Helvetica Neue',
         description: picked.inferred
           ? '__TODO: Family name inferred from the CSS variable ' + picked.source +
             ' — the variable names the binding, not necessarily the typeface. ' +
             'Confirm the real family and set googleImport before publishing.'
           : '__TODO: Describe the ' + slot + ' font.'
       };
+      unresolvedImports.push(slot + ' (' + picked.family + ')');
       fontNotes.push(slot + ' = ' + picked.family +
         ' (' + picked.from + (picked.inferred ? ', inferred — needs confirming' : '') + ')');
     });
     if (Object.keys(fonts).length) {
       newFields.fonts = fonts;
       summary.push('    Fonts: ' + fontNotes.join(', '));
+      if (unresolvedImports.length) {
+        summary.push('    Fonts: no webfont import emitted for ' + unresolvedImports.join(', ') +
+          ' — set googleImport (or a @font-face) by hand; a fallback is in place meanwhile');
+      }
     }
   }
 
@@ -266,6 +355,20 @@ function run(cli, ingested) {
       newFields.logos = fromIngest.logos;
       summary.push('    Logos: ' + fromIngest.logos.length + ' ranked from ingested sources');
     }
+  }
+
+  // `newFields.fonts` is also set by the --from ingest block above, from
+  // measured computed styles. Ignoring it meant a font proven to render (Trade
+  // Gothic, observed on 53 elements) was overwritten with a __TODO marker, and
+  // the measurement survived only in ingest-evidence.json.
+  if (!extracted.tailwindFonts && !cssFonts && !newFields.fonts) {
+    // The gap is carried in `description`, not in `family`. A marker in
+    // `family` becomes a CSS font stack and printed straight into brand.md's
+    // Typography section as the typeface's name.
+    clearIfScaffold('fonts', {
+      display: { family: '', googleImport: '', description: '__TODO: Which display typeface does this brand use?' },
+      body: { family: '', googleImport: '', description: '__TODO: Which body typeface does this brand use?' }
+    }, 'fonts (nothing extractable)');
   }
 
   // Spacing from Tailwind
@@ -297,22 +400,30 @@ function run(cli, ingested) {
   var theme = newFields.theme || baseConfig.theme;
 
   // Auto-generate gradients from theme
-  if (theme && isEmptyOrScaffold(baseConfig.gradients)) {
+  if (theme && needsRegeneration(baseConfig.gradients, 'gradients')) {
     var gradients = helpers.buildGradientsFromTheme(theme);
     if (gradients.length) {
       newFields.gradients = gradients;
       summary.push('    Gradients: ' + gradients.length + ' auto-generated from theme');
+    } else if (documentsAnotherBrand) {
+      // Nothing derivable and the field still holds brandkit's own indigo →
+      // violet gradient, labelled "Brand". Leaving it because the builder
+      // found nothing is how a navy steel fabricator's guide ended up
+      // presenting a purple gradient as its brand. Most projects have no
+      // gradient at all; none is the honest answer.
+      newFields.gradients = [];
+      summary.push('    Gradients: none found in this project — brandkit\'s placeholder removed');
     }
   }
 
   // Auto-generate hierarchy from theme
-  if (theme && isEmptyOrScaffold(baseConfig.hierarchy)) {
+  if (theme && needsRegeneration(baseConfig.hierarchy, 'hierarchy')) {
     newFields.hierarchy = helpers.buildHierarchyFromTheme(theme);
     summary.push('    Hierarchy: 4 levels auto-generated from theme colors');
   }
 
   // Auto-generate accessibility pairs from all extracted colors
-  if (isEmptyOrScaffold(baseConfig.accessibility)) {
+  if (needsRegeneration(baseConfig.accessibility, 'accessibility')) {
     var allColors = [];
     var colorSource = newFields.colors || baseConfig.colors;
     if (colorSource) {
@@ -321,22 +432,102 @@ function run(cli, ingested) {
         if (group) {
           var items = group.items || group;
           if (Array.isArray(items)) {
-            allColors = allColors.concat(items);
+            // Carry the group so the pair generator can tell a text colour
+            // from a surface tone.
+            allColors = allColors.concat(items.map(function (it) {
+              var copy = {};
+              Object.keys(it).forEach(function (k) { copy[k] = it[k]; });
+              copy.group = key;
+              return copy;
+            }));
           }
         }
       });
     }
+    // Pair against the brand's OWN surfaces. Hard-coding white documented a
+    // background a dark brand never uses.
+    var surfaces = [];
+    function addSurface(token, label) {
+      var v = theme && theme[token];
+      if (!v) return;
+      var parsed = helpers.parseCssColor(v);
+      if (!parsed) return;
+      if (surfaces.some(function (s) { return s.hex === parsed.hex; })) return;
+      surfaces.push({ hex: parsed.hex, name: label });
+    }
+    addSurface('--white', 'White');
+    addSurface('--cloud', 'Page background');
+    addSurface('--ink', 'Ink');
+
     if (allColors.length) {
-      var a11y = helpers.generateA11yPairs(allColors);
+      var a11y = helpers.generateA11yPairs(allColors, { surfaces: surfaces });
       if (a11y.length) {
         newFields.accessibility = a11y;
-        summary.push('    Accessibility: ' + a11y.length + ' contrast pairs auto-computed');
+        var failing = a11y.filter(function (x) { return !x.passes; }).length;
+        // The real count. `surfaces.length || 1` reported "1 surface" when zero
+        // were found, hiding that every row was measured against an assumed
+        // white the brand may never use.
+        summary.push('    Accessibility: ' + a11y.length + ' pair(s) computed against ' +
+          surfaces.length + ' surface(s)' +
+          (failing ? ', ' + failing + ' below AA' : ''));
+      } else if (!surfaces.length) {
+        newFields.accessibility = [];
+        summary.push('    Accessibility: no brand surface found to measure against — table left empty');
+      } else {
+        // The derive path used to end here with no else, so a palette that
+        // produced no pairs left brandkit's scaffold table standing — the fix
+        // silently doing nothing. An empty table is honest; a borrowed one is not.
+        newFields.accessibility = [];
+        summary.push('    Accessibility: no measurable pairs — table left empty');
       }
+    } else if (documentsAnotherBrand) {
+      newFields.accessibility = [];
+      summary.push('    Accessibility: no colors to measure — table left empty');
+    }
+  }
+
+  // Prose brandkit wrote about itself. None of it is derivable from a codebase,
+  // so it becomes explicitly unfilled rather than shipping as the client's own
+  // words. Phase 0 keeps markers out of the rendered guide and the exports.
+  if (documentsAnotherBrand) {
+    if (isStillScaffold(baseConfig.voice, scaffold.voice)) {
+      newFields.voice = {
+        description: '__TODO: How does this brand sound? One or two sentences.',
+        do: [],
+        dont: []
+      };
+      stripped.push('voice');
+    }
+    if (isStillScaffold(baseConfig.gradientUsage, scaffold.gradientUsage)) {
+      newFields.gradientUsage = { do: [], dont: [] };
+      stripped.push('gradientUsage');
+    }
+    if (isStillScaffold(baseConfig.sections, scaffold.sections)) {
+      // Section intros are brandkit describing brandkit ("One config, every
+      // token."). An empty intro renders as no intro, which is honest.
+      newFields.sections = {};
+      stripped.push('sections');
+    }
+    if (isStillScaffold(baseConfig.components, scaffold.components)) {
+      // Cards and stats are brandkit's own marketing copy. The component
+      // PATTERNS still render from the theme; only the words are removed.
+      newFields.components = Object.assign({}, baseConfig.components || {}, {
+        cards: [],
+        stats: []
+      });
+      stripped.push('components');
+    }
+    // brandkit's own marks are not the client's logo. init copies them as
+    // placeholders; listing them as this brand's assets is the same lie as
+    // shipping brandkit's tagline.
+    if (isStillScaffold(baseConfig.logos, scaffold.logos) && !extracted.logos) {
+      newFields.logos = [];
+      stripped.push('logos');
     }
   }
 
   // Auto-generate cssVariables from theme
-  if (theme && isEmptyOrScaffold(baseConfig.cssVariables)) {
+  if (theme && needsRegeneration(baseConfig.cssVariables, 'cssVariables')) {
     var cssVarSections = helpers.buildCssVariablesFromTheme(theme);
     if (cssVarSections.length) {
       newFields.cssVariables = cssVarSections;
@@ -345,7 +536,7 @@ function run(cli, ingested) {
   }
 
   // Auto-scaffold typography if empty or missing
-  if (isEmptyOrScaffold(baseConfig.typography)) {
+  if (needsRegeneration(baseConfig.typography, 'typography')) {
     newFields.typography = helpers.scaffoldTypography();
     summary.push('    Typography: standard type scale scaffolded');
   }
@@ -359,6 +550,59 @@ function run(cli, ingested) {
   // Ensure brand dir exists
   if (!fs.existsSync(brandDir)) {
     fs.mkdirSync(brandDir, { recursive: true });
+  }
+
+  // Read the prose-loss flags BEFORE anything deletes them. The backup guard
+  // used to consult them after the reporting block had already removed them, so
+  // `proseLost` was always false and a run whose only destructive change was
+  // dropping an authored swatch's writing wrote no backup at all.
+  var carriedByValue = (finalConfig.colors && finalConfig.colors._carriedByValue) || null;
+  var ambiguousColours = (finalConfig.colors && finalConfig.colors._ambiguousColours) || null;
+  var unmatchedAuthored = (finalConfig.colors && finalConfig.colors._unmatchedAuthored) || null;
+  if (finalConfig.colors) {
+    delete finalConfig.colors._carriedByValue;
+    delete finalConfig.colors._ambiguousColours;
+    delete finalConfig.colors._unmatchedAuthored;
+  }
+  var proseLost = !!(unmatchedAuthored || ambiguousColours);
+
+  // Removing content is not reversible from the CLI, so leave an undo behind.
+  // Written once, only when this run actually changes something and no backup
+  // exists yet: overwriting it every run meant a later no-op replaced the backup
+  // with a copy of the stripped config, destroying the undo for the run that did
+  // the removing. Zero dependencies; a plain copy is enough.
+  var backupPath = configPath + '.bak';
+  var wroteBackup = false;
+  if (existingConfig && (stripped.length || rederived.length || proseLost) &&
+      !fs.existsSync(backupPath)) {
+    var before = JSON.stringify(existingConfig, null, 2) + '\n';
+    var after = JSON.stringify(finalConfig, null, 2) + '\n';
+    if (before !== after) {
+      try {
+        fs.writeFileSync(backupPath, before);
+        wroteBackup = true;
+      } catch (_) { /* a failed backup must not block the write */ }
+    }
+  }
+
+  // Reported after the backup decision, so the recovery advice can name a file
+  // that actually exists. It used to read `wroteBackup` before assignment and
+  // therefore always claimed none had been written.
+  if (carriedByValue) {
+    console.log('    Carried ' + carriedByValue.length +
+      ' swatch name(s) across by colour value (this config predates sourceVar): ' +
+      carriedByValue.join(', '));
+  }
+  if (ambiguousColours) {
+    console.log('    Several authored swatches share one colour, so their prose ' +
+      'could not be matched: ' + ambiguousColours.join(', '));
+  }
+  if (unmatchedAuthored) {
+    // Loud, because this is authored work that could not be carried forward.
+    console.log('    Could NOT carry forward prose for: ' + unmatchedAuthored.join(', '));
+    console.log(wroteBackup
+      ? '      recover it from config.json.bak'
+      : '      recover it from version control (no new backup was written)');
   }
 
   fs.writeFileSync(configPath, JSON.stringify(finalConfig, null, 2) + '\n');
@@ -382,7 +626,7 @@ function run(cli, ingested) {
   }
 
   // Count what needs TODO attention
-  var todoCount = countTodos(finalConfig);
+  var todoPaths = unfilled.findTodos(finalConfig);
 
   console.log('');
   console.log('  Generated ' + path.relative(process.cwd(), configPath));
@@ -390,7 +634,22 @@ function run(cli, ingested) {
   if (extracted.tailwindFonts) console.log('    Fonts: ' + Object.keys(extracted.tailwindFonts).length + ' detected');
   if (extracted.tailwindSpacing) console.log('    Spacing: ' + extracted.tailwindSpacing.length + ' tokens');
   if (extracted.logos) console.log('    Logos: ' + extracted.logos.length + ' files found');
-  if (todoCount > 0) console.log('    TODO: ' + todoCount + ' fields need manual or AI attention');
+  function uniq(list) {
+    return list.filter(function (v, i) { return list.indexOf(v) === i; });
+  }
+  if (rederived.length) {
+    console.log('    Recomputed from this project (replacing brandkit\'s scaffold): ' +
+      uniq(rederived).join(', '));
+  }
+  if (stripped.length) {
+    console.log('    Removed brandkit scaffold content — not derivable, needs a human:');
+    uniq(stripped).forEach(function (k) { console.log('      ' + k); });
+    // Claimed only when a file was actually written. The message used to print
+    // unconditionally, citing a config.json.bak that did not exist on a first
+    // run (there was no previous config to back up).
+    if (wroteBackup) console.log('      previous config saved to config.json.bak');
+  }
+  reportTodos(todoPaths);
   if (ingested) console.log('    Evidence: ingest-evidence.json');
   console.log('');
 }
@@ -466,6 +725,25 @@ function ensureThemeDefaults(theme) {
       theme[rgbKey] = helpers.hexToRgbString(val);
     }
   });
+  // A foreground that cannot be read on its fill is worse than none: brand.md
+  // renders it as "put `X` text/icons on it", so an illegible pair becomes
+  // published advice. Drop it and let the contrast-maximizing default below
+  // choose. 4.5:1 is the bar because this colour is advised for TEXT — 3:1
+  // would let a 3.5:1 pair through and print it as "AA Large".
+  if (theme['--accent'] && theme['--accent-foreground']) {
+    var pairRatio = helpers.contrastRatio(theme['--accent-foreground'], theme['--accent']);
+    var measured = pairRatio === null ? null : parseFloat(pairRatio);
+    // `parseFloat(null) || 0` read an UNMEASURABLE pair as 0 — below the bar —
+    // so an authored token brandkit simply could not parse (a color-mix(), an
+    // unresolved var()) was deleted and the block below invented #FFFFFF in its
+    // place. Publishing a colour the product never declared is the exact
+    // failure this release exists to remove. Only a pair that was actually
+    // measured, and actually failed, is dropped.
+    if (theme['--accent-foreground'] === theme['--accent'] ||
+        (measured !== null && measured < 4.5)) {
+      delete theme['--accent-foreground'];
+    }
+  }
   if (theme['--accent'] && !theme['--accent-foreground'] && helpers.parseCssColor(theme['--accent'])) {
     // Pick the on-fill color with the higher WCAG contrast (not a luminance
     // threshold — a mid-tone fill like orange reads better with black text
@@ -475,8 +753,17 @@ function ensureThemeDefaults(theme) {
     var contrastBlack = (lum + 0.05) / 0.05;
     theme['--accent-foreground'] = contrastBlack >= contrastWhite ? '#000000' : '#FFFFFF';
   }
+  // --accent-text is the accent used AS text on a light surface. Copying the
+  // fill verbatim published a caution-grade pair as guidance — a mid-tone
+  // accent reads at 1.3:1 on white. Darken until it clears AA, and emit
+  // nothing if it never does rather than advising an unreadable colour.
   if (theme['--accent'] && !theme['--accent-text']) {
-    theme['--accent-text'] = theme['--accent'];
+    var onPaper = theme['--white'] || '#FFFFFF';
+    var accentHex = helpers.parseCssColor(theme['--accent']);
+    if (accentHex) {
+      var readable = ingest.darkenUntilReadable(accentHex.hex, onPaper, 4.5);
+      if (readable) theme['--accent-text'] = readable;
+    }
   }
 }
 
@@ -502,9 +789,77 @@ function colorsFromCssVars(cssVars) {
     if (/^--font-/.test(key)) return; // font stack
     if (!helpers.parseCssColor(cssVars[key])) return;
     // Hand on the authored text; buildColors re-parses and keeps the original.
-    out.push({ name: humanizeVarName(key), hex: cssVars[key], role: '' });
+    // sourceVar is the stable identity: the token this colour came from.
+    // cssVar is derived from the human name, so keying a merge on it means a
+    // rename orphans the very prose the merge exists to preserve.
+    out.push({ name: humanizeVarName(key), hex: cssVars[key], role: '', sourceVar: key });
   });
   return out;
+}
+
+/**
+ * A theme from an extracted palette, for a host with no CSS custom properties.
+ *
+ * `theme` was only ever built from cssVars, so a Tailwind-3 project — colours
+ * in a JS config, no `:root` block — kept brandkit's entire 26-key scaffold
+ * palette. `brand.md` then told the client their accent was #4F46E5,
+ * `tokens.json` carried 20 brandkit colours, and gradients/hierarchy were
+ * derived FROM that scaffold and reported as "recomputed from this project".
+ * None of it carried a marker, so nothing objected.
+ */
+function themeFromColors(colors) {
+  if (!colors) return null;
+  var theme = {};
+
+  function firstOf(group) {
+    var items = (colors[group] && colors[group].items) || [];
+    return items.length ? items[0] : null;
+  }
+  // Whole words, and an exact name beats a word inside a longer one. A plain
+  // substring scan let a swatch called "Greenhouse" claim `--success` ahead of
+  // the swatch actually named "Success".
+  function bySemanticName(names) {
+    var items = (colors.semantic && colors.semantic.items) || [];
+    var exact = null;
+    var worded = null;
+    items.forEach(function (item) {
+      if (!helpers.parseCssColor(item.hex)) return;
+      var n = String(item.name || '').toLowerCase().trim();
+      var words = n.split(/[^a-z0-9]+/).filter(Boolean);
+      names.forEach(function (want) {
+        if (!exact && n === want) exact = item;
+        if (!worded && words.indexOf(want) !== -1) worded = item;
+      });
+    });
+    return exact || worded;
+  }
+
+  // The accent gets the same parse guard as the neutrals below. Checking only
+  // truthiness wrote an undeterminable value — a swatch whose hex is still
+  // `var(--brand)` — into theme, where it was published as this brand's accent.
+  var accent = firstOf('brand');
+  if (accent && helpers.parseCssColor(accent.hex)) theme['--accent'] = accent.hex;
+
+  // Neutrals sorted by luminance give the ink/paper ends of the ramp.
+  var neutrals = ((colors.neutrals && colors.neutrals.items) || []).filter(function (n) {
+    return n.hex && helpers.relativeLuminance(n.hex) !== null;
+  }).sort(function (a, b) {
+    return helpers.relativeLuminance(a.hex) - helpers.relativeLuminance(b.hex);
+  });
+  if (neutrals.length) {
+    theme['--ink'] = neutrals[0].hex;
+    theme['--cloud'] = neutrals[neutrals.length - 1].hex;
+    if (neutrals.length > 2) theme['--slate'] = neutrals[Math.floor(neutrals.length / 2)].hex;
+  }
+
+  [['--success', ['success', 'green', 'positive']],
+   ['--warning', ['warning', 'caution', 'amber']],
+   ['--error', ['error', 'danger', 'destructive', 'red']]].forEach(function (pair) {
+    var hit = bySemanticName(pair[1]);
+    if (hit && hit.hex) theme[pair[0]] = hit.hex;
+  });
+
+  return Object.keys(theme).length ? theme : null;
 }
 
 function buildColors(colorList) {
@@ -521,9 +876,17 @@ function buildColors(colorList) {
     'background', 'foreground', 'border', 'input', 'ring', 'card', 'popover',
     'muted', 'secondary'];
 
+  // Data-viz colours belong to the design system but are not brand identity,
+  // and there is no swatch group for them. Listing chart-4 as a brand colour
+  // misrepresents the palette; they stay in `theme` and the CSS-variable
+  // reference, which is where a developer looks for them.
+  var VIZ_RE = /\b(chart|graph|viz|series|dataviz)\b|^chart[- ]?\d/i;
+  var vizSkipped = 0;
+
   for (var i = 0; i < colorList.length; i++) {
     var c = colorList[i];
     if (!c.name) continue;
+    if (VIZ_RE.test(c.name)) { vizSkipped++; continue; }
     // Accept any CSS color, not hex alone. extract-tailwind already collects
     // oklch/rgb/hsl values and a Tailwind 4 project is oklch throughout, so a
     // hex-only test here silently discarded the host's entire palette and
@@ -565,6 +928,8 @@ function buildColors(colorList) {
     // Record the authored text whenever it differs from the hex actually
     // rendered — that includes an alpha hex, whose transparency is dropped.
     if (parsed.original.toUpperCase() !== parsed.hex) entry.authored = parsed.original;
+    // Origin of this swatch, for a stable per-item merge on re-generate.
+    entry.sourceVar = c.sourceVar || ('name:' + lowerName);
 
     if (isSemantic) semantic.push(entry);
     else if (isNeutral) neutrals.push(entry);
@@ -574,21 +939,72 @@ function buildColors(colorList) {
   return {
     brand: { label: 'Brand', items: brand },
     neutrals: { label: 'Neutrals', items: neutrals },
-    semantic: { label: 'Semantic', items: semantic }
+    semantic: { label: 'Semantic', items: semantic },
+    _vizSkipped: vizSkipped
   };
 }
 
-function countTodos(obj) {
-  var count = 0;
-  var str = JSON.stringify(obj);
-  var regex = /__TODO/g;
-  while (regex.exec(str) !== null) count++;
-  return count;
+/**
+ * Report the gaps grouped by section. A bare integer stops being actionable
+ * past a handful of items; the section tells you where to go.
+ */
+function reportTodos(paths) {
+  if (!paths.length) return;
+  var groups = {};
+  paths.forEach(function (p) {
+    var section = unfilled.sectionOf(p);
+    (groups[section] = groups[section] || []).push(p);
+  });
+  console.log('    Not yet defined — ' + paths.length + ' item(s):');
+  Object.keys(groups).sort().forEach(function (section) {
+    var blocks = groups[section].some(unfilled.isBlocking);
+    console.log('      ' + section + ' (' + groups[section].length + ')' +
+      (blocks ? '  — needed before this guide is client-ready' : ''));
+  });
 }
 
 /**
- * Check if a field is empty or only contains scaffold/placeholder data.
- * Returns true if the field should be overwritten by auto-generation.
+ * Is this field still exactly what brandkit scaffolded?
+ *
+ * `isEmptyOrScaffold` only ever looked for `__TODO`, but the starter ships
+ * populated, marker-free content — so the check was always false and twelve
+ * sections were never regenerated. A client's guide therefore showed brandkit's
+ * indigo gradient labelled "Brand", brandkit's voice ("Brandkit speaks like a
+ * thoughtful teammate"), and cards reading "One config — A single config.json
+ * drives every colour…". Nothing flagged it, because none of it is a marker.
+ *
+ * Compared per item where the field is a list: editing one of six accessibility
+ * rows must not make the other five count as the author's work.
+ */
+function isStillScaffold(value, scaffoldValue) {
+  if (value === undefined || value === null) return true;
+  if (Array.isArray(value) && Array.isArray(scaffoldValue)) {
+    // Per item, and NOT a subset test. A subset test got both directions
+    // wrong: deleting one scaffold row left the rest a subset, so the array
+    // read as untouched and the deletion was undone on the next run; while
+    // editing one row made the whole array "authored" and left the other five
+    // brandkit rows standing. Scaffold only when nothing the author put there
+    // survives.
+    return authoredItems(value, scaffoldValue).length === 0;
+  }
+  return JSON.stringify(value) === JSON.stringify(scaffoldValue);
+}
+
+/** The entries in `value` that did not come from the scaffold. */
+function authoredItems(value, scaffoldValue) {
+  if (!Array.isArray(value)) return [];
+  var scaffoldSet = {};
+  (scaffoldValue || []).forEach(function (v) { scaffoldSet[JSON.stringify(v)] = true; });
+  return value.filter(function (v) { return scaffoldSet[JSON.stringify(v)] !== true; });
+}
+
+/**
+ * Is this field absent, empty, or holding an unfilled marker?
+ *
+ * Named for what it once did. The scaffold half of the question now lives in
+ * isStillScaffold() — this only answers "is there nothing usable here", which
+ * is why a populated, marker-free starter section sailed past it for twelve
+ * fields.
  */
 function isEmptyOrScaffold(value) {
   if (!value) return true;

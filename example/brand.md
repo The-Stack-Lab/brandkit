@@ -47,6 +47,13 @@ When you change this brand — colors, type, logos, voice, spacing, or anything 
 
 Revision history (newest first):
 
+- **v1.6.0** (August 2026):
+  - A guide no longer ships brandkit's own content as the client's brand: voice, gradients, section intros, component copy and placeholder logos are cleared or derived when they still hold the scaffold.
+  - "Not yet defined" is a real state. Values brandkit cannot measure are omitted from the exports and shown as a muted placeholder on the page, instead of printing internal __TODO markers into a client-facing document.
+  - Colours and fonts now merge per item, so hand-written names, roles and typeface rationale survive a re-run while the values underneath re-derive.
+  - An accent's foreground follows its own fill, and contrast is measured in any colour space — so the Color section shows real ratios instead of advising a colour as text on itself.
+  - The accessibility table reports failures and measures against the brand's own surfaces, rather than only ever showing passes against white.
+  - Webfont imports are no longer invented for typefaces that may not be on Google Fonts; a fallback keeps the specimen honest and `build` refuses to ship a guide with essential fields still undefined.
 - **v1.5.0** (August 2026):
   - Tailwind 4 CSS-first and shadcn/ui support: @theme inline blocks are parsed, var() token ladders resolved, and oklch/rgb/hsl colors converted for swatches, contrast, and the design-token export.
   - generate now names the guide from the host project's package.json and marks what it cannot measure as __TODO, instead of leaving brandkit's own copy in a client's guide.

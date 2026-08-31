@@ -1291,3 +1291,17 @@ body {
   .changelog-page { padding: 48px 22px 64px; }
   .changelog-title { font-size: 34px; }
 }
+
+/* ------------------------------------------------------------------ *
+ * Unfilled state
+ *
+ * A value `generate` could not derive is marked rather than printed. Without
+ * this the raw "__TODO: …" marker rendered as body copy in a guide sent to a
+ * client for approval. Muted and italic so it reads as an acknowledged gap,
+ * not as content.
+ * ------------------------------------------------------------------ */
+[data-brandkit-unset] {
+  color: var(--slate);
+  font-style: italic;
+  opacity: 0.75;
+}
