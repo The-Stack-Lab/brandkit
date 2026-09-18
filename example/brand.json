@@ -4,7 +4,7 @@
   "tagline": "The config-driven brand guide",
   "description": "Brandkit turns a single config.json into a complete, living brand guide: colors, typography, logos, voice, and components, all driven by design tokens. This is the default guide; swap the config and assets to make it your own.",
   "url": "github.com/The-Stack-Lab/brandkit",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "generatedBy": "brandkit",
   "voice": {
     "summary": "Clear, confident, and friendly. Brandkit speaks like a thoughtful teammate: it explains the what and the why without jargon, and never talks down to the reader.",
@@ -363,6 +363,14 @@
     }
   ],
   "changelog": [
+    {
+      "version": "1.7.1",
+      "date": "September 2026",
+      "changes": [
+        "Palette tokens in tokens.json describe a wide-gamut value the same way theme tokens do: $value stays sRGB hex, and the original rides along as authored plus colorSpace. The separate oklch key that 1.7.0 introduced is gone.",
+        "A palette color's oklch is only exported as the authored form of its hex when the two really are the same color. A disagreeing, translucent or out-of-range oklch is left out instead of telling a wide-gamut consumer to paint something else."
+      ]
+    },
     {
       "version": "1.7.0",
       "date": "September 2026",
