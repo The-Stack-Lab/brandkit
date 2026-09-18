@@ -88,8 +88,75 @@ var tokens = exporter.buildTokensJson(freeway);
 check('Plum is a token', tokens.color.palette.plum.$value, '#A65188');
 check('Pink is a token', tokens.color.palette.pink.$value, '#D56181');
 check('the role is the description', tokens.color.palette.plum.$description, 'Accent. Gradient bridge, tags, highlights');
-check('oklch rides in $extensions, $value stays hex',
-  tokens.color.palette.plum.$extensions['app.stacklist.brandkit'].oklch, 'oklch(0.56 0.13 343)');
+var plumExt = tokens.color.palette.plum.$extensions['app.stacklist.brandkit'];
+check('oklch rides in $extensions as authored + colorSpace, $value stays hex',
+  [plumExt.authored, plumExt.colorSpace, tokens.color.palette.plum.$value], ['oklch(0.56 0.13 343)', 'oklch', '#A65188']);
+check('there is no second convention', 'oklch' in plumExt, false);
+var themeWide = exporter.buildTokensJson({ theme: { '--accent': 'oklch(0.56 0.13 343)' }, colors: { brand: [{ name: 'Plum', oklch: 'oklch(0.56 0.13 343)' }, { name: 'Flat', hex: '#A65188' }, { name: 'Short', hex: '#abc' }] } });
+var tExt = themeWide.color.accent.$extensions['app.stacklist.brandkit'], pExt = themeWide.color.palette.plum.$extensions['app.stacklist.brandkit'];
+check('a palette token and a theme token describe a wide-gamut value identically',
+  [pExt.authored, pExt.colorSpace], [tExt.authored, tExt.colorSpace]);
+// hex and oklch are two fields, and they can disagree. `authored` must always
+// be the same color as $value.
+var mixed = exporter.buildTokensJson({ colors: { brand: [
+  { name: 'Clash', hex: '#FF0000', oklch: 'oklch(0.56 0.13 343)' },
+  { name: 'Black', hex: '#000000', oklch: 'oklch(1 0 0)' },
+  { name: 'Alpha', hex: '#A6518880', oklch: 'oklch(0.56 0.13 343)' },
+  { name: 'Junk', hex: '#A65188', oklch: 'not a color' },
+  { name: 'Marker', hex: '#A65188', oklch: '__TODO: measure' }] } }).color.palette;
+function extOf(t) { return t.$extensions['app.stacklist.brandkit']; }
+check('a disagreeing oklch is not presented as the authored form of the hex', [mixed.clash.$value, 'authored' in extOf(mixed.clash)], ['#FF0000', false]);
+check('black is never authored as white', 'authored' in extOf(mixed.black), false);
+check('an alpha hex keeps its alpha, the oklch cannot carry it', [mixed.alpha.$value, extOf(mixed.alpha).authored, extOf(mixed.alpha).colorSpace], ['#A65188', '#A6518880', 'hex']);
+check('an unparseable oklch is ignored', [mixed.junk.$value, 'authored' in extOf(mixed.junk)], ['#A65188', false]);
+check('a marker oklch is ignored and never exported', /__TODO/.test(JSON.stringify(mixed.marker)), false);
+// The whole matrix, one row per reachable outcome: [hex, oklch] -> [$value, authored, colorSpace]
+[
+  [[undefined, 'oklch(0.56 0.13 343)'], ['#A75288', 'oklch(0.56 0.13 343)', 'oklch'], 'oklch only (converted, one unit off the hand-stated hex)'],
+  [['#A65188', undefined], ['#A65188', undefined, undefined], 'hex only'],
+  [['#abc', undefined], ['#AABBCC', '#abc', 'hex'], 'shorthand hex only'],
+  [['#A65188', 'oklch(0.56 0.13 343)'], ['#A65188', 'oklch(0.56 0.13 343)', 'oklch'], 'agreeing within hand rounding'],
+  [['#A65188', 'oklch(56% 0.13 343deg)'], ['#A65188', 'oklch(56% 0.13 343deg)', 'oklch'], 'percent and deg syntax'],
+  [['#00E000', 'oklch(0.79 0.35 142)'], ['#00E000', 'oklch(0.79 0.35 142)', 'oklch'], 'wide gamut original beside its sRGB fallback'],
+  [['#00E000', 'oklch(0.79 0.10 142)'], ['#00E000', undefined, undefined], 'an original LESS chromatic than its fallback is not it'],
+  [['#FF0000', 'oklch(0.56 0.13 343)'], ['#FF0000', undefined, undefined], 'different hue'],
+  [['#000000', 'oklch(1 0 0)'], ['#000000', undefined, undefined], 'black is not white'],
+  [['#000000', 'oklch(4% 0 0)'], ['#000000', undefined, undefined], 'a near-black clips to #000000 but is 0.04 lighter: omitted, the safe direction'],
+  [['#000000', 'oklch(0 0 0)'], ['#000000', 'oklch(0 0 0)', 'oklch'], 'true black'],
+  [['#000000', 'oklch(25% 0 0)'], ['#000000', undefined, undefined], 'a visibly lighter dark gray'],
+  [['#FFFFFF', 'oklch(1 0 0)'], ['#FFFFFF', 'oklch(1 0 0)', 'oklch'], 'achromatic: hue is ignored'],
+  [['#FF0000', 'oklch(0.628 0.258 29.23 / 0.5)'], ['#FF0000', undefined, undefined], 'translucent oklch beside an opaque hex'],
+  [['#FF0000', '#f008'], ['#FF0000', undefined, undefined], 'translucent hex parked in the oklch field'],
+  [['#FF0000', 'rgba(255, 0, 0, 0.5)'], ['#FF0000', undefined, undefined], 'rgba in the oklch field'],
+  [['#FF0000', 'rgb(255 1 0)'], ['#FF0000', 'rgb(255 1 0)', 'rgb'], 'an in-gamut rgb() that lands on the hex'],
+  [['#A6518880', 'oklch(0.56 0.13 343)'], ['#A65188', '#A6518880', 'hex'], 'translucent hex wins over the oklch'],
+  [['#C8C0C8', 'oklch(0.81 0.28 328)'], ['#C8C0C8', undefined, undefined], 'a vivid original beside a near-gray hex that is not on the gamut boundary'],
+  [['#FF0000', 'oklch(0.63 26 29)'], ['#FF0000', undefined, undefined], 'a chroma typo (26 for 26%) far beyond any gamut'],
+  [['#808080', 'oklch(0.60 0.029 0)'], ['#808080', undefined, undefined], 'a tinted gray is not neutral gray'],
+  [['#00E000', 'oklch(0.79 0.35 -218)'], ['#00E000', 'oklch(0.79 0.35 -218)', 'oklch'], 'wide gamut with a negative hue'],
+  [['#FF0000', 'oklch(0.628 0.258 29.23 / 1)'], ['#FF0000', 'oklch(0.628 0.258 29.23 / 1)', 'oklch'], 'an explicit alpha of 1 is opaque'],
+  [['#FF0000', 'oklch(0.628 0.258 29.23 / 100%)'], ['#FF0000', 'oklch(0.628 0.258 29.23 / 100%)', 'oklch'], 'so is 100%'],
+  [['#FF0000FF', 'oklch(0.628 0.258 29.23)'], ['#FF0000', 'oklch(0.628 0.258 29.23)', 'oklch'], 'an opaque 8-digit hex does not block the oklch'],
+  [['#83DFFF', 'oklch(0.95 0.30 264)'], ['#83DFFF', undefined, undefined], 'out of gamut: clipping lands exactly on an unrelated hex (53 degrees of hue apart)'],
+  [['#009500', 'oklch(0.5 0.38 150)'], ['#009500', undefined, undefined], 'out of gamut: clipped match with a different lightness'],
+  [['#000000', 'oklch(-1 0 0)'], ['#000000', undefined, undefined], 'a negative lightness clips to black but is never vouched for'],
+  [['#FF0000', 'oklch(0.63 0.45 29)'], ['#FF0000', undefined, undefined], 'chroma beyond what CSS can express'],
+  [['#FF0000', 'oklch(0.63 0.30 29)'], ['#FF0000', 'oklch(0.63 0.30 29)', 'oklch'], 'a P3-range red beside its sRGB fallback'],
+  [['#A65188', 'not a color'], ['#A65188', undefined, undefined], 'unparseable oklch'],
+  [['#A65188', '__TODO: measure'], ['#A65188', undefined, undefined], 'marker oklch']
+].forEach(function (row) {
+  var tok = exporter.buildTokensJson({ colors: { brand: [{ name: 'T', hex: row[0][0], oklch: row[0][1] }] } }).color.palette.t;
+  var e = extOf(tok);
+  check('authored matrix: ' + row[2], [tok.$value, e.authored, e.colorSpace], row[1]);
+});
+var starterTokens = exporter.buildTokensJson(schema.starterConfig()).color.palette;
+check('every starter color keeps its hand-written oklch',
+  Object.keys(starterTokens).filter(function (k) { return extOf(starterTokens[k]).colorSpace !== 'oklch'; }), []);
+var kept = Object.keys(tokens.color.palette).filter(function (k) { return extOf(tokens.color.palette[k]).colorSpace === 'oklch'; }).length;
+check('hand-rounded oklch values still count as the same color: all 12 of Freeway\'s keep theirs', kept, 12);
+check('a plain hex color carries no authored value', 'authored' in themeWide.color.palette.flat.$extensions['app.stacklist.brandkit'], false);
+check('a shorthand hex keeps what the author wrote, as theme tokens do',
+  [themeWide.color.palette['short'].$value, themeWide.color.palette['short'].$extensions['app.stacklist.brandkit'].authored], ['#AABBCC', '#abc']);
 check('neutrals are tokens too', tokens.color.palette.graphite.$value, '#36325A');
 check('flat theme tokens are where they were', tokens.color.accent, { $type: 'color', $value: '#281D73' });
 check('every flat theme token survives',
