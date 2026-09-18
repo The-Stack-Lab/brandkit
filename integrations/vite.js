@@ -66,7 +66,7 @@ module.exports = function brandkitVite(options) {
       // Then produce a real production build into the output: theme baked into
       // styles.css, engine.js copied, and the agent-native exports written +
       // embedded in index.html. This makes the deployed /brand carry brand.json,
-      // tokens.json, brand.md and the inline <script id="brandkit-brand"> — so an
+      // tokens.json, brand.md and the inline <script id="brandkit-brand">, so an
       // agent pointed at the URL gets structured brand data without a manual
       // `brandkit build` step. Falls back to the raw copy if config is missing.
       var configPath = path.join(srcDir, 'config.json');

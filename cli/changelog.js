@@ -2,7 +2,7 @@ var fs = require('fs');
 var path = require('path');
 
 /**
- * brandkit changelog — record a brand-guide revision.
+ * brandkit changelog: record a brand-guide revision.
  *
  * Prepends a `{ version, date, changes }` entry to config.changelog (newest
  * first) and bumps brand.version. A fresh guide starts at 0.1; each call
@@ -45,7 +45,7 @@ module.exports = function changelog(args) {
   opts.messages = opts.messages.filter(function (m) { return String(m).trim() !== ''; });
   if (!opts.messages.length) {
     console.error('');
-    console.error('  Nothing to log — pass at least one change message.');
+    console.error('  Nothing to log. Pass at least one change message.');
     console.error('  Example: brandkit changelog "Added the gradient system"');
     console.error('');
     process.exit(1);
@@ -53,11 +53,11 @@ module.exports = function changelog(args) {
 
   // Reject a malformed explicit --version so junk never lands in brand.version
   // (which build/template.js consume downstream). The changelog scheme is
-  // strictly MAJOR.MINOR, so a patch (1.2.3) is rejected too — keeping the
+  // strictly MAJOR.MINOR, so a patch (1.2.3) is rejected too, keeping the
   // regex, the message, and parseVersion's bump logic consistent.
   if (opts.version && !/^\d+\.\d+$/.test(opts.version)) {
     console.error('');
-    console.error('  Invalid --version "' + opts.version + '" — expected MAJOR.MINOR (e.g. 0.3 or 1.0).');
+    console.error('  Invalid --version "' + opts.version + '": expected MAJOR.MINOR (e.g. 0.3 or 1.0).');
     console.error('');
     process.exit(1);
   }
@@ -70,17 +70,17 @@ module.exports = function changelog(args) {
 
   // The scheme is MAJOR.MINOR. If the stored version isn't clean (hand-edited,
   // or a 3-part value like the demo's package version), warn rather than
-  // silently normalizing — the bump uses only its leading major.minor.
+  // silently normalizing: the bump uses only its leading major.minor.
   if (!opts.version && !/^\d+\.\d+$/.test(prevVersion)) {
     console.error('  Note: brand.version "' + prevVersion +
-      '" is not MAJOR.MINOR — bumping from its leading major.minor.');
+      '" is not MAJOR.MINOR: bumping from its leading major.minor.');
   }
 
   // --lock finalizes a pre-1.0 brand at 1.0; refuse to move a >=1.0 brand
   // backward (which would also break the newest-first version ordering).
   if (opts.lock && parseVersion(prevVersion).major >= 1) {
     console.error('');
-    console.error('  Already at v' + prevVersion + ' — the brand is locked (>= 1.0).');
+    console.error('  Already at v' + prevVersion + '. The brand is locked (>= 1.0).');
     console.error('  Use --major or --version X.Y to bump further.');
     console.error('');
     process.exit(1);
@@ -142,7 +142,7 @@ function parseArgs(args) {
     else if (a === '--major') opts.major = true;
     else if (valueFlags[a]) {
       // A value flag at the end of argv would otherwise read undefined and be
-      // silently ignored — error instead.
+      // silently ignored: error instead.
       if (i + 1 >= args.length) { opts.error = a + ' requires a value.'; break; }
       opts[valueFlags[a]] = args[++i];
     }
@@ -157,7 +157,7 @@ function parseArgs(args) {
 
 function printUsage() {
   console.log('');
-  console.log('  brandkit changelog — record a brand-guide revision');
+  console.log('  brandkit changelog: record a brand-guide revision');
   console.log('');
   console.log('  Usage:');
   console.log('    brandkit changelog "<message>" ["<message>" ...]');

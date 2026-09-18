@@ -227,7 +227,7 @@ check('dark surface is NOT written to --ink', dark.theme['--ink'], undefined);
 check('hero text is readable on the measured hero',
   parseFloat(helpers.contrastRatio('#FFFFFF', dark.theme['--header-bg'])) >= 4.5, true);
 
-// The guard drops any emitted pair styles.css really renders together —
+// The guard drops any emitted pair styles.css really renders together:
 // here body text that would be near-white on the white page.
 var collide = ingest.toConfigFields(
   { tokens: { colors: {}, theme: { '--ink': '#FEFEFE' } } }, {});

@@ -6,9 +6,9 @@ var exporter = require('../lib/export');
  * brandkit export [dir] [--format json|dtcg|md|all] [--out <dir>]
  *
  * Emit agent-native views of a brand from its config.json:
- *   brand.json   — normalized, semantic brand (roles, usage, contrast, assets)
- *   tokens.json  — W3C Design Tokens (DTCG) format
- *   brand.md     — an LLM brief ("how to be on-brand"), a.k.a. llms.txt
+ *   brand.json, normalized, semantic brand (roles, usage, contrast, assets)
+ *   tokens.json, W3C Design Tokens (DTCG) format
+ *   brand.md, an LLM brief ("how to be on-brand"), a.k.a. llms.txt
  */
 module.exports = function exportCmd(args) {
   args = args || [];
@@ -54,7 +54,7 @@ module.exports = function exportCmd(args) {
   console.log('  brandkit export');
   console.log('');
   if (!result.written.length) {
-    console.log('  Nothing written — unknown --format "' + format + '" (use json|dtcg|md|all).');
+    console.log('  Nothing written: unknown --format "' + format + '" (use json|dtcg|md|all).');
   } else {
     result.written.forEach(function (f) {
       console.log('    wrote   ' + path.join(path.relative(process.cwd(), dest) || '.', f));

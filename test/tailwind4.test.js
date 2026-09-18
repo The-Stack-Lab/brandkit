@@ -2,7 +2,7 @@
  * Regression tests for the Tailwind 4 / shadcn CSS-first integration defects.
  *
  * Reported from a Next.js 16 + Tailwind 4 + shadcn/ui project where every one
- * of these failed silently — exit 0, cheerful output, wrong result. Each case
+ * of these failed silently: exit 0, cheerful output, wrong result. Each case
  * names the failure it locks out.
  */
 var os = require('os');
@@ -24,7 +24,7 @@ function check(name, got, want) {
 }
 
 /* ------------------------------------------------------------------ *
- * 1. @theme inline — what `npx shadcn init` actually writes
+ * 1. @theme inline: what `npx shadcn init` actually writes
  * ------------------------------------------------------------------ */
 
 var THEME_FORMS = ['@theme {', '@theme inline {', '@theme static {', '@theme default {'];
@@ -33,7 +33,7 @@ THEME_FORMS.forEach(function (head) {
   check('parses "' + head + '"', vars['--font-display'], 'Archivo');
 });
 
-// The block reader must not stop at the first '}' — a nested rule used to
+// The block reader must not stop at the first '}', a nested rule used to
 // truncate everything after it.
 check('nested braces do not truncate the block',
   I.extractFromContent('@theme inline {\n  --a: 1px;\n  @media (min-width:0){ --ignored: 2px; }\n  --b: 3px;\n}')['--b'],
@@ -45,7 +45,7 @@ check('brace in a comment does not break parsing',
   '#FFF');
 
 /* ------------------------------------------------------------------ *
- * 2. var() resolution — the shadcn token ladder
+ * 2. var() resolution: the shadcn token ladder
  * ------------------------------------------------------------------ */
 
 var ladder = I.resolveVarRefs({
@@ -73,7 +73,7 @@ check('var() inside another function resolves', ladder['--mixed'],
   'color-mix(in oklab, oklch(0.3623 0.1583 269.14) 50%, white)');
 
 /* ------------------------------------------------------------------ *
- * 3. Color parsing — oklch is the Tailwind 4 default
+ * 3. Color parsing: oklch is the Tailwind 4 default
  * ------------------------------------------------------------------ */
 
 check('oklch white round-trips', helpers.parseCssColor('oklch(1 0 0)').hex, '#FFFFFF');
@@ -83,7 +83,7 @@ check('hsl() parses', helpers.parseCssColor('hsl(0 100% 50%)').hex, '#FF0000');
 check('named color parses', helpers.parseCssColor('white').hex, '#FFFFFF');
 check('authored value is preserved', helpers.parseCssColor('oklch(0.5 0.1 200)').original, 'oklch(0.5 0.1 200)');
 
-// The OKLab inverse must be exact, not approximate — swatches and contrast
+// The OKLab inverse must be exact, not approximate, swatches and contrast
 // ratios are computed from it.
 var exact = ['#4F46E5', '#00FF00', '#0000FF', '#F9FAFB', '#111827', '#ABCDEF'].every(function (hex) {
   var rgb = helpers.toRgb(hex);
@@ -123,7 +123,7 @@ check('empty is not a color', helpers.parseCssColor(''), null);
  * 4. Contrast must never fabricate a passing score
  *
  * hexToRgb() coerced any non-hex string to {0,0,0}, so an oklch value scored
- * 21.0:1 — a perfect, AAA-rated claim — in a client-facing a11y table.
+ * 21.0:1 (a perfect, AAA-rated claim) in a client-facing a11y table.
  * ------------------------------------------------------------------ */
 
 check('unparseable contrast is null, not 21.0:1', helpers.contrastRatio('var(--x)', '#FFFFFF'), null);
@@ -135,7 +135,7 @@ check('isLightColor is false for unparseable input', helpers.isLightColor('var(-
 // An unmeasurable pair must contribute no row at all. `rating !== 'Fail'` was
 // true for null, which published {ratio: null, rating: null} into the guide's
 // accessibility table as though it had been measured.
-// Surfaces must be supplied — assuming white fabricated rows against a
+// Surfaces must be supplied: assuming white fabricated rows against a
 // background the brand may never use.
 var a11y = helpers.generateA11yPairs(
   [{ hex: 'var(--x)', name: 'Broken' }, { hex: '#000000', name: 'Ink' }],
@@ -146,7 +146,7 @@ check('no null ratio reaches the a11y table',
   a11y.some(function (p) { return p.ratio === null || p.rating === null; }), false);
 
 /* ------------------------------------------------------------------ *
- * 5. Theme mapping is 1:1 — no silent overwrite
+ * 5. Theme mapping is 1:1: no silent overwrite
  * ------------------------------------------------------------------ */
 
 var warnings = [];
@@ -231,7 +231,7 @@ check('description is an explicit TODO', cfg.brand.description.indexOf('__TODO')
 check('brandkit url is not shipped to a client', cfg.brand.url.indexOf('__TODO') === 0, true);
 check("brandkit's wordmark is not shipped to a client", cfg.brand.sidebarLogo, '');
 
-// package.json is untrusted — brandkit may run inside a repo someone else
+// package.json is untrusted: brandkit may run inside a repo someone else
 // wrote, and this value is rendered into the guide and written to brand.md.
 var evilDir = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-evil-'));
 fs.writeFileSync(path.join(evilDir, 'package.json'),
@@ -274,7 +274,7 @@ check('brandkit does not reseed itself', schema.seedBrandIdentity(selfCfg, selfD
 // A project with no package.json has nothing to seed from.
 var bareDir = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-bare-'));
 // Mark it as a repo root so the upward walk stops here. Without a boundary the
-// assertion would depend on whatever happens to sit above TMPDIR — which on CI
+// assertion would depend on whatever happens to sit above TMPDIR, which on CI
 // is often inside a checkout that does have a package.json.
 fs.mkdirSync(path.join(bareDir, '.git'));
 check('no package.json means no seeding', schema.seedBrandIdentity(schema.starterConfig(), bareDir), false);
@@ -309,7 +309,7 @@ check('unresolved nested fallback stays exactly as authored',
 check('resolvable nested fallback still resolves',
   I.resolveVarRefs({ '--b': '#123456', '--x': 'var(--missing, var(--b))' })['--x'], '#123456');
 
-// CSS angle units. Stripping only "deg" read `0.5turn` as 0.5 degrees — red
+// CSS angle units. Stripping only "deg" read `0.5turn` as 0.5 degrees, red
 // where the author wrote cyan.
 check('turn is converted', helpers.parseCssColor('hsl(0.5turn 100% 50%)').hex, '#00FFFF');
 check('grad is converted', helpers.parseCssColor('hsl(200grad 100% 50%)').hex, '#00FFFF');
@@ -322,7 +322,7 @@ check('an unknown angle unit is rejected', helpers.parseCssColor('hsl(10px 100% 
 check('named color reports colorSpace "named"', helpers.parseCssColor('white').space, 'named');
 check('oklch still reports its own space', helpers.parseCssColor('oklch(0.5 0.1 200)').space, 'oklch');
 
-// The authored value must survive whenever it differs from the emitted hex —
+// The authored value must survive whenever it differs from the emitted hex:
 // an alpha hex included, since its transparency is dropped.
 var alphaTokens = exporter.buildTokensJson({
   brand: { name: 'x' },
@@ -354,7 +354,7 @@ check('a hand-written tagline survives seeding', edited.brand.tagline, 'We forge
 check('a hand-set logo is not reset to empty', edited.brand.sidebarLogo, 'logos/acme.svg');
 
 // The guide dir is a child of the project it documents, so seeding must walk
-// up — not read the process cwd, which named a monorepo package after the root.
+// up: not read the process cwd, which named a monorepo package after the root.
 var monoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-mono-'));
 fs.mkdirSync(path.join(monoRoot, 'packages', 'client', 'brand'), { recursive: true });
 fs.writeFileSync(path.join(monoRoot, 'package.json'), JSON.stringify({ name: 'monorepo-root' }));
@@ -374,7 +374,7 @@ check('seeding walks up to the owning package', monoCfg.brand.name, 'client-app'
 
 // A CSS string cannot span lines. One unterminated quote used to put the whole
 // remainder of the file "inside a string", which stopped comment stripping and
-// handed a commented-out — deliberately disabled — declaration to the parser
+// handed a commented-out (deliberately disabled) declaration to the parser
 // as live. Ordered so that "last write wins" cannot mask the failure.
 var unterminated = '.a { content: "oops;\n}\n:root { --brand: #0000ff; /* --brand: #ff0000; */ }';
 check('a disabled declaration never beats the live one',
@@ -455,7 +455,7 @@ check('a missing name is still seeded', missingName.brand.name, 'acme');
 
 // The home boundary must be tested BEFORE its own manifest, or the walk
 // returns the very ~/package.json it exists to reject. os.homedir() reads
-// $HOME on POSIX, so point it at a fixture for the duration — testing this
+// $HOME on POSIX, so point it at a fixture for the duration, testing this
 // through the .git boundary instead would pass under the OLD ordering too,
 // which is exactly how the bug shipped.
 var homeWalk = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-home-')));

@@ -3,11 +3,11 @@
     "name": "brandkit",
     "displayName": "Brandkit",
     "tagline": "The config-driven brand guide",
-    "description": "Brandkit turns a single config.json into a complete, living brand guide: colors, typography, logos, voice, and components, all driven by design tokens. This is the default guide; swap the config and assets to make it your own.",
+    "description": "Brandkit turns a single config.json into a complete, living brand guide — colors, typography, logos, voice, and components, all driven by design tokens. This is the default guide; swap the config and assets to make it your own.",
     "url": "github.com/The-Stack-Lab/brandkit",
     "byline": "Open source · MIT",
-    "version": "1.6.0",
-    "date": "June 2026",
+    "version": "0.1",
+    "date": "PINNED",
     "guideLabel": "Web Style Guide",
     "headerLogo": "",
     "sidebarLogo": "logos/brandkit-wordmark-dark.svg"
@@ -16,12 +16,12 @@
     "display": {
       "family": "Space Grotesk",
       "googleImport": "Space+Grotesk:wght@400;500;600;700",
-      "description": "Space Grotesk: a geometric sans with a little character. Used for headlines, the wordmark, and large display moments."
+      "description": "Space Grotesk — a geometric sans with a little character. Used for headlines, the wordmark, and large display moments."
     },
     "body": {
       "family": "Inter",
       "googleImport": "Inter:wght@300;400;500;600;700",
-      "description": "Inter: a highly legible workhorse for body copy, UI labels, and long-form reading at every size."
+      "description": "Inter — a highly legible workhorse for body copy, UI labels, and long-form reading at every size."
     }
   },
   "theme": {
@@ -123,7 +123,7 @@
           "hex": "#4F46E5",
           "oklch": "oklch(0.51 0.23 277)",
           "cssVar": "--accent",
-          "role": "Primary accent: buttons, links, focus",
+          "role": "Primary accent — buttons, links, focus",
           "light": false
         },
         {
@@ -152,7 +152,7 @@
           "hex": "#374151",
           "oklch": "oklch(0.37 0.03 260)",
           "cssVar": "--graphite",
-          "role": "Secondary text: descriptions",
+          "role": "Secondary text, descriptions",
           "light": false
         },
         {
@@ -160,7 +160,7 @@
           "hex": "#6B7280",
           "oklch": "oklch(0.55 0.02 264)",
           "cssVar": "--slate",
-          "role": "Tertiary text: captions",
+          "role": "Tertiary text, captions",
           "light": false
         },
         {
@@ -250,8 +250,8 @@
   "sections": {
     "gradients": "One brand gradient, used sparingly for hero moments and large headlines. The subtle variant tints cards and section backgrounds without competing with content.",
     "gradientTextDemo": "One config, every token.",
-    "logos": "Download the logo in the format and size you need. Select a variant, then download. Raster formats can be resized on the fly.",
-    "components": "A small set of building blocks (buttons, cards, and stats) that inherit every brand token automatically. Change the config and they all update.",
+    "logos": "Download the logo in the format and size you need. Select a variant, then download — raster formats can be resized on the fly.",
+    "components": "A small set of building blocks — buttons, cards, and stats — that inherit every brand token automatically. Change the config and they all update.",
     "spacing": "A consistent spacing scale keeps layouts in rhythm. Use these tokens for padding, gaps, and margins instead of arbitrary values.",
     "variables": "Every token below is a CSS custom property. Copy any line and drop it straight into your stylesheet."
   },
@@ -262,7 +262,7 @@
       "colorVar": "--ink",
       "colorName": "Ink",
       "hex": "#111827",
-      "description": "Primary text: body copy, headings, and content where readability is critical."
+      "description": "Primary text — body copy, headings, and content where readability is critical."
     },
     {
       "class": "h-secondary",
@@ -270,7 +270,7 @@
       "colorVar": "--graphite",
       "colorName": "Graphite",
       "hex": "#374151",
-      "description": "Secondary text: descriptions, supporting information, and labels."
+      "description": "Secondary text — descriptions, supporting information, and labels."
     },
     {
       "class": "h-tertiary",
@@ -278,7 +278,7 @@
       "colorVar": "--slate",
       "colorName": "Slate",
       "hex": "#6B7280",
-      "description": "Tertiary text: captions, timestamps, footnotes, and metadata."
+      "description": "Tertiary text — captions, timestamps, footnotes, and metadata."
     },
     {
       "class": "h-accent",
@@ -286,13 +286,13 @@
       "colorVar": "--accent-text",
       "colorName": "Indigo",
       "hex": "#4338CA",
-      "description": "Accent text: links, interactive labels, and calls to action."
+      "description": "Accent text — links, interactive labels, and calls to action."
     }
   ],
   "logos": [
     {
       "name": "Wordmark",
-      "description": "Primary lockup. Use on light backgrounds.",
+      "description": "Primary lockup — use on light backgrounds.",
       "variants": {
         "svg": "logos/brandkit-wordmark-dark.svg"
       },
@@ -412,7 +412,7 @@
       "weight": 400,
       "tracking": "0",
       "leading": "1.7",
-      "sample": "The default for body copy: legible, neutral, and easy on the eyes at any length."
+      "sample": "The default for body copy — legible, neutral, and easy on the eyes at any length."
     },
     {
       "name": "Body SM",
@@ -444,7 +444,7 @@
     }
   ],
   "voice": {
-    "description": "Clear, confident, and friendly. Brandkit speaks like a thoughtful teammate: it explains the what and the why without jargon, and never talks down to the reader.",
+    "description": "Clear, confident, and friendly. Brandkit speaks like a thoughtful teammate — it explains the what and the why without jargon, and never talks down to the reader.",
     "do": [
       "Swap the config and your whole guide updates.",
       "Every token is one source of truth.",
@@ -525,7 +525,7 @@
         {
           "prop": "--accent",
           "value": "#4F46E5",
-          "comment": "Fill: buttons, active states"
+          "comment": "Fill — buttons, active states"
         },
         {
           "prop": "--accent-foreground",
@@ -679,7 +679,7 @@
       },
       {
         "title": "Zero dependencies",
-        "description": "Vanilla JS and CSS variables: nothing to install, nothing to maintain.",
+        "description": "Vanilla JS and CSS variables — nothing to install, nothing to maintain.",
         "tag": "Lightweight"
       },
       {
@@ -705,58 +705,8 @@
   },
   "changelog": [
     {
-      "version": "1.6.0",
-      "date": "June 2026",
-      "changes": [
-        "Added a changelog: a standalone history page, the brandkit changelog command, version history in the agent exports, and a scaffolded AGENTS.md."
-      ]
-    },
-    {
-      "version": "1.2.4",
-      "date": "June 2026",
-      "changes": [
-        "Added a basePath config option for serving the guide under a sub-path (e.g. /brand)."
-      ]
-    },
-    {
-      "version": "1.2.3",
-      "date": "June 2026",
-      "changes": [
-        "Sidebar \"Using an AI agent?\" callout with a copy-paste prompt pointing at the exports."
-      ]
-    },
-    {
-      "version": "1.2.2",
-      "date": "May 2026",
-      "changes": [
-        "Optional web-font fallback stand-in for typefaces that are not web-available."
-      ]
-    },
-    {
-      "version": "1.1.0",
-      "date": "May 2026",
-      "changes": [
-        "Accent fill/text split for safe contrast.",
-        "Agent-native exports: brand.json, tokens.json, brand.md."
-      ]
-    },
-    {
-      "version": "1.0",
-      "date": "April 2026",
-      "changes": [
-        "Brand locked, first stable release of the guide."
-      ]
-    },
-    {
-      "version": "0.2",
-      "date": "April 2026",
-      "changes": [
-        "Added logo downloads, the type scale, voice & tone, and component patterns."
-      ]
-    },
-    {
       "version": "0.1",
-      "date": "March 2026",
+      "date": "September 2026",
       "changes": [
         "Initial brand guide scaffolded with brandkit."
       ]

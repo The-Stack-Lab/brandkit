@@ -30,7 +30,7 @@
   // class is added once the first render pass below completes. Idempotent.
   function reveal() { document.documentElement.classList.add('bk-ready'); }
   // Failsafe registered BEFORE the fetch: if config.json is slow or fails, never
-  // leave the page permanently blank — reveal after 1.5s no matter what. The
+  // leave the page permanently blank: reveal after 1.5s no matter what. The
   // finally below clears this on the normal path so it doesn't fire twice.
   var revealFailsafe = setTimeout(reveal, 1500);
 
@@ -45,7 +45,7 @@
   } finally {
     // Reveal after init()'s synchronous render pass (or on error, so a failed
     // load shows the page rather than a blank frame). The throw still surfaces
-    // as an unhandled rejection for debugging — finally doesn't swallow it.
+    // as an unhandled rejection for debugging, finally doesn't swallow it.
     clearTimeout(revealFailsafe);
     reveal();
   }
@@ -54,7 +54,7 @@
     var copyFormat = localStorage.getItem('brandkit-copy-format') || 'hex';
 
     /* ==============================================================
-       HTML escape helper — prevents XSS from config values
+       HTML escape helper: prevents XSS from config values
        ============================================================== */
     function esc(s) {
       return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -75,7 +75,7 @@
       return t === '' || t.indexOf('__TODO') === 0;
     }
 
-    /** Text if filled, else '' — for inline use where an empty string is fine. */
+    /** Text if filled, else '': for inline use where an empty string is fine. */
     function orBlank(v) {
       return isUnset(v) ? '' : v;
     }
@@ -101,7 +101,7 @@
     }
 
     /* ==============================================================
-       Font stack helper — weaves in an optional `fallback` web stand-in
+       Font stack helper: weaves in an optional `fallback` web stand-in
        for brands whose official typeface isn't web-available:
          'Family', 'Fallback', sans-serif
        No fallback → 'Family', sans-serif (backward-compatible).
@@ -118,7 +118,7 @@
     }
 
     /* ==============================================================
-       CSS-value sanitizer — strips the characters a config value would
+       CSS-value sanitizer: strips the characters a config value would
        need to break out of the injected <style> block ( < > ), out of the
        :root {…} rule ( { } ), or out of its own declaration to smuggle in
        another one ( ; ). A legitimate custom-property token/value never
@@ -129,7 +129,7 @@
     function cssVal(v) { return String(v == null ? '' : v).replace(/[<>{};]/g, ''); }
 
     /* ==============================================================
-       BOOTSTRAP — inject fonts + CSS variables before any rendering
+       BOOTSTRAP: inject fonts + CSS variables before any rendering
        ============================================================== */
     function bootstrap() {
       // Inject Google Fonts
@@ -179,7 +179,7 @@
 
       // Set page title
       if (cfg.brand && cfg.brand.displayName) {
-        document.title = cfg.brand.displayName + ' \u2014 Brand Guide';
+        document.title = cfg.brand.displayName + ': Brand Guide';
       }
     }
 
@@ -208,8 +208,37 @@
         await navigator.clipboard.writeText(text);
         toast('Copied: ' + (text.length > 50 ? text.slice(0, 47) + '...' : text));
       } catch (_) {
-        toast('Copy failed \u2014 try from localhost or HTTPS');
+        toast('Copy failed: try from localhost or HTTPS');
       }
+    }
+
+    /* ==============================================================
+       Optional sections (logo usage, formats) exist only when the config
+       defines them. A config written before they existed has no nav entry
+       for them, so adopting the fields would render a section nothing
+       links to. Add the link unless the author already placed one.
+       ============================================================== */
+    function navWithOptionalSections(nav) {
+      function hasId(id) {
+        return nav.some(function (g) {
+          return (g.items || []).some(function (it) { return it.id === id; });
+        });
+      }
+      var groups = nav.map(function (g) { return { group: g.group, items: (g.items || []).slice() }; });
+      var logosAt = -1;
+      groups.forEach(function (g, i) {
+        g.items.forEach(function (it) { if (it.id === 'logos') logosAt = i; });
+      });
+      if (hasLogoUsage() && !hasId('logo-usage')) {
+        if (logosAt !== -1) groups[logosAt].items.push({ label: 'Usage', id: 'logo-usage' });
+        else groups.push({ group: 'Logos', items: [{ label: 'Usage', id: 'logo-usage' }] });
+      }
+      if (resolvedFormats().length && !hasId('formats')) {
+        var entry = { group: 'Formats', items: [{ label: 'Canvas Specs', id: 'formats' }] };
+        if (logosAt !== -1) groups.splice(logosAt + 1, 0, entry);
+        else groups.push(entry);
+      }
+      return groups;
     }
 
     /* ==============================================================
@@ -218,7 +247,7 @@
     function renderNav() {
       var navEl = document.getElementById('nav');
       if (!navEl || !cfg.nav) return;
-      navEl.innerHTML = cfg.nav.map(function (group) {
+      navEl.innerHTML = navWithOptionalSections(cfg.nav).map(function (group) {
         var header = '<li class="nav-group">' + esc(group.group) + '</li>';
         var items = group.items.map(function (item) {
           return '<li class="nav-group-items"><a href="#' + esc(item.id) + '">' + esc(item.label) + '</a></li>';
@@ -228,7 +257,7 @@
     }
 
     /* ==============================================================
-       2b. Render agent callout — a paste-ready prompt that points an AI
+       2b. Render agent callout: a paste-ready prompt that points an AI
        agent at the machine-readable exports (brand.json / tokens.json /
        brand.md) so it reads structured brand data instead of scraping the
        rendered page. Opt out with brand.agentCallout === false.
@@ -264,10 +293,10 @@
         .replace(/[\u0000-\u001F\u007F\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/g, ' ').replace(/\s+/g, ' ').trim() || 'this brand';
       var prompt =
         'This page is a brandkit brand guide for ' + name + '. It publishes ' +
-        'machine-readable brand data — read these instead of scraping the page:\n\n' +
-        '- ' + brandUrl + ' — full structured brand: colors (roles + contrast), typography, voice, logos, spacing\n' +
-        '- ' + tokensUrl + ' — W3C design tokens (DTCG $type/$value), for code and design tooling\n' +
-        '- ' + mdUrl + ' — brand brief: how to stay on-brand\n\n' +
+        'machine-readable brand data. Read these instead of scraping the page:\n\n' +
+        '- ' + brandUrl + ' (full structured brand: colors with roles and contrast, typography, voice, logos, spacing)\n' +
+        '- ' + tokensUrl + ' (W3C design tokens, DTCG $type/$value, for code and design tooling)\n' +
+        '- ' + mdUrl + ' (brand brief: how to stay on-brand)\n\n' +
         'Fetch them, then apply ' + name + "'s colors, type, and voice to what you're building.";
 
       box.innerHTML =
@@ -282,7 +311,7 @@
     }
 
     /* ==============================================================
-       2c. Render changelog link — pinned to the bottom of the sidebar when
+       2c. Render changelog link: pinned to the bottom of the sidebar when
        a changelog exists, pointing at the standalone changelog.html page.
        ============================================================== */
     function renderChangelogLink() {
@@ -554,6 +583,226 @@
     }
 
     /* ==============================================================
+       5b. Logo usage + 5c. Formats: the rules for output that is not a web
+       page. Both sections stay hidden unless the config defines them.
+
+       FORMAT_PRESETS mirrors lib/formats.js (no module system here), keep
+       the two in sync.
+       ============================================================== */
+    var FORMAT_PRESETS = {
+      'social-square':   { name: 'Social square (1:1)',            kind: 'social',       width: 1080, height: 1080, unit: 'px' },
+      'social-portrait': { name: 'Social portrait (4:5)',          kind: 'social',       width: 1080, height: 1350, unit: 'px' },
+      'social-story':    { name: 'Story or vertical video (9:16)', kind: 'social',       width: 1080, height: 1920, unit: 'px' },
+      'link-card':       { name: 'Link preview card',              kind: 'social',       width: 1200, height: 630,  unit: 'px' },
+      'slide-16x9':      { name: 'Slide 16:9',                     kind: 'presentation', width: 1920, height: 1080, unit: 'px' }
+    };
+    var PRESET_ALIASES = {
+      '1080x1080': 'social-square', '1080x1350': 'social-portrait', '1080x1920': 'social-story',
+      '1200x630': 'link-card', '1920x1080': 'slide-16x9'
+    };
+    var FORMAT_KINDS = ['social', 'presentation', 'video', 'print', 'other'];
+
+    // A hand-edited config can hold `"logos": {}`. The nav runs for every
+    // config, so it must never assume a list.
+    function logoList() { return Array.isArray(cfg.logos) ? cfg.logos : []; }
+
+    function resolvedFormats() {
+      if (!Array.isArray(cfg.formats)) return [];
+      return cfg.formats.map(function (entry) {
+        if (typeof entry === 'string') entry = isUnset(entry) ? null : { preset: entry };
+        if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
+        var out = {};
+        if (!isUnset(entry.preset)) {
+          var k = typeof entry.preset === 'string' ? entry.preset.trim().toLowerCase().replace(/\s+/g, '') : '';
+          if (PRESET_ALIASES[k]) k = PRESET_ALIASES[k];
+          var preset = Object.prototype.hasOwnProperty.call(FORMAT_PRESETS, k) ? FORMAT_PRESETS[k] : null;
+          if (preset) { out.preset = k; Object.keys(preset).forEach(function (p) { out[p] = preset[p]; }); }
+          else out.unknownPreset = String(entry.preset);
+        }
+        Object.keys(entry).forEach(function (p) {
+          if (p !== 'preset' && p !== '__proto__' && !isUnset(entry[p])) out[p] = entry[p];
+        });
+        if (typeof out.unit !== 'string') delete out.unit;
+        if (out.unit === undefined && (out.width !== undefined || out.height !== undefined)) out.unit = 'px';
+        if (out.kind !== undefined && FORMAT_KINDS.indexOf(out.kind) === -1) out.kind = 'other';
+        return out;
+      }).filter(function (f) {
+        // An entry with no canvas and no name is not a format. Without this an
+        // empty `{}` revealed the section and drew a blank card.
+        if (f === null) return false;
+        var hasDims = typeof f.width === 'number' && typeof f.height === 'number';
+        return hasDims || (typeof f.name === 'string' && !isUnset(f.name)) || !!f.unknownPreset;
+      });
+    }
+
+    function safeZoneOf(fmt) {
+      var z = fmt.safeZone;
+      if (z === undefined || z === null || z === '') return null;
+      if (typeof z !== 'number' && (typeof z !== 'object' || Array.isArray(z))) return null;
+      var all = typeof z === 'number' ? z : (typeof z.all === 'number' ? z.all : null);
+      if (all !== null && all < 0) all = null;
+      var src = typeof z === 'object' ? z : {};
+      var out = {}, any = all !== null;
+      ['top', 'right', 'bottom', 'left'].forEach(function (side) {
+        if (typeof src[side] === 'number' && src[side] >= 0) { out[side] = src[side]; any = true; }
+        else out[side] = all !== null ? all : 0;
+      });
+      if (!any) return null;
+      out.unit = (typeof src.unit === 'string' && !isUnset(src.unit)) ? src.unit
+        : (typeof fmt.unit === 'string' && !isUnset(fmt.unit)) ? fmt.unit : 'px';
+      return out;
+    }
+
+    function usageOf(src) {
+      if (!src || typeof src !== 'object') return null;
+      var cs = src.clearSpace;
+      if (typeof cs === 'string') cs = { rule: cs };
+      var rows = [];
+      // Same two tests as normalizeClearSpace() in lib/formats.js.
+      var csRule = (cs && typeof cs === 'object' && typeof cs.rule === 'string' && !isUnset(cs.rule)) ? cs.rule : '';
+      var csRatio = (cs && typeof cs === 'object' && typeof cs.ratio === 'number' && cs.ratio > 0) ? cs.ratio : null;
+      if (csRule || csRatio !== null) {
+        rows.push(['Clear space', csRule +
+          (csRatio !== null ? (csRule ? ' (' : '') + csRatio + '\u00D7 the logo height' + (csRule ? ')' : '') : '')]);
+      }
+      var min = src.minSize || {};
+      var sizes = [];
+      if (typeof min.digitalPx === 'number' && min.digitalPx > 0) sizes.push(min.digitalPx + 'px on screen');
+      if (typeof min.printMm === 'number' && min.printMm > 0) sizes.push(min.printMm + 'mm in print');
+      if (sizes.length) rows.push(['Minimum width', sizes.join(' \u00B7 ')]);
+      // Rules are sentences. An object here would print as "[object Object]".
+      function isText(x) { return (typeof x === 'string' || typeof x === 'number') && !isUnset(x); }
+      var placement = [].concat(src.placement || []).filter(isText);
+      if (placement.length) rows.push(['Placement', placement.join(' \u00B7 ')]);
+      var dont = [].concat(src.dont || []).filter(isText);
+      return (rows.length || dont.length) ? { rows: rows, dont: dont } : null;
+    }
+
+    function hasLogoUsage() {
+      if (usageOf(cfg.logoUsage)) return true;
+      return logoList().some(function (l) { return !!usageOf(l); });
+    }
+
+    function usageCard(title, u) {
+      var html = '<div class="usage-card">';
+      if (title) html += '<div class="usage-card-title">' + esc(title) + '</div>';
+      if (u.rows.length) {
+        html += '<dl class="spec-list">' + u.rows.map(function (r) {
+          return '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>';
+        }).join('') + '</dl>';
+      }
+      if (u.dont.length) {
+        html += '<div class="usage-dont"><h4>Never</h4><ul>' + u.dont.map(function (d) {
+          return '<li>' + esc(d) + '</li>';
+        }).join('') + '</ul></div>';
+      }
+      return html + '</div>';
+    }
+
+    function renderLogoUsage() {
+      var section = document.getElementById('logo-usage');
+      var container = document.getElementById('logo-usage-content');
+      if (!section || !container || !hasLogoUsage()) return;
+      var html = '';
+      var brandWide = usageOf(cfg.logoUsage);
+      if (brandWide) html += usageCard(logoList().length > 1 ? 'All logos' : '', brandWide);
+      logoList().forEach(function (l) {
+        var own = usageOf(l);
+        if (own) html += usageCard(isUnset(l.name) ? 'Logo' : l.name, own);
+      });
+      container.innerHTML = html;
+      section.hidden = false;
+    }
+
+    // Where the logo chip sits inside the safe zone preview.
+    function placementStyle(placement) {
+      var p = String(placement || '').toLowerCase();
+      var v = p.indexOf('top') !== -1 ? 'top:0;' : p.indexOf('bottom') !== -1 ? 'bottom:0;' : 'top:50%;';
+      var h = p.indexOf('left') !== -1 ? 'left:0;' : p.indexOf('right') !== -1 ? 'right:0;' : 'left:50%;';
+      var tx = h === 'left:50%;' ? '-50%' : '0', ty = v === 'top:50%;' ? '-50%' : '0';
+      return v + h + 'transform:translate(' + tx + ',' + ty + ');';
+    }
+
+    function renderFormats() {
+      var section = document.getElementById('formats');
+      var grid = document.getElementById('formats-grid');
+      var formats = resolvedFormats();
+      if (!section || !grid || !formats.length) return;
+
+      grid.innerHTML = formats.map(function (f) {
+        var unit = f.unit || 'px';
+        var hasDims = typeof f.width === 'number' && typeof f.height === 'number' && f.width > 0 && f.height > 0;
+        var zone = safeZoneOf(f);
+        var logo = (f.logo && typeof f.logo === 'object' && !Array.isArray(f.logo)) ? f.logo
+          : (typeof f.logo === 'string' && !isUnset(f.logo)) ? { placement: f.logo } : null;
+        // Decided before the preview is drawn: a logo entry that says nothing
+        // gets no row and no chip.
+        var logoBits = logo ? [logo.variant, logo.placement,
+          typeof logo.maxWidth === 'number' ? 'max ' + logo.maxWidth + unit : null, logo.note]
+          .filter(function (x) { return typeof x === 'string' && !isUnset(x); }) : [];
+        if (!logoBits.length) logo = null;
+        var preview = '';
+        if (hasDims) {
+          var pct = function (n, of) { return Math.max(0, Math.min(45, (n / of) * 100)).toFixed(2) + '%'; };
+          var drawZone = zone && zone.unit === unit;
+          var inset = drawZone
+            ? 'top:' + pct(zone.top, f.height) + ';right:' + pct(zone.right, f.width) +
+              ';bottom:' + pct(zone.bottom, f.height) + ';left:' + pct(zone.left, f.width) + ';'
+            : 'top:0;right:0;bottom:0;left:0;';
+          // Tall canvases are capped by height, wide ones by width.
+          var boxWidth = Math.round(Math.min(220, 220 * (f.width / f.height)));
+          preview =
+            '<div class="format-preview" style="width:' + boxWidth + 'px;aspect-ratio:' + f.width + ' / ' + f.height + ';">' +
+              '<div class="format-safe' + (drawZone ? '' : ' none') + '" style="' + inset + '">' +
+                (logo ? '<span class="format-logo-chip" style="' + placementStyle(logo.placement) + '">Logo</span>' : '') +
+              '</div>' +
+            '</div>';
+        }
+
+        var rows = [];
+        if (hasDims) rows.push(['Canvas', f.width + ' \u00D7 ' + f.height + ' ' + unit]);
+        else if (f.unknownPreset) rows.push(['Canvas', 'Unknown preset "' + f.unknownPreset + '"']);
+        if (zone) {
+          var even = zone.top === zone.right && zone.right === zone.bottom && zone.bottom === zone.left;
+          rows.push(['Safe zone', even ? zone.top + zone.unit + ' on every side'
+            : zone.top + ' / ' + zone.right + ' / ' + zone.bottom + ' / ' + zone.left + ' ' + zone.unit + ' (top, right, bottom, left)']);
+        }
+        if (logoBits.length) rows.push(['Logo', logoBits.join(' \u00B7 ')]);
+        if (f.typography && typeof f.typography === 'object' && !Array.isArray(f.typography)) {
+          Object.keys(f.typography).forEach(function (role) {
+            var t = f.typography[role];
+            if (typeof t === 'string') t = { style: t };
+            if (!t || isUnset(t.style)) return;
+            rows.push([role.charAt(0).toUpperCase() + role.slice(1), t.style + (isUnset(t.size) ? '' : ' at ' + t.size)]);
+          });
+        }
+        var bgs = [].concat(f.background || []).map(function (b) {
+          if (b && typeof b === 'object') {
+            return [b.color || b.note || b.type, b.overlay ? 'with ' + b.overlay : null]
+              .filter(function (x) { return !isUnset(x); }).join(' ');
+          }
+          return isUnset(b) ? '' : String(b);
+        }).filter(Boolean);
+        if (bgs.length) rows.push(['Backgrounds', bgs.join(' \u00B7 ')]);
+
+        return (
+          '<div class="format-card">' +
+            '<div class="format-preview-wrap">' + preview + '</div>' +
+            '<div class="format-body">' +
+              '<div class="format-name">' + esc(isUnset(f.name) ? 'Format' : f.name) +
+                (f.kind ? '<span class="format-kind">' + esc(f.kind) + '</span>' : '') + '</div>' +
+              '<dl class="spec-list">' + rows.map(function (r) {
+                return '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>';
+              }).join('') + '</dl>' +
+              (isUnset(f.notes) ? '' : '<p class="format-notes">' + esc(f.notes) + '</p>') +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+      section.hidden = false;
+    }
+
+    /* ==============================================================
        6. Render typography
        ============================================================== */
     function renderTypography() {
@@ -646,7 +895,7 @@
 
       // Cards
       if (cfg.components.cards) {
-        html += '<div class="component-label" style="margin-top:28px;">Cards \u2014 Light Background</div>';
+        html += '<div class="component-label" style="margin-top:28px;">Cards: Light Background</div>';
         html += '<div class="card-demo-grid">';
         cfg.components.cards.forEach(function (card) {
           var cardTitle = card.title || card.label || '';
@@ -664,7 +913,7 @@
 
       // Stats
       if (cfg.components.stats) {
-        html += '<div class="component-label" style="margin-top:28px;">Stats \u2014 Dark Background</div>';
+        html += '<div class="component-label" style="margin-top:28px;">Stats: Dark Background</div>';
         html += '<div class="dark-card-demo">';
         html += '<div class="dark-section-label">By the numbers</div>';
         html += '<div class="dark-card-demo-grid">';
@@ -825,6 +1074,8 @@
       var mapping = {
         'gradients': 'section-intro-gradients',
         'logos': 'section-intro-logos',
+        'logoUsage': 'section-intro-logoUsage',
+        'formats': 'section-intro-formats',
         'components': 'section-intro-components',
         'spacing': 'section-intro-spacing',
         'variables': 'section-intro-variables'
@@ -957,7 +1208,7 @@
        18. Render shell (header, intro, footer, misc)
        ============================================================== */
     function renderShell() {
-      // Header — show brand.headerLogo image if set, else the brand name as text.
+      // Header: show brand.headerLogo image if set, else the brand name as text.
       // brand.guideLabel renames the "Web Style Guide" label (header + footer).
       var guideLabel = cfg.brand.guideLabel || 'Web Style Guide';
       var wordmark = document.getElementById('header-wordmark');
@@ -986,7 +1237,7 @@
         '<span>' + esc(cfg.brand.url) + ' \u00B7 ' + esc(cfg.brand.byline) + '</span>' +
         '<span>' + esc(guideLabel) + ' v' + esc(cfg.brand.version) + ' \u00B7 ' + esc(cfg.brand.date) + '</span>';
 
-      // Typography specimens — read descriptions from config
+      // Typography specimens: read descriptions from config
       var typeDisplayName = document.getElementById('type-display-name');
       if (typeDisplayName && cfg.fonts) typeDisplayName.textContent = cfg.fonts.display.family;
       var typeDisplayDesc = document.getElementById('type-display-desc');
@@ -1065,7 +1316,7 @@
           '</div>';
       }
 
-      // Sidebar brand — logo image if brand.sidebarLogo is set, else brand name
+      // Sidebar brand: logo image if brand.sidebarLogo is set, else brand name
       var sidebarBrand = document.querySelector('.sidebar-brand');
       if (sidebarBrand) {
         if (cfg.brand.sidebarLogo) {
@@ -1089,6 +1340,8 @@
     renderColors();
     renderGradients();
     renderLogos();
+    renderLogoUsage();
+    renderFormats();
     renderTypography();
     renderHierarchy();
     renderVoice();
