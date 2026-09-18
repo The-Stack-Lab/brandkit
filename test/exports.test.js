@@ -96,6 +96,22 @@ var themeWide = exporter.buildTokensJson({ theme: { '--accent': 'oklch(0.56 0.13
 var tExt = themeWide.color.accent.$extensions['app.stacklist.brandkit'], pExt = themeWide.color.palette.plum.$extensions['app.stacklist.brandkit'];
 check('a palette token and a theme token describe a wide-gamut value identically',
   [pExt.authored, pExt.colorSpace], [tExt.authored, tExt.colorSpace]);
+// hex and oklch are two fields, and they can disagree. `authored` must always
+// be the same color as $value.
+var mixed = exporter.buildTokensJson({ colors: { brand: [
+  { name: 'Clash', hex: '#FF0000', oklch: 'oklch(0.56 0.13 343)' },
+  { name: 'Black', hex: '#000000', oklch: 'oklch(1 0 0)' },
+  { name: 'Alpha', hex: '#A6518880', oklch: 'oklch(0.56 0.13 343)' },
+  { name: 'Junk', hex: '#A65188', oklch: 'not a color' },
+  { name: 'Marker', hex: '#A65188', oklch: '__TODO: measure' }] } }).color.palette;
+function extOf(t) { return t.$extensions['app.stacklist.brandkit']; }
+check('a disagreeing oklch is not presented as the authored form of the hex', [mixed.clash.$value, 'authored' in extOf(mixed.clash)], ['#FF0000', false]);
+check('black is never authored as white', 'authored' in extOf(mixed.black), false);
+check('an alpha hex keeps its alpha, the oklch cannot carry it', [mixed.alpha.$value, extOf(mixed.alpha).authored, extOf(mixed.alpha).colorSpace], ['#A65188', '#A6518880', 'hex']);
+check('an unparseable oklch is ignored', [mixed.junk.$value, 'authored' in extOf(mixed.junk)], ['#A65188', false]);
+check('a marker oklch is ignored and never exported', /__TODO/.test(JSON.stringify(mixed.marker)), false);
+var kept = Object.keys(tokens.color.palette).filter(function (k) { return extOf(tokens.color.palette[k]).colorSpace === 'oklch'; }).length;
+check('hand-rounded oklch values still count as the same color: all 12 of Freeway\'s keep theirs', kept, 12);
 check('a plain hex color carries no authored value', 'authored' in themeWide.color.palette.flat.$extensions['app.stacklist.brandkit'], false);
 check('a shorthand hex keeps what the author wrote, as theme tokens do',
   [themeWide.color.palette['short'].$value, themeWide.color.palette['short'].$extensions['app.stacklist.brandkit'].authored], ['#AABBCC', '#abc']);
