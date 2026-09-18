@@ -25,7 +25,7 @@ function fixture(name) {
   return JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', name), 'utf8'));
 }
 
-var DASHES = /[—–]/;
+var DASHES = /[\u2014\u2013]/;
 var freeway = fixture('freeway.config.json');
 var extras = fixture('freeway.formats.json');
 var withFormats = clone(freeway);
@@ -141,7 +141,7 @@ check('no dashes anywhere in the shipped package or the demo', offenders, []);
 
 // A client's own dash is theirs to keep: stripped from the family prefix, as
 // before, but never rewritten inside their prose.
-var legacyFont = { fonts: { body: { family: 'Inter', description: 'Inter — a workhorse' } } };
+var legacyFont = { fonts: { body: { family: 'Inter', description: 'Inter \u2014 a workhorse' } } };
 check('a legacy "Family (dash) description" prefix is still stripped',
   has(exporter.buildBrandMarkdown(legacyFont), '- **Body:** Inter: a workhorse'), true);
 
