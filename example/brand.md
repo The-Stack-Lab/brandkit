@@ -77,6 +77,9 @@ When you change this brand (colors, type, logos, voice, spacing, or anything in 
 
 Revision history (newest first):
 
+- **v1.7.1** (September 2026):
+  - Palette tokens in tokens.json describe a wide-gamut value the same way theme tokens do: $value stays sRGB hex, and the original rides along as authored plus colorSpace. The separate oklch key that 1.7.0 introduced is gone.
+  - A palette color's oklch is only exported as the authored form of its hex when the two really are the same color. A disagreeing, translucent or out-of-range oklch is left out instead of telling a wide-gamut consumer to paint something else.
 - **v1.7.0** (September 2026):
   - brand.md now names the whole palette: every brand color and neutral with its hex, role, and whether it is safe as text on white. It also carries the named type scale and the spacing scale.
   - tokens.json gains the brand's own palette at color.palette, with each role as the description and oklch preserved. Existing theme tokens are unchanged.
