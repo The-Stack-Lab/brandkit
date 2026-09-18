@@ -47,6 +47,7 @@ lib/
     render.js         ← Optional Playwright escalation, detected, never depended on
     reconcile.js      ← Precedence, evidence, conflicts, rejections
   config-schema.js    ← Starter config template + merge logic
+  formats.js          ← Output-format presets + safe zone / clear space normalizers (preset table mirrored in dist/engine.js)
   resolve.js          ← Path to dist/ (swagger-ui-dist pattern)
 config.schema.json    ← JSON Schema for config.json (shipped in npm files)
 dist/
@@ -105,7 +106,9 @@ The accent uses a fill/text split: `--accent` (fill), `--accent-foreground` (tex
 - `gradientUsage`: do/don't lists
 - `sections`: section intro strings (gradients, logos, components, spacing, variables, gradientTextDemo)
 - `hierarchy`: text hierarchy demo data (class, colorVar, colorName, hex, description)
-- `logos`, `logoSizes`: logo variants + available download sizes
+- `logos`, `logoSizes`: logo variants + available download sizes. Each logo may carry optional usage overrides (`clearSpace`, `minSize`, `placement`, `dont`).
+- `logoUsage`: optional brand-wide logo rules (same four fields). Renders the Logo Usage section.
+- `formats`: optional output canvases, each `{ preset | name, kind, width, height, unit, safeZone, logo, typography, background, notes }`. Presets: `social-square`, `social-portrait`, `social-story`, `link-card`, `slide-16x9`. Renders the Formats section.
 - `typography`: full type scale with specimens
 - `voice`: description + do/don't examples
 - `accessibility`: contrast ratio grid
@@ -212,9 +215,9 @@ month). Run `build`/`export` afterward to refresh the deployed page and exports.
 ### Agent-native exports (lib/export.js)
 
 `build` and `export` project `config.json` into machine-first views, written next to the HTML:
-- `brand.json`: normalized, semantic brand (accent fill/text split with contrast, color roles, voice, logos with usage, spacing). The agent-first view, not the render config.
-- `tokens.json`: W3C Design Tokens (DTCG) `{ $type, $value }` for color / fontFamily / dimension. Only hex theme values become color tokens (gradients/`-rgb` are excluded to stay tool-compatible).
-- `brand.md`: an LLM brief; surfaces low-contrast pairs as explicit cautions, ends with a `## Changelog` section.
+- `brand.json`: normalized, semantic brand (accent fill/text split with contrast, color roles, voice, logos with usage, spacing). The agent-first view, not the render config. Also carries `logoUsage`, per-logo `usage`, and resolved `formats` (names already mapped to file paths, hexes and type metrics).
+- `tokens.json`: W3C Design Tokens (DTCG) `{ $type, $value }` for color / fontFamily / dimension. Only hex theme values become color tokens (gradients/`-rgb` are excluded to stay tool-compatible). The config palette (`colors.brand/neutrals/semantic`) is nested at `color.palette.<slug>` with the role as `$description` and oklch under `$extensions`, so it cannot collide with the flat `color.<theme-var>` tokens.
+- `brand.md`: an LLM brief; surfaces low-contrast pairs as explicit cautions, ends with a `## Changelog` section. Color leads with the palette from `colors.brand` (theme-derived usage lines follow), neutrals come from `colors.neutrals`, and it carries the type scale, spacing, `## Logo usage` and `## Formats` as followable instructions. brand.md and brand.json share one projection (`projectFormats`, `projectLogoUsage`) so they cannot disagree.
 
 `config.changelog` rides along automatically: it's added to `brand.json`, and `brand.md`'s `## Changelog` section is emitted **unconditionally**, it leads with the maintenance instruction ("when you change the brand, run `brandkit changelog`…") so an agent reading the brief learns the rule even before any entries exist, then lists the history. `tokens.json` is unaffected (not token data).
 
@@ -223,6 +226,12 @@ month). Run `build`/`export` afterward to refresh the deployed page and exports.
 `build` also injects `<link rel="alternate" type="application/json" href="brand.json">` and embeds `<script type="application/json" id="brandkit-brand">` (with `</script>` escaped) so an agent fetching the deployed page gets structured data without scraping. The transforms are pure (`lib/export.js`); file writing is `writeExports()`.
 
 For a human pointing their own agent at the guide, `renderAgentCallout()` (engine.js) renders a "Using an AI agent?" box under the sidebar nav with a copy-paste prompt. The prompt resolves the export URLs against `location.href` (via `new URL`) so it carries absolute links to `brand.json` / `tokens.json` / `brand.md`, and names the brand from `cfg.brand`. Hide it with `brand.agentCallout: false`.
+
+### No em or en dashes, and what that means for the starter
+
+Nothing brandkit writes (exports, CLI output, microsite copy, starter config, comments) contains an em or en dash; `test/exports.test.js` scans the package and fails on one. Two files match a dash by escape on purpose (`lib/export.js` `fontLine`, `lib/config-schema.js` `copyNorm`) to recognize one in a client's content. Client content is never rewritten.
+
+Scaffold detection (`isStillScaffold`, `mergeColors`, `isAuthored`, `seedBrandIdentity`) compares through `copyKey()`, which ignores punctuation and case, because guides scaffolded by 1.6.0 and earlier hold the old dashed copy. **If you reword starter copy, change punctuation only, or those guides stop being recognized as scaffold.** `test/fixtures/starter-1.6.0.json` locks this.
 
 ## Coding Standards
 
@@ -255,4 +264,4 @@ node -e "require('fs').writeFileSync('example/AGENTS.md', require('./lib/agents-
 
 `example/{brand.json,tokens.json,brand.md}` are committed as a reference of what the exports look like, regenerate them with `export` (not `build`, which would overwrite the raw dev `index.html`/`styles.css`).
 
-No client brand data lives in this repo.
+No client brand data lives in this repo, with one exception: `test/fixtures/freeway.config.json`, a copy of Freeway PHX's published `/brand/config.json` (em dashes removed) that the export tests use as their acceptance fixture. `test/fixtures/starter-1.6.0.json` pins the pre-1.7 starter copy so scaffold detection stays backward compatible.
