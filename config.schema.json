@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/The-Stack-Lab/brandkit/config.schema.json",
   "title": "brandkit config",
-  "description": "Configuration for a brandkit brand guide. The single source of truth — drives the rendered guide and the agent-native exports (brand.json, tokens.json, brand.md).",
+  "description": "Configuration for a brandkit brand guide. It is the single source of truth: it drives the rendered guide and the agent-native exports (brand.json, tokens.json, brand.md).",
   "type": "object",
   "required": [
     "brand",
@@ -61,7 +61,7 @@
         },
         "sourceVar": {
           "type": "string",
-          "description": "The token this swatch was extracted from. Stable identity for the per-item merge on re-generate — unlike cssVar, which is derived from the name."
+          "description": "The token this swatch was extracted from. Stable identity for the per-item merge on re-generate, unlike cssVar, which is derived from the name."
         },
         "authored": {
           "type": "string",
@@ -116,7 +116,7 @@
         },
         "version": {
           "type": "string",
-          "description": "The brand guide's own revision (shown in the banner/footer) — not the brandkit package version."
+          "description": "The brand guide's own revision (shown in the banner/footer), not the brandkit package version."
         },
         "date": {
           "type": "string"
@@ -135,7 +135,7 @@
         },
         "agentCallout": {
           "type": "boolean",
-          "description": "Show the 'Using an AI agent?' callout under the sidebar nav — a copy-paste prompt pointing an agent at the brand.json / tokens.json / brand.md exports. Defaults to true; set false to hide it."
+          "description": "Show the 'Using an AI agent?' callout under the sidebar nav, a copy-paste prompt pointing an agent at the brand.json / tokens.json / brand.md exports. Defaults to true; set false to hide it."
         }
       }
     },
@@ -451,7 +451,7 @@
           },
           "passes": {
             "type": "boolean",
-            "description": "Whether this pair clears AA. Failures are kept in the table deliberately — a contrast table that can only show passes cannot report a problem."
+            "description": "Whether this pair clears AA. Failures are kept in the table deliberately: a contrast table that can only show passes cannot report a problem."
           },
           "textPairing": {
             "type": "boolean",

@@ -1,11 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Brandkit — Style Guide Engine
+   Brandkit: Style Guide Engine
    Self-contained stylesheet, no dependencies.
    CSS custom properties injected by engine.js from config.json.
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ───────────────────────────────────────────────────────────────────
-   Default tokens — a config only needs to OVERRIDE these.
+   Default tokens: a config only needs to OVERRIDE these.
    This stylesheet consumes every variable below; shipping defaults here
    means a minimal or ported config never renders broken (invisible
    buttons, colorless code, system fonts, transparent tints).
@@ -32,7 +32,7 @@
   --font-display: 'Inter', sans-serif;
   --font-body: 'Inter', sans-serif;
 
-  /* Accent — fill vs. text split (Material/shadcn "on-color" convention)
+  /* Accent: fill vs. text split (Material/shadcn "on-color" convention)
        --accent            the fill color (buttons, active chips)
        --accent-foreground text/icon color ON the fill (must pass on --accent)
        --accent-text       the accent used AS text/links on a light surface */
@@ -41,7 +41,7 @@
   --accent-foreground: #FFFFFF;
   --accent-text: var(--accent);
 
-  /* Primary action — the fill for primary buttons / CTAs.
+  /* Primary action: the fill for primary buttons / CTAs.
        Defaults to the accent, so single-accent brands are unchanged. Brands that
        separate the primary action from the accent (e.g. a black CTA with an orange
        accent) override --primary / --primary-foreground. */
@@ -52,7 +52,7 @@
   --gradient-brand: linear-gradient(135deg, #4338CA 0%, #6366F1 50%, #EC4899 100%);
   --gradient-brand-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(236, 72, 153, 0.06) 100%);
 
-  /* Header background — the hero block behind the wordmark/logo.
+  /* Header background: the hero block behind the wordmark/logo.
        Defaults to the brand gradient; override (e.g. a flat dark color) for a
        hero that shouldn't carry the accent. */
   --header-bg: var(--gradient-brand);
@@ -132,7 +132,7 @@ body {
 .sidebar-nav a:hover { color: var(--ink); background: var(--cloud); }
 .sidebar-nav a.active { color: var(--accent-text); border-left-color: var(--accent-text); background: rgba(var(--accent-rgb), 0.04); font-weight: 500; }
 
-/* Agent callout — paste-ready prompt that points an AI agent at the exports */
+/* Agent callout: paste-ready prompt that points an AI agent at the exports */
 .sidebar-agent {
   margin: 28px 16px 8px;
   padding: 14px;
@@ -170,10 +170,10 @@ body {
 .sidebar-agent-btn:active { transform: translateY(1px); }
 .sidebar-agent-btn:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 
-/* Changelog link — pinned to the bottom of the sidebar column */
+/* Changelog link: pinned to the bottom of the sidebar column */
 /* The author `display:flex` below would override the UA `[hidden]{display:none}`
    (author beats UA), leaving an empty bordered box when JS hasn't un-hidden it
-   (no changelog, or before the engine runs) — so restore hidden explicitly. */
+   (no changelog, or before the engine runs), so restore hidden explicitly. */
 .sidebar-changelog[hidden] { display: none; }
 .sidebar-changelog {
   margin: auto 16px 4px;        /* auto top pushes it to the bottom */
@@ -1176,7 +1176,7 @@ body {
   margin: 0;
 }
 
-/* Each release — a vertical timeline with the version "ticked" on the rail */
+/* Each release: a vertical timeline with the version "ticked" on the rail */
 .changelog-list {
   border-left: 2px solid var(--mist);
   padding-left: 32px;

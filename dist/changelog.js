@@ -18,7 +18,7 @@
   // paints. Idempotent. See the matching gate in engine.js.
   function reveal() { document.documentElement.classList.add('bk-ready'); }
   // Failsafe registered BEFORE the fetch: never leave the page permanently blank
-  // if config.json is slow or fails — reveal after 1.5s regardless.
+  // if config.json is slow or fails, reveal after 1.5s regardless.
   var revealFailsafe = setTimeout(reveal, 1500);
   function done() { clearTimeout(revealFailsafe); reveal(); }
 
@@ -33,7 +33,7 @@
     .then(done, done);
 
   /* ================================================================
-     Helpers (kept in sync with dist/engine.js — no module system here)
+     Helpers (kept in sync with dist/engine.js, no module system here)
      ================================================================ */
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -55,7 +55,7 @@
   function cssVal(v) { return String(v == null ? '' : v).replace(/[<>{};]/g, ''); }
 
   /* ================================================================
-     Bootstrap — fonts + theme variables, mirroring engine.js
+     Bootstrap: fonts + theme variables, mirroring engine.js
      ================================================================ */
   function bootstrap(cfg) {
     if (cfg.fonts) {
@@ -95,7 +95,7 @@
     }
 
     var name = cfg.brand && (cfg.brand.displayName || cfg.brand.name);
-    document.title = (name ? name + ' — ' : '') + 'Changelog';
+    document.title = (name ? name + ': ' : '') + 'Changelog';
   }
 
   /* ================================================================
@@ -110,7 +110,7 @@
 
     var leadEl = document.getElementById('changelog-lead');
     if (leadEl) {
-      leadEl.textContent = 'A history of every revision to this brand guide — newest first.';
+      leadEl.textContent = 'A history of every revision to this brand guide, newest first.';
     }
 
     var list = document.getElementById('changelog-list');

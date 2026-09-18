@@ -77,7 +77,7 @@ module.exports = function init(args) {
     console.log('    kept    config.json (already exists)');
   }
 
-  // Maintenance contract for agents/humans working in this dir — written when
+  // Maintenance contract for agents/humans working in this dir, written when
   // absent (so older guides pick it up on --update) and never clobbered.
   var agentsPath = path.join(targetDir, 'AGENTS.md');
   if (!fs.existsSync(agentsPath)) {

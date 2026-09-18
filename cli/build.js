@@ -28,12 +28,12 @@ module.exports = function build(args) {
 
   // A guide with unfilled essentials is not ready to send. Building it anyway
   // is how brandkit's own placeholder content reached client approval
-  // documents — so say so plainly, and make shipping it a deliberate act.
+  // documents: so say so plainly, and make shipping it a deliberate act.
   var blocking = unfilled.findTodos(config).filter(unfilled.isBlocking);
 
   // Structural emptiness counts too: `generate` clears a section that only held
   // brandkit's scaffold, and that carries no marker. Reported per blocking
-  // field, and only when no marker path already covers it — listing
+  // field, and only when no marker path already covers it, listing
   // `voice.description` and `voice (empty)` separately inflated the count.
   unfilled.BLOCKING_PATHS.forEach(function (fieldPath) {
     var already = blocking.some(function (p) {

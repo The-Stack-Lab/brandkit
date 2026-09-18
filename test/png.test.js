@@ -72,7 +72,7 @@ function px(img, i) {
   return [img.pixels[i * 4], img.pixels[i * 4 + 1], img.pixels[i * 4 + 2], img.pixels[i * 4 + 3]];
 }
 
-// 1. truecolor 8-bit, filter None — the well-trodden path
+// 1. truecolor 8-bit, filter None: the well-trodden path
 var rgb = build(2, 1, 8, 2, [Buffer.from([255, 0, 0, 0, 255, 0])], { bpp: 3 });
 check('colorType 2 (RGB8)', [px(png.decode(rgb), 0), px(png.decode(rgb), 1)],
   [[255, 0, 0, 255], [0, 255, 0, 255]]);
@@ -97,7 +97,7 @@ var palImg = png.decode(pal);
 check('colorType 3 (palette + tRNS)', [px(palImg, 0), px(palImg, 1)],
   [[255, 0, 0, 255], [0, 0, 255, 17]]);
 
-// 6. 16-bit truecolor — high byte should survive
+// 6. 16-bit truecolor: high byte should survive
 var rgb16 = build(1, 1, 16, 2, [Buffer.from([0xAB, 0xCD, 0x12, 0x34, 0x56, 0x78])], { bpp: 6 });
 check('colorType 2 @ 16-bit', px(png.decode(rgb16), 0), [0xAB, 0x12, 0x56, 255]);
 
@@ -133,7 +133,7 @@ var tmp = require('path').join(require('os').tmpdir(), 'brandkit-png-test.png');
 fs.writeFileSync(tmp, Buffer.from('not a png at all'));
 check('readFile returns null on junk', png.readFile(tmp), null);
 
-// 10a. missing IEND but complete image data — lenient decode is correct
+// 10a. missing IEND but complete image data, lenient decode is correct
 fs.writeFileSync(tmp, rgb.slice(0, rgb.length - 12));
 check('decodes despite missing IEND', px(png.readFile(tmp), 0), [255, 0, 0, 255]);
 

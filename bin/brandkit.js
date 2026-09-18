@@ -40,7 +40,7 @@ switch (command) {
 
 function printHelp() {
   console.log('');
-  console.log('  brandkit — config-driven brand guide');
+  console.log('  brandkit: config-driven brand guide');
   console.log('');
   console.log('  Usage:');
   console.log('    brandkit init [dir]        Scaffold a new brand guide');

@@ -1,5 +1,5 @@
 /**
- * Regression tests for 1.6.0 — the unfilled-state layer, scaffold provenance,
+ * Regression tests for 1.6.0: the unfilled-state layer, scaffold provenance,
  * pairing/gate fixes, merge semantics, font honesty and accessibility.
  *
  * Every case names the failure it locks out. Where a fix is a boundary or a
@@ -47,7 +47,7 @@ check('no marker reaches brand.md', (md.match(/__TODO/g) || []).length, 0);
 check('no marker reaches brand.json', (JSON.stringify(bj).match(/__TODO/g) || []).length, 0);
 check('a real list entry survives the filter', bj.voice.do, ['A real do']);
 check('a real changelog entry survives', bj.changelog[0].changes, ['Real']);
-// {ratio:'__TODO'} rendered as "is __TODO (__TODO) — fails AA".
+// {ratio:'__TODO'} rendered as "is __TODO (__TODO), fails AA".
 check('an unfilled ratio raises no caution', md.indexOf('Contrast cautions'), -1);
 check('brand.md reports the gaps once, plainly', md.indexOf('## Not yet defined') !== -1, true);
 check('an unfilled font rationale is not printed as prose',
@@ -67,7 +67,7 @@ check('the fill comes from --primary', theme['--accent'], '#111111');
 check('its foreground comes from --primary-foreground', theme['--accent-foreground'], '#FFFFFF');
 check("shadcn's own --accent still becomes --coral", theme['--coral'], '#EEEEEE');
 // Passing it through would collide with --primary-foreground and be resolved
-// by CSS declaration order — luck, not design.
+// by CSS declaration order: luck, not design.
 check('the orphaned foreground is dropped, not guessed', warns.length, 1);
 
 // A future edit must not be able to reintroduce a two-into-one destination.
@@ -115,7 +115,7 @@ check('brandkit does not strip its own repo', schema.hostBrandIdentity('.'), nul
 
 // The merge must not treat brandkit's own values as the author's work: that
 // preserved the starter's "Space+Grotesk:wght@…" beside a freshly extracted
-// "Nexa-bold" family — loading one typeface while labelling it another.
+// "Nexa-bold" family: loading one typeface while labelling it another.
 var mergedFonts = schema.mergeConfigs(
   { fonts: { display: { family: 'Space Grotesk',
                         googleImport: scaffold.fonts.display.googleImport,
@@ -206,7 +206,7 @@ check('the value-based pairing is reported', (upgraded._carriedByValue || []).le
 
 // Position must NEVER be used. Config order is not the host's declaration
 // order, so pairing by index swapped two swatches' names AND roles onto each
-// other — and the viz-token skip changed the extracted count, disabling the
+// other: and the viz-token skip changed the extracted count, disabling the
 // length guard on exactly the shadcn projects that ship --chart-1..5.
 var swapped = schema.mergeConfigs(
   { colors: { brand: { label: 'B', items: [
@@ -224,7 +224,7 @@ check('prose follows the colour, not the index',
 check('and so does the role', swapped.brand.items[0].role, 'Accent only');
 
 // When the value ALSO changed there is no honest bridge. The prose is not
-// guessed onto another swatch — the loss is reported instead.
+// guessed onto another swatch: the loss is reported instead.
 var lostProse = schema.mergeConfigs(
   { colors: { brand: { label: 'B', items: [
       { name: 'Barone Blue', role: 'Structural steel blue', hex: '#000000' }] },
@@ -319,7 +319,7 @@ function group(items, g) {
   return { colors: o };
 }
 
-// Prose carried across by NAME was still reported as lost — a false claim in
+// Prose carried across by NAME was still reported as lost, a false claim in
 // the release built to stop false claims.
 var named = schema.mergeConfigs(
   group([{ name: 'Navy', role: 'Our navy', hex: '#0A2A5E' }]),
@@ -346,7 +346,7 @@ var shortHex = schema.mergeConfigs(
   group([{ name: 'Brand', role: '', hex: '#0000AA', sourceVar: '--brand' }])).colors;
 check('a 3-digit hex bridges to its 6-digit form', shortHex.brand.items[0].name, 'Barone Blue');
 
-// A scoped client package must not identify AS brandkit — that would disable
+// A scoped client package must not identify AS brandkit, that would disable
 // every provenance check for it.
 var scoped = fs.mkdtempSync(path.join(os.tmpdir(), 'brandkit-scoped-'));
 fs.writeFileSync(path.join(scoped, 'package.json'), JSON.stringify({ name: '@client/brandkit' }));
@@ -355,7 +355,7 @@ fs.writeFileSync(path.join(scoped, 'package.json'), JSON.stringify({ name: '@sta
 check('the real published name is brandkit', schema.isBrandkitRepo(scoped), true);
 try { fs.rmSync(scoped, { recursive: true, force: true }); } catch (_) { /* gone */ }
 
-/* ---------------- 10. Ensemble round 3 — the multi-pass resolver ---------------- */
+/* ---------------- 10. Ensemble round 3: the multi-pass resolver ---------------- */
 
 function C(b, n, sm) {
   return { colors: { brand: { label: 'B', items: b || [] },
@@ -363,8 +363,8 @@ function C(b, n, sm) {
                      semantic: { label: 'S', items: sm || [] } } };
 }
 
-// A greedy single pass let one prior supply prose to TWO swatches — claimed by
-// colour, then again by name — so the guide showed two identical names.
+// A greedy single pass let one prior supply prose to TWO swatches, claimed by
+// colour, then again by name: so the guide showed two identical names.
 var twice = schema.mergeConfigs(
   C([{ name: 'Barone Blue', role: 'Structural navy', hex: '#1F2F8F' }]),
   C([{ name: 'Steel', hex: '#1F2F8F', sourceVar: '--steel' },
@@ -405,11 +405,11 @@ check('an authored description on a scaffold-shaped item is reported if lost',
   (schema.mergeConfigs(C([scaffoldish]), C([{ name: 'Other', hex: '#ABCDEF', sourceVar: '--o' }]))
     .colors._unmatchedAuthored || []).length > 0, true);
 
-/* ---------------- 11. Ensemble round 4 — two-sided uniqueness ---------------- */
+/* ---------------- 11. Ensemble round 4: two-sided uniqueness ---------------- */
 
 // Provenance claims must be honest about HOW a pairing was made. Inferring
 // "carried by colour value" from differing sourceVars labelled every name match
-// that way — essentially every swatch in any pre-1.6.0 upgrade.
+// that way: essentially every swatch in any pre-1.6.0 upgrade.
 var byNameOnly = schema.mergeConfigs(
   C([{ name: 'Barone Blue', role: 'Structural navy', hex: '#1F2F8F' }]),
   C([{ name: 'Barone Blue', hex: '#22308F', sourceVar: '--barone' }])).colors;
@@ -459,7 +459,7 @@ check('a real value bridge is reported as such',
 });
 
 // Indeterminate in either direction. Reporting only prior-side ambiguity told
-// the user a colour was "not found" when it could not be told apart — the wrong
+// the user a colour was "not found" when it could not be told apart, the wrong
 // cause for someone deciding whether to re-approve a brand.
 var oneToMany = schema.mergeConfigs(
   C([{ name: 'Brand Blue', role: 'Primary CTA', hex: '#0055FF' }]),
@@ -470,7 +470,7 @@ check('one prior shared by several targets is reported ambiguous',
 
 // mergeLogos buckets on asset paths from the host filesystem. On a bare {} a
 // path of `__proto__` made the lookup truthy via inheritance, so the entry was
-// never recorded and the authored prose was dropped — silently, unlike the
+// never recorded and the authored prose was dropped, silently, unlike the
 // colour buckets which threw.
 check('an asset path of "__proto__" does not lose authored logo prose',
   schema.mergeConfigs(

@@ -30,7 +30,7 @@
   // class is added once the first render pass below completes. Idempotent.
   function reveal() { document.documentElement.classList.add('bk-ready'); }
   // Failsafe registered BEFORE the fetch: if config.json is slow or fails, never
-  // leave the page permanently blank — reveal after 1.5s no matter what. The
+  // leave the page permanently blank: reveal after 1.5s no matter what. The
   // finally below clears this on the normal path so it doesn't fire twice.
   var revealFailsafe = setTimeout(reveal, 1500);
 
@@ -45,7 +45,7 @@
   } finally {
     // Reveal after init()'s synchronous render pass (or on error, so a failed
     // load shows the page rather than a blank frame). The throw still surfaces
-    // as an unhandled rejection for debugging — finally doesn't swallow it.
+    // as an unhandled rejection for debugging, finally doesn't swallow it.
     clearTimeout(revealFailsafe);
     reveal();
   }
@@ -54,7 +54,7 @@
     var copyFormat = localStorage.getItem('brandkit-copy-format') || 'hex';
 
     /* ==============================================================
-       HTML escape helper — prevents XSS from config values
+       HTML escape helper: prevents XSS from config values
        ============================================================== */
     function esc(s) {
       return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -75,7 +75,7 @@
       return t === '' || t.indexOf('__TODO') === 0;
     }
 
-    /** Text if filled, else '' — for inline use where an empty string is fine. */
+    /** Text if filled, else '': for inline use where an empty string is fine. */
     function orBlank(v) {
       return isUnset(v) ? '' : v;
     }
@@ -101,7 +101,7 @@
     }
 
     /* ==============================================================
-       Font stack helper — weaves in an optional `fallback` web stand-in
+       Font stack helper: weaves in an optional `fallback` web stand-in
        for brands whose official typeface isn't web-available:
          'Family', 'Fallback', sans-serif
        No fallback → 'Family', sans-serif (backward-compatible).
@@ -118,7 +118,7 @@
     }
 
     /* ==============================================================
-       CSS-value sanitizer — strips the characters a config value would
+       CSS-value sanitizer: strips the characters a config value would
        need to break out of the injected <style> block ( < > ), out of the
        :root {…} rule ( { } ), or out of its own declaration to smuggle in
        another one ( ; ). A legitimate custom-property token/value never
@@ -129,7 +129,7 @@
     function cssVal(v) { return String(v == null ? '' : v).replace(/[<>{};]/g, ''); }
 
     /* ==============================================================
-       BOOTSTRAP — inject fonts + CSS variables before any rendering
+       BOOTSTRAP: inject fonts + CSS variables before any rendering
        ============================================================== */
     function bootstrap() {
       // Inject Google Fonts
@@ -179,7 +179,7 @@
 
       // Set page title
       if (cfg.brand && cfg.brand.displayName) {
-        document.title = cfg.brand.displayName + ' \u2014 Brand Guide';
+        document.title = cfg.brand.displayName + ': Brand Guide';
       }
     }
 
@@ -208,7 +208,7 @@
         await navigator.clipboard.writeText(text);
         toast('Copied: ' + (text.length > 50 ? text.slice(0, 47) + '...' : text));
       } catch (_) {
-        toast('Copy failed \u2014 try from localhost or HTTPS');
+        toast('Copy failed: try from localhost or HTTPS');
       }
     }
 
@@ -228,7 +228,7 @@
     }
 
     /* ==============================================================
-       2b. Render agent callout — a paste-ready prompt that points an AI
+       2b. Render agent callout: a paste-ready prompt that points an AI
        agent at the machine-readable exports (brand.json / tokens.json /
        brand.md) so it reads structured brand data instead of scraping the
        rendered page. Opt out with brand.agentCallout === false.
@@ -264,10 +264,10 @@
         .replace(/[\u0000-\u001F\u007F\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/g, ' ').replace(/\s+/g, ' ').trim() || 'this brand';
       var prompt =
         'This page is a brandkit brand guide for ' + name + '. It publishes ' +
-        'machine-readable brand data — read these instead of scraping the page:\n\n' +
-        '- ' + brandUrl + ' — full structured brand: colors (roles + contrast), typography, voice, logos, spacing\n' +
-        '- ' + tokensUrl + ' — W3C design tokens (DTCG $type/$value), for code and design tooling\n' +
-        '- ' + mdUrl + ' — brand brief: how to stay on-brand\n\n' +
+        'machine-readable brand data. Read these instead of scraping the page:\n\n' +
+        '- ' + brandUrl + ' (full structured brand: colors with roles and contrast, typography, voice, logos, spacing)\n' +
+        '- ' + tokensUrl + ' (W3C design tokens, DTCG $type/$value, for code and design tooling)\n' +
+        '- ' + mdUrl + ' (brand brief: how to stay on-brand)\n\n' +
         'Fetch them, then apply ' + name + "'s colors, type, and voice to what you're building.";
 
       box.innerHTML =
@@ -282,7 +282,7 @@
     }
 
     /* ==============================================================
-       2c. Render changelog link — pinned to the bottom of the sidebar when
+       2c. Render changelog link: pinned to the bottom of the sidebar when
        a changelog exists, pointing at the standalone changelog.html page.
        ============================================================== */
     function renderChangelogLink() {
@@ -646,7 +646,7 @@
 
       // Cards
       if (cfg.components.cards) {
-        html += '<div class="component-label" style="margin-top:28px;">Cards \u2014 Light Background</div>';
+        html += '<div class="component-label" style="margin-top:28px;">Cards: Light Background</div>';
         html += '<div class="card-demo-grid">';
         cfg.components.cards.forEach(function (card) {
           var cardTitle = card.title || card.label || '';
@@ -664,7 +664,7 @@
 
       // Stats
       if (cfg.components.stats) {
-        html += '<div class="component-label" style="margin-top:28px;">Stats \u2014 Dark Background</div>';
+        html += '<div class="component-label" style="margin-top:28px;">Stats: Dark Background</div>';
         html += '<div class="dark-card-demo">';
         html += '<div class="dark-section-label">By the numbers</div>';
         html += '<div class="dark-card-demo-grid">';
@@ -957,7 +957,7 @@
        18. Render shell (header, intro, footer, misc)
        ============================================================== */
     function renderShell() {
-      // Header — show brand.headerLogo image if set, else the brand name as text.
+      // Header: show brand.headerLogo image if set, else the brand name as text.
       // brand.guideLabel renames the "Web Style Guide" label (header + footer).
       var guideLabel = cfg.brand.guideLabel || 'Web Style Guide';
       var wordmark = document.getElementById('header-wordmark');
@@ -986,7 +986,7 @@
         '<span>' + esc(cfg.brand.url) + ' \u00B7 ' + esc(cfg.brand.byline) + '</span>' +
         '<span>' + esc(guideLabel) + ' v' + esc(cfg.brand.version) + ' \u00B7 ' + esc(cfg.brand.date) + '</span>';
 
-      // Typography specimens — read descriptions from config
+      // Typography specimens: read descriptions from config
       var typeDisplayName = document.getElementById('type-display-name');
       if (typeDisplayName && cfg.fonts) typeDisplayName.textContent = cfg.fonts.display.family;
       var typeDisplayDesc = document.getElementById('type-display-desc');
@@ -1065,7 +1065,7 @@
           '</div>';
       }
 
-      // Sidebar brand — logo image if brand.sidebarLogo is set, else brand name
+      // Sidebar brand: logo image if brand.sidebarLogo is set, else brand name
       var sidebarBrand = document.querySelector('.sidebar-brand');
       if (sidebarBrand) {
         if (cfg.brand.sidebarLogo) {
