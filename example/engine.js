@@ -616,7 +616,7 @@
           var k = typeof entry.preset === 'string' ? entry.preset.trim().toLowerCase().replace(/\s+/g, '') : '';
           if (PRESET_ALIASES[k]) k = PRESET_ALIASES[k];
           var preset = Object.prototype.hasOwnProperty.call(FORMAT_PRESETS, k) ? FORMAT_PRESETS[k] : null;
-          if (preset) Object.keys(preset).forEach(function (p) { out[p] = preset[p]; });
+          if (preset) { out.preset = k; Object.keys(preset).forEach(function (p) { out[p] = preset[p]; }); }
           else out.unknownPreset = String(entry.preset);
         }
         Object.keys(entry).forEach(function (p) {
@@ -667,9 +667,11 @@
       if (typeof min.digitalPx === 'number' && min.digitalPx > 0) sizes.push(min.digitalPx + 'px on screen');
       if (typeof min.printMm === 'number' && min.printMm > 0) sizes.push(min.printMm + 'mm in print');
       if (sizes.length) rows.push(['Minimum width', sizes.join(' \u00B7 ')]);
-      var placement = [].concat(src.placement || []).filter(function (p) { return !isUnset(p); });
+      // Rules are sentences. An object here would print as "[object Object]".
+      function isText(x) { return (typeof x === 'string' || typeof x === 'number') && !isUnset(x); }
+      var placement = [].concat(src.placement || []).filter(isText);
       if (placement.length) rows.push(['Placement', placement.join(' \u00B7 ')]);
-      var dont = [].concat(src.dont || []).filter(function (d) { return !isUnset(d); });
+      var dont = [].concat(src.dont || []).filter(isText);
       return (rows.length || dont.length) ? { rows: rows, dont: dont } : null;
     }
 

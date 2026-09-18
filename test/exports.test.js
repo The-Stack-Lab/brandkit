@@ -172,6 +172,11 @@ check('a punctuation-only CSS value edit is authored', schema.copyKey(typeEdit) 
 var hexEdit = clone(current.colors.brand.items[0]);
 hexEdit.hex = hexEdit.hex.toLowerCase();
 check('a hex case edit is authored', schema.copyKey(hexEdit) === schema.copyKey(current.colors.brand.items[0]), false);
+check('content under an own __proto__ key is not hidden from the comparison',
+  schema.copyKey(JSON.parse('{"description":"x","__proto__":{"mine":"authored"}}')) === schema.copyKey({ description: 'x' }), false);
+check('a marker in the neutrals fallback is not printed',
+  has(exporter.buildBrandMarkdown({ theme: { '--ink': '__TODO: choose', '--slate': '#67648C' } }), '__TODO'), false);
+check('a marker clear space is no rule at all', formatsLib.normalizeClearSpace({ rule: '__TODO: define', ratio: 0.5 }), { ratio: 0.5 });
 check('a punctuation-only prose edit is still scaffold',
   schema.copyKey({ description: 'Primary lockup; use on light backgrounds' }), schema.copyKey({ description: current.logos[0].description }));
 
@@ -362,6 +367,17 @@ check('no config value reaches the page as markup', /<img/.test(xssPage.els['for
   function canvas(x) { return [x.name, x.kind, x.width, x.height, x.unit, x.unknownPreset]; }
   check('engine and library agree on ' + JSON.stringify(entry), canvas(fromEngine), canvas(fromLib));
 });
+// ...and on how many formats a brand defines at all.
+var countCfg = { formats: [{ notes: 'print on uncoated stock' }, { kind: 'video' }, {}, 'social-square', { name: 'Poster' }, { preset: 'nope' }] };
+check('the page and the exports count the same formats',
+  [page(countCfg).api.formats().length, formatsLib.resolveFormats(countCfg).length, exporter.buildBrandJson(countCfg).formats.length], [3, 3, 3]);
+var objRules = page({ logoUsage: { dont: [{ rule: 'stretch it' }, 'Recolor it'], placement: [{ a: 1 }] } });
+objRules.api.usage();
+check('an object in a rule list is never printed', /object Object/.test(objRules.els['logo-usage-content'].innerHTML), false);
+var cjk = exporter.buildTokensJson({ colors: { brand: [{ name: '\u85CD', hex: '#0000FF', cssVar: '--brand-ai' }, { name: '\u2605', hex: '#FF0000' }] }, spacing: [{ token: '__proto__', px: 8 }, { token: 'sm', px: 8 }] });
+check('a non-Latin color name still becomes a token', Object.keys(cjk.color.palette), ['brand-ai', 'brand-2']);
+check('a __proto__ spacing token cannot replace the group prototype', Object.keys(cjk.dimension), ['sm']);
+
 [80, -5, { all: 60, bottom: 90 }, { top: 10 }, { all: 10, unit: 'mm' }, { left: -1 }, 'x', [1], {}].forEach(function (z) {
   var fmt = { width: 100, height: 100, unit: 'px', safeZone: z };
   check('engine and library agree on safeZone ' + JSON.stringify(z), page({}).api.zone(fmt), formatsLib.normalizeSafeZone(z, 'px'));
