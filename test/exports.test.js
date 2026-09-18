@@ -292,6 +292,12 @@ check('an unknown logo variant is reported', has(hmd, 'logo "Nope" is not in the
 check('non-positive minimum sizes are dropped', 'usage' in hj.logos[0], false);
 var typeOnly = exporter.buildBrandJson({ formats: [{ preset: 'link-card', background: [{ type: 'photo' }, { type: '__TODO' }, {}] }] });
 check('a background given only as a type is kept, hollow ones are not', typeOnly.formats[0].background, [{ type: 'photo' }]);
+check('but a color type that names no color is not a background',
+  'background' in exporter.buildBrandJson({ formats: [{ preset: 'link-card', background: [{ type: 'color' }, { type: 'other' }] }] }).formats[0], false);
+var markerLog = exporter.buildBrandMarkdown({ changelog: [{ version: '__TODO: 0.1', date: '__TODO: today', changes: ['__TODO: what changed'] },
+  { version: '0.2', date: '__TODO: when', changes: ['Real change', '__TODO'] }] });
+check('no marker reaches the revision history', has(markerLog, '__TODO'), false);
+check('an entry with nothing filled is not listed, a real one is', [has(markerLog, 'v?'), has(markerLog, '- **v0.2**: Real change')], [false, true]);
 var emptyHeads = exporter.buildBrandMarkdown({ logos: ['bad', {}, { variants: { svg: 'a.svg' } }], changelog: [null] });
 check('no Logos heading without a nameable logo', has(emptyHeads, '## Logos'), false);
 check('no revision history heading without an entry', has(emptyHeads, 'Revision history'), false);
