@@ -82,6 +82,72 @@
           }
         }
       }
+    },
+    "logoUsage": {
+      "type": "object",
+      "description": "Logo usage rules. All fields optional. Used for the brand-wide `logoUsage` and, with the same fields, on a single `logos[]` entry to override the brand-wide rule for that logo.",
+      "properties": {
+        "clearSpace": {
+          "description": "Minimum clear space around the logo, expressed relative to the logo itself so it holds at any size. A sentence, or an object with the sentence and a numeric ratio.",
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "The rule as a sentence, e.g. \"the height of the F mark on all sides\"."
+            },
+            {
+              "type": "object",
+              "properties": {
+                "rule": {
+                  "type": "string",
+                  "description": "The rule as a sentence, e.g. \"the height of the F mark on all sides\"."
+                },
+                "ratio": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "The same rule as a multiple of the logo's rendered height, e.g. 0.5 for half the logo height. Lets a tool compute the margin."
+                }
+              }
+            }
+          ]
+        },
+        "minSize": {
+          "type": "object",
+          "description": "Smallest size the logo may be rendered at. Below this it stops being legible.",
+          "properties": {
+            "digitalPx": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Minimum rendered width on screens, in CSS pixels."
+            },
+            "printMm": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Minimum rendered width in print, in millimeters."
+            }
+          }
+        },
+        "placement": {
+          "description": "Positions on a canvas where the logo is allowed, e.g. [\"top left\", \"bottom left\", \"centered\"]. Anything not listed is not allowed.",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "dont": {
+          "type": "array",
+          "description": "Misuse rules, one per entry, e.g. \"Stretch, squash or rotate the logo\". Rendered and exported under a \"Never\" heading.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "properties": {
@@ -277,7 +343,8 @@
       "type": "object",
       "additionalProperties": {
         "type": "string"
-      }
+      },
+      "description": "Section intro strings, keyed by section: gradients, logos, logoUsage, formats, components, spacing, variables, gradientTextDemo."
     },
     "hierarchy": {
       "type": "array",
@@ -334,6 +401,22 @@
               "dark",
               "gradient"
             ]
+          },
+          "clearSpace": {
+            "$ref": "#/definitions/logoUsage/properties/clearSpace",
+            "description": "Overrides `logoUsage.clearSpace` for this logo only."
+          },
+          "minSize": {
+            "$ref": "#/definitions/logoUsage/properties/minSize",
+            "description": "Overrides `logoUsage.minSize` for this logo only."
+          },
+          "placement": {
+            "$ref": "#/definitions/logoUsage/properties/placement",
+            "description": "Overrides `logoUsage.placement` for this logo only."
+          },
+          "dont": {
+            "$ref": "#/definitions/logoUsage/properties/dont",
+            "description": "Overrides `logoUsage.dont` for this logo only."
           }
         }
       }
@@ -353,6 +436,294 @@
             ]
           }
         }
+      }
+    },
+    "logoUsage": {
+      "$ref": "#/definitions/logoUsage"
+    },
+    "formats": {
+      "type": "array",
+      "description": "Output canvases that are not web pages (social cards, slides, video frames, print). Each entry tells an agent how to compose one canvas. Rendered as the Formats section and exported to brand.json and brand.md. A string entry is shorthand for { \"preset\": \"<name>\" }.",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "A preset name: social-square, social-portrait, social-story, link-card, slide-16x9 (or its dimensions, e.g. \"1080x1080\")."
+          },
+          {
+            "type": "object",
+            "properties": {
+              "preset": {
+                "type": "string",
+                "description": "Inherit name, kind, width, height and unit from a built-in canvas: social-square (1080x1080), social-portrait (1080x1350), social-story (1080x1920), link-card (1200x630), slide-16x9 (1920x1080). The dimensions are accepted as aliases. Any field set on this entry overrides the preset."
+              },
+              "name": {
+                "type": "string",
+                "description": "Display name, e.g. \"Instagram square\", \"LinkedIn link card\", \"Slide 16:9\"."
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "social",
+                  "presentation",
+                  "video",
+                  "print",
+                  "other"
+                ],
+                "description": "What the canvas is for."
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Canvas width in `unit`. Required unless a preset supplies it."
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Canvas height in `unit`. Required unless a preset supplies it."
+              },
+              "unit": {
+                "type": "string",
+                "description": "Unit for width, height and safeZone. Defaults to \"px\". Use \"mm\" or \"in\" for print."
+              },
+              "safeZone": {
+                "description": "Inset margins inside which all text and logos must sit. A number applies to every side.",
+                "oneOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "top": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Inset from the top edge, in the format's unit. Falls back to `all`, then 0."
+                      },
+                      "right": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Inset from the right edge, in the format's unit. Falls back to `all`, then 0."
+                      },
+                      "bottom": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Inset from the bottom edge, in the format's unit. Falls back to `all`, then 0."
+                      },
+                      "left": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Inset from the left edge, in the format's unit. Falls back to `all`, then 0."
+                      },
+                      "all": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Inset applied to every side not given individually."
+                      },
+                      "unit": {
+                        "type": "string",
+                        "description": "Unit for the insets when it differs from the format's unit."
+                      }
+                    }
+                  }
+                ]
+              },
+              "logo": {
+                "type": "object",
+                "description": "Which logo goes on this canvas and where.",
+                "properties": {
+                  "variant": {
+                    "type": "string",
+                    "description": "The `name` of an entry in `logos`. Resolved to its file path in the exports."
+                  },
+                  "placement": {
+                    "type": "string",
+                    "description": "Where it sits, e.g. \"bottom left\". Should be one of `logoUsage.placement` when that is set."
+                  },
+                  "maxWidth": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Largest rendered width on this canvas, in the format's unit."
+                  },
+                  "note": {
+                    "type": "string",
+                    "description": "Free text guidance, e.g. \"omit on slides after the title slide\"."
+                  }
+                }
+              },
+              "typography": {
+                "type": "object",
+                "description": "Which type styles to use on this canvas, keyed by role. `headline` and `body` are the conventional roles; any other role name is allowed.",
+                "properties": {
+                  "headline": {
+                    "description": "A named style from the `typography` scale, optionally resized for this canvas.",
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "description": "The style's `name` in the `typography` scale, e.g. \"H1\"."
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "style"
+                        ],
+                        "properties": {
+                          "style": {
+                            "type": "string",
+                            "description": "The style's `name` in the `typography` scale, e.g. \"H1\". Weight, tracking, leading and family are resolved from it in the exports."
+                          },
+                          "size": {
+                            "type": "string",
+                            "description": "Size on this canvas, with unit, e.g. \"76px\". Overrides the scale's web size, which is usually wrong for a fixed canvas."
+                          },
+                          "weight": {
+                            "type": [
+                              "number",
+                              "string"
+                            ],
+                            "description": "Weight override for this canvas."
+                          },
+                          "leading": {
+                            "type": "string",
+                            "description": "Line-height override for this canvas."
+                          },
+                          "note": {
+                            "type": "string",
+                            "description": "Free text guidance for this role, e.g. \"eight words or fewer\"."
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "body": {
+                    "description": "A named style from the `typography` scale, optionally resized for this canvas.",
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "description": "The style's `name` in the `typography` scale, e.g. \"H1\"."
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "style"
+                        ],
+                        "properties": {
+                          "style": {
+                            "type": "string",
+                            "description": "The style's `name` in the `typography` scale, e.g. \"H1\". Weight, tracking, leading and family are resolved from it in the exports."
+                          },
+                          "size": {
+                            "type": "string",
+                            "description": "Size on this canvas, with unit, e.g. \"76px\". Overrides the scale's web size, which is usually wrong for a fixed canvas."
+                          },
+                          "weight": {
+                            "type": [
+                              "number",
+                              "string"
+                            ],
+                            "description": "Weight override for this canvas."
+                          },
+                          "leading": {
+                            "type": "string",
+                            "description": "Line-height override for this canvas."
+                          },
+                          "note": {
+                            "type": "string",
+                            "description": "Free text guidance for this role, e.g. \"eight words or fewer\"."
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": {
+                  "description": "A named style from the `typography` scale, optionally resized for this canvas.",
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "description": "The style's `name` in the `typography` scale, e.g. \"H1\"."
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "style"
+                      ],
+                      "properties": {
+                        "style": {
+                          "type": "string",
+                          "description": "The style's `name` in the `typography` scale, e.g. \"H1\". Weight, tracking, leading and family are resolved from it in the exports."
+                        },
+                        "size": {
+                          "type": "string",
+                          "description": "Size on this canvas, with unit, e.g. \"76px\". Overrides the scale's web size, which is usually wrong for a fixed canvas."
+                        },
+                        "weight": {
+                          "type": [
+                            "number",
+                            "string"
+                          ],
+                          "description": "Weight override for this canvas."
+                        },
+                        "leading": {
+                          "type": "string",
+                          "description": "Line-height override for this canvas."
+                        },
+                        "note": {
+                          "type": "string",
+                          "description": "Free text guidance for this role, e.g. \"eight words or fewer\"."
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "background": {
+                "type": "array",
+                "description": "The only backgrounds allowed on this canvas.",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "description": "A palette color's `name` (resolved to its hex in the exports), the word \"gradient\" for the brand gradient, or free text such as \"photography with a dark overlay\"."
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "color",
+                            "gradient",
+                            "photo",
+                            "other"
+                          ],
+                          "description": "The kind of background."
+                        },
+                        "color": {
+                          "type": "string",
+                          "description": "A palette color's `name`."
+                        },
+                        "overlay": {
+                          "type": "string",
+                          "description": "For photography: the overlay that keeps text legible, e.g. \"a 60% Ink overlay\"."
+                        },
+                        "note": {
+                          "type": "string",
+                          "description": "Free text guidance for this background."
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "notes": {
+                "type": "string",
+                "description": "Free text guidance for composing this canvas."
+              }
+            }
+          }
+        ]
       }
     },
     "typography": {

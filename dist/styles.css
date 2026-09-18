@@ -531,6 +531,77 @@ body {
 .gradient-usage-card.do li::before { background: var(--success); }
 .gradient-usage-card.dont li::before { background: var(--error); }
 
+/* ── Logo usage + Formats (optional sections) ── */
+#section-intro-logoUsage:empty, #section-intro-formats:empty { display: none; }
+
+.usage-card, .format-card {
+  background: var(--white);
+  border: 1px solid var(--mist);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 16px;
+}
+
+.usage-card-title, .format-name {
+  font-family: var(--font-display), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+
+.spec-list { display: grid; grid-template-columns: 132px 1fr; gap: 8px 16px; margin: 0; }
+.spec-list dt { font-size: 12px; font-weight: 600; color: var(--slate); }
+.spec-list dd { font-size: 13px; line-height: 1.6; color: var(--graphite); margin: 0; }
+
+.usage-dont { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--mist); }
+.usage-dont h4 {
+  font-family: var(--font-display), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+.usage-dont ul { list-style: none; padding: 0; }
+.usage-dont li { font-size: 13px; line-height: 1.7; color: var(--graphite); padding-left: 16px; position: relative; }
+.usage-dont li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--error);
+}
+
+.format-card { display: grid; grid-template-columns: 252px 1fr; gap: 28px; align-items: start; }
+.format-preview-wrap { display: flex; justify-content: center; }
+.format-preview { position: relative; max-width: 100%; background: var(--cloud); border: 1px solid var(--haze); border-radius: 6px; }
+.format-safe { position: absolute; border: 1px dashed var(--accent-text); border-radius: 2px; }
+.format-safe.none { border-color: transparent; }
+.format-logo-chip {
+  position: absolute;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-foreground);
+  background: var(--accent);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+.format-kind {
+  font-family: var(--font-body), sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--slate);
+  margin-left: 10px;
+}
+.format-notes { font-size: 13px; line-height: 1.7; color: var(--graphite); margin-top: 16px; }
+
 /* ── Typography ── */
 .type-specimen { margin-bottom: 40px; }
 
@@ -1282,6 +1353,7 @@ body {
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
+  .format-card { grid-template-columns: 1fr; }
   .sidebar { display: none; }
   .main { margin-left: 0; }
   .copy-format-bar { left: 24px; }

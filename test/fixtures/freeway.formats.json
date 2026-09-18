@@ -1,0 +1,42 @@
+{
+  "logoUsage": {
+    "clearSpace": { "rule": "the height of the F mark on all sides", "ratio": 0.5 },
+    "minSize": { "digitalPx": 96, "printMm": 25 },
+    "placement": ["top left", "bottom left", "centered"],
+    "dont": [
+      "Stretch, squash or rotate the logo",
+      "Recolor it outside the ink and white versions",
+      "Place it on busy photography without an overlay",
+      "Add shadows, outlines, glows or other effects"
+    ]
+  },
+  "formats": [
+    {
+      "preset": "social-square",
+      "name": "Instagram square",
+      "safeZone": 80,
+      "logo": { "variant": "Logotype White (#FFFFFF)", "placement": "bottom left", "maxWidth": 260 },
+      "typography": {
+        "headline": { "style": "H1", "size": "76px" },
+        "body": { "style": "Body LG", "size": "32px" }
+      },
+      "background": ["Indigo", "gradient", { "type": "photo", "overlay": "a 60% Ink overlay", "note": "community photography" }],
+      "notes": "One idea per card. Headline of eight words or fewer"
+    },
+    {
+      "preset": "link-card",
+      "name": "LinkedIn link card",
+      "safeZone": { "all": 60, "bottom": 90 },
+      "logo": { "variant": "Logotype Dark (#100C2E)", "placement": "top left", "maxWidth": 220 },
+      "typography": { "headline": { "style": "H2", "size": "56px" } },
+      "background": ["White", "Cloud"]
+    },
+    {
+      "preset": "slide-16x9",
+      "safeZone": { "top": 96, "right": 120, "bottom": 96, "left": 120 },
+      "logo": { "variant": "Logotype Dark (#100C2E)", "placement": "bottom left", "maxWidth": 200 },
+      "typography": { "headline": "H1", "body": "Body LG" },
+      "background": ["White", "Indigo"]
+    }
+  ]
+}
