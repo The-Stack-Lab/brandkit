@@ -658,9 +658,12 @@
       var cs = src.clearSpace;
       if (typeof cs === 'string') cs = { rule: cs };
       var rows = [];
-      if (cs && (!isUnset(cs.rule) || typeof cs.ratio === 'number')) {
-        rows.push(['Clear space', (isUnset(cs.rule) ? '' : cs.rule) +
-          (typeof cs.ratio === 'number' ? (isUnset(cs.rule) ? '' : ' (') + cs.ratio + '\u00D7 the logo height' + (isUnset(cs.rule) ? '' : ')') : '')]);
+      // Same two tests as normalizeClearSpace() in lib/formats.js.
+      var csRule = (cs && typeof cs === 'object' && typeof cs.rule === 'string' && !isUnset(cs.rule)) ? cs.rule : '';
+      var csRatio = (cs && typeof cs === 'object' && typeof cs.ratio === 'number' && cs.ratio > 0) ? cs.ratio : null;
+      if (csRule || csRatio !== null) {
+        rows.push(['Clear space', csRule +
+          (csRatio !== null ? (csRule ? ' (' : '') + csRatio + '\u00D7 the logo height' + (csRule ? ')' : '') : '')]);
       }
       var min = src.minSize || {};
       var sizes = [];

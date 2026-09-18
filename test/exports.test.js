@@ -177,6 +177,9 @@ check('content under an own __proto__ key is not hidden from the comparison',
 check('a marker in the neutrals fallback is not printed',
   has(exporter.buildBrandMarkdown({ theme: { '--ink': '__TODO: choose', '--slate': '#67648C' } }), '__TODO'), false);
 check('a marker clear space is no rule at all', formatsLib.normalizeClearSpace({ rule: '__TODO: define', ratio: 0.5 }), { ratio: 0.5 });
+var fontEdit = clone(current.fonts.display);
+fontEdit.family = fontEdit.family.toLowerCase();
+check('a font family edit is authored', schema.copyKey(fontEdit) === schema.copyKey(current.fonts.display), false);
 check('a punctuation-only prose edit is still scaffold',
   schema.copyKey({ description: 'Primary lockup; use on light backgrounds' }), schema.copyKey({ description: current.logos[0].description }));
 
@@ -287,6 +290,13 @@ check('a safe zone that leaves nothing is reported, not computed', [has(hmd, 'Us
 check('a negative safe zone is dropped', 'safeZone' in hj.formats[1], false);
 check('an unknown logo variant is reported', has(hmd, 'logo "Nope" is not in the logos list'), true);
 check('non-positive minimum sizes are dropped', 'usage' in hj.logos[0], false);
+var typeOnly = exporter.buildBrandJson({ formats: [{ preset: 'link-card', background: [{ type: 'photo' }, { type: '__TODO' }, {}] }] });
+check('a background given only as a type is kept, hollow ones are not', typeOnly.formats[0].background, [{ type: 'photo' }]);
+var emptyHeads = exporter.buildBrandMarkdown({ logos: ['bad', {}, { variants: { svg: 'a.svg' } }], changelog: [null] });
+check('no Logos heading without a nameable logo', has(emptyHeads, '## Logos'), false);
+check('no revision history heading without an entry', has(emptyHeads, 'Revision history'), false);
+check('a newline in a logo name cannot start a heading',
+  /^## Injected/m.test(exporter.buildBrandMarkdown({ logos: [{ name: 'Mark\n## Injected', variants: { svg: 'a.svg' } }] })), false);
 check('an empty Usage heading is never printed', has(exporter.buildBrandMarkdown({ colors: { brand: [{ name: 'A', hex: '#000000' }] } }), '**Usage:**'), false);
 
 /* ---------------- 7. The microsite mirrors the library ---------------- */
@@ -374,6 +384,12 @@ check('the page and the exports count the same formats',
 var objRules = page({ logoUsage: { dont: [{ rule: 'stretch it' }, 'Recolor it'], placement: [{ a: 1 }] } });
 objRules.api.usage();
 check('an object in a rule list is never printed', /object Object/.test(objRules.els['logo-usage-content'].innerHTML), false);
+[{ ratio: 0 }, { ratio: -1 }, { rule: '__TODO', ratio: 0 }, 7, { rule: 'the F height', ratio: 0.5 }, 'the F height'].forEach(function (cs) {
+  var shown = page({ logoUsage: { clearSpace: cs } });
+  shown.api.usage();
+  check('page and exports agree on whether clearSpace ' + JSON.stringify(cs) + ' is a rule',
+    !shown.els['logo-usage'].hidden, formatsLib.normalizeClearSpace(cs) !== null);
+});
 var cjk = exporter.buildTokensJson({ colors: { brand: [{ name: '\u85CD', hex: '#0000FF', cssVar: '--brand-ai' }, { name: '\u2605', hex: '#FF0000' }] }, spacing: [{ token: '__proto__', px: 8 }, { token: 'sm', px: 8 }] });
 check('a non-Latin color name still becomes a token', Object.keys(cjk.color.palette), ['brand-ai', 'brand-2']);
 check('a __proto__ spacing token cannot replace the group prototype', Object.keys(cjk.dimension), ['sm']);
