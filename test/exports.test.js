@@ -161,6 +161,20 @@ check('the 1.6.0 starter really did differ (or this section proves nothing)',
 check('reworded copy is authored, not scaffold',
   schema.copyKey('Primary lockup. Use on dark backgrounds.') === schema.copyKey(current.logos[0].description), false);
 
+// Loose comparison is for prose only. A machine value that differs at all is
+// the author's: generate must not delete a logo because its path changed case.
+var logoEdit = clone(current.logos[0]);
+logoEdit.variants.svg = 'logos/Brandkit-wordmark-dark.svg';
+check('a case-only path edit is authored', schema.copyKey(logoEdit) === schema.copyKey(current.logos[0]), false);
+var typeEdit = clone(current.typography[0]);
+typeEdit.leading = '1:05';
+check('a punctuation-only CSS value edit is authored', schema.copyKey(typeEdit) === schema.copyKey(current.typography[0]), false);
+var hexEdit = clone(current.colors.brand.items[0]);
+hexEdit.hex = hexEdit.hex.toLowerCase();
+check('a hex case edit is authored', schema.copyKey(hexEdit) === schema.copyKey(current.colors.brand.items[0]), false);
+check('a punctuation-only prose edit is still scaffold',
+  schema.copyKey({ description: 'Primary lockup; use on light backgrounds' }), schema.copyKey({ description: current.logos[0].description }));
+
 /* ---------------- 6. Formats and logo usage ---------------- */
 
 check('a preset supplies the canvas', formatsLib.resolveFormat('social-square'),
@@ -198,8 +212,12 @@ check('and no per-logo usage key', 'usage' in plain.logos[0], false);
 var perLogo = clone(freeway);
 perLogo.logos[1].minSize = { digitalPx: 120 };
 check('a rule set on one logo exports on that logo', exporter.buildBrandJson(perLogo).logos[1].usage, { minSize: { digitalPx: 120 } });
-check('and appears in the brief as an override',
-  has(exporter.buildBrandMarkdown(perLogo), '**Logotype White (#FFFFFF)** (overrides the rules above for this logo):'), true);
+check('with no brand-wide rules it does not claim to override any',
+  has(exporter.buildBrandMarkdown(perLogo), '\n**Logotype White (#FFFFFF)**:\n'), true);
+var perLogoBoth = clone(withFormats);
+perLogoBoth.logos[1].minSize = { digitalPx: 120 };
+check('with brand-wide rules it reads as an override',
+  has(exporter.buildBrandMarkdown(perLogoBoth), '**Logotype White (#FFFFFF)** (overrides the rules above for this logo):'), true);
 
 var mdf = exporter.buildBrandMarkdown(withFormats);
 check('brief has no new sections without the fields', has(md, '## Formats') || has(md, '## Logo usage'), false);
@@ -224,6 +242,48 @@ check('an unknown preset is reported as a gap', has(mdBroken, '- Format "TikTok"
 check('a style missing from the scale is reported', has(mdBroken, '- Format "TikTok": type style "Mega" is not in the type scale'), true);
 check('a color missing from the palette is reported', has(mdBroken, '- Format "TikTok": background color "Teal" is not in the palette'), true);
 
+/* ---------------- 6b. Markers and odd input never reach an export ---------------- */
+
+var hostile = {
+  brand: { name: 'x' },
+  theme: { '--palette': '#111111', '--brand-palette': '#222222' },
+  spacing: [{ token: 'md', px: '__TODO: fill me' }, { token: 'sm', px: '8px' }, { token: 'lg', px: 24 }, null],
+  colors: { brand: [null, 'red', { name: '__TODO', label: 'Real', hex: '#123456', role: '__TODO', usage: 'Real usage' },
+                    { name: 'constructor', hex: '#000000' }, { name: 'A\n## Injected', hex: '#FFFFFF' }] },
+  typography: [{ name: 'Dis|play\nX', font: 'a\nb', size: '1', weight: 1 }],
+  logos: [{ name: 'Mark', variants: { svg: 'm.svg' }, minSize: { digitalPx: 0, printMm: -3 } }],
+  logoUsage: { placement: 'top left', dont: [{ nope: 1 }, 'Stretch it'], minSize: null, clearSpace: 7 },
+  formats: [
+    {}, '__TODO: add', true, null,
+    { preset: 'social-square', name: '__TODO', width: '__TODO', kind: '__TODO', unit: '__TODO: x', safeZone: 600,
+      logo: { variant: 'Nope' }, typography: ['H1'], background: [{ color: '__TODO: pick' }, null, 'no gradients please'] },
+    { preset: 'ig-square', width: 1080, height: 1080, safeZone: -40, notes: 'A\n## Injected' }
+  ]
+};
+var hmd = '', hj = null, ht = null, threw = null;
+try {
+  hmd = exporter.buildBrandMarkdown(hostile); hj = exporter.buildBrandJson(hostile); ht = exporter.buildTokensJson(hostile);
+} catch (e) { threw = e.message; }
+check('hostile input does not throw', threw, null);
+var hall = hmd + JSON.stringify(hj) + JSON.stringify(ht);
+check('no marker reaches any export', has(hall, '__TODO'), false);
+check('no "undefined", "NaN" or "[object Object]" is printed', /undefined|NaN|\[object Object\]/.test(hall), false);
+check('a newline in a value cannot start a markdown heading', /^## Injected/m.test(hmd), false);
+check('the type scale row stays on one line', has(hmd, '| Dis/play X | a b | 1 | 1 |  |  |'), true);
+check('spacing keeps only real dimensions', has(hmd, '- **Scale:** `sm` 8px, `lg` 24px.'), true);
+check('and so do the tokens', ht.dimension, { sm: { $type: 'dimension', $value: '8px' }, lg: { $type: 'dimension', $value: '24px' } });
+check('a marker name falls back to the label', has(hmd, '- **Real** `#123456`: Real usage.'), true);
+check('a color named "constructor" keeps its own key', Object.keys(ht.color['brand-brand-palette']).indexOf('constructor') !== -1, true);
+check('the palette group never overwrites a theme token', [ht.color.palette.$value, ht.color['brand-palette'].$value, typeof ht.color['brand-brand-palette']], ['#111111', '#222222', 'object']);
+check('markers do not displace the preset', [hj.formats[0].name, hj.formats[0].width, hj.formats[0].kind, hj.formats[0].unit], ['Social square (1:1)', 1080, 'social', 'px']);
+check('hollow entries are not formats', hj.formats.length, 2);
+check('an unknown preset with its own dimensions is not "no dimensions"', has(hmd, 'unknown preset "ig-square"\n') || /unknown preset "ig-square"$/m.test(hmd), true);
+check('a safe zone that leaves nothing is reported, not computed', [has(hmd, 'Usable area: -'), has(hmd, 'the safe zone leaves no usable area')], [false, true]);
+check('a negative safe zone is dropped', 'safeZone' in hj.formats[1], false);
+check('an unknown logo variant is reported', has(hmd, 'logo "Nope" is not in the logos list'), true);
+check('non-positive minimum sizes are dropped', 'usage' in hj.logos[0], false);
+check('an empty Usage heading is never printed', has(exporter.buildBrandMarkdown({ colors: { brand: [{ name: 'A', hex: '#000000' }] } }), '**Usage:**'), false);
+
 /* ---------------- 7. The microsite mirrors the library ---------------- */
 
 var engine = fs.readFileSync(path.join(__dirname, '..', 'dist', 'engine.js'), 'utf8');
@@ -235,6 +295,77 @@ check('engine.js aliases match lib/formats.js', aliasSrc && new Function('return
 check('the logo usage section ships hidden', /<div class="section" id="logo-usage" hidden>/.test(html), true);
 check('the formats section ships hidden', /<div class="section" id="formats" hidden>/.test(html), true);
 check('both renderers are called', has(engine, '    renderLogoUsage();\n    renderFormats();'), true);
+
+/* ---------------- 8. The renderers, run without a browser ---------------- */
+
+// engine.js is one IIFE with no exports, so the new functions are lifted out as
+// text and run against a stub document.
+function lift(startMarker, endMarker) {
+  var from = engine.indexOf(startMarker), to = engine.indexOf(endMarker, from);
+  return from === -1 || to === -1 ? null : engine.slice(from, to);
+}
+var lifted = [
+  lift('    function esc(s) {', '    /**'),
+  lift('    function isUnset(v) {', '    /**'),
+  lift('    function navWithOptionalSections(nav) {', '    /* ===='),
+  lift('    var FORMAT_PRESETS = {', '    /* ====')
+];
+check('the engine functions could be lifted', lifted.every(Boolean), true);
+function page(cfg) {
+  var els = {};
+  ['logo-usage', 'logo-usage-content', 'formats', 'formats-grid'].forEach(function (id) { els[id] = { hidden: true, innerHTML: '' }; });
+  var doc = { getElementById: function (id) { return els[id] || null; } };
+  var api = new Function('cfg', 'document', lifted.join('\n') +
+    '\nreturn { nav: navWithOptionalSections, formats: resolvedFormats, zone: safeZoneOf, usage: renderLogoUsage, render: renderFormats };')(cfg, doc);
+  return { api: api, els: els };
+}
+function navIds(p, nav) {
+  return p.api.nav(nav).map(function (g) { return g.group + ':' + g.items.map(function (i) { return i.id; }).join(','); });
+}
+
+var legacyNav = [{ group: 'Logos', items: [{ label: 'Downloads', id: 'logos' }] }, { group: 'Content', items: [{ label: 'Voice', id: 'voice' }] }];
+var oddLogos = page({ logos: {}, nav: legacyNav });
+var navThrew = null;
+try { navIds(oddLogos, legacyNav); oddLogos.api.usage(); oddLogos.api.render(); } catch (e) { navThrew = e.message; }
+check('a non-array logos does not take the nav (and the page) down', navThrew, null);
+
+var legacyPage = page({ logos: freeway.logos, nav: legacyNav });
+legacyPage.api.usage(); legacyPage.api.render();
+check('a legacy config gets exactly its own nav', navIds(legacyPage, legacyNav), ['Logos:logos', 'Content:voice']);
+check('and both sections stay hidden', [legacyPage.els['logo-usage'].hidden, legacyPage.els.formats.hidden], [true, true]);
+
+var fullPage = page({ logos: freeway.logos, nav: legacyNav, logoUsage: extras.logoUsage, formats: extras.formats });
+fullPage.api.usage(); fullPage.api.render();
+check('adopting the fields adds the links without a nav edit', navIds(fullPage, legacyNav), ['Logos:logos,logo-usage', 'Formats:formats', 'Content:voice']);
+check('and reveals both sections', [fullPage.els['logo-usage'].hidden, fullPage.els.formats.hidden], [false, false]);
+check('three format cards', fullPage.els['formats-grid'].innerHTML.split('class="format-card"').length - 1, 3);
+var authoredNav = [{ group: 'Brand', items: [{ label: 'Marks', id: 'logos' }, { label: 'Rules', id: 'logo-usage' }, { label: 'Sizes', id: 'formats' }] }];
+check('an authored link is never duplicated', navIds(fullPage, authoredNav), ['Brand:logos,logo-usage,formats']);
+
+var hollowPage = page({ nav: legacyNav, formats: [{}, '', [1], null, { preset: '' }, '__TODO: add'], logoUsage: { minSize: { digitalPx: 0 }, dont: ['__TODO'] } });
+hollowPage.api.usage(); hollowPage.api.render();
+check('hollow entries reveal nothing and add no links', [hollowPage.els.formats.hidden, hollowPage.els['logo-usage'].hidden, navIds(hollowPage, legacyNav)], [true, true, ['Logos:logos', 'Content:voice']]);
+
+var xss = '"><img src=x onerror=alert(1)>';
+var xssPage = page({ logos: [{ name: xss, dont: [xss] }], formats: [{ name: xss, kind: xss, unit: xss, width: 100, height: 100, notes: xss, safeZone: 10,
+  logo: { variant: xss, placement: xss, note: xss }, typography: { headline: { style: xss, size: xss } }, background: [xss, { color: xss, overlay: xss }] }] });
+xssPage.api.usage(); xssPage.api.render();
+check('no config value reaches the page as markup', /<img/.test(xssPage.els['formats-grid'].innerHTML + xssPage.els['logo-usage-content'].innerHTML), false);
+
+// Same input, same canvas: the page must not say one thing and brand.json another.
+[ 'social-square', '1200x630', ' Slide-16x9 ', { preset: 'link-card', name: 'LinkedIn' }, { preset: 'slide-16x9', kind: 'banner' },
+  { name: 'Poster', kind: 'print', width: 297, height: 420, unit: 'mm' }, { preset: 'nope', name: 'X' }, { preset: 0, name: 'Y' },
+  { preset: ['social-square'], name: 'Z' }, { preset: 'social-square', name: '__TODO', width: '__TODO' }
+].forEach(function (entry) {
+  var fromEngine = page({ formats: [entry] }).api.formats()[0] || {};
+  var fromLib = formatsLib.resolveFormat(entry) || {};
+  function canvas(x) { return [x.name, x.kind, x.width, x.height, x.unit, x.unknownPreset]; }
+  check('engine and library agree on ' + JSON.stringify(entry), canvas(fromEngine), canvas(fromLib));
+});
+[80, -5, { all: 60, bottom: 90 }, { top: 10 }, { all: 10, unit: 'mm' }, { left: -1 }, 'x', [1], {}].forEach(function (z) {
+  var fmt = { width: 100, height: 100, unit: 'px', safeZone: z };
+  check('engine and library agree on safeZone ' + JSON.stringify(z), page({}).api.zone(fmt), formatsLib.normalizeSafeZone(z, 'px'));
+});
 
 console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

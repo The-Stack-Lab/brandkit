@@ -600,39 +600,57 @@
       '1080x1080': 'social-square', '1080x1350': 'social-portrait', '1080x1920': 'social-story',
       '1200x630': 'link-card', '1920x1080': 'slide-16x9'
     };
+    var FORMAT_KINDS = ['social', 'presentation', 'video', 'print', 'other'];
+
+    // A hand-edited config can hold `"logos": {}`. The nav runs for every
+    // config, so it must never assume a list.
+    function logoList() { return Array.isArray(cfg.logos) ? cfg.logos : []; }
 
     function resolvedFormats() {
       if (!Array.isArray(cfg.formats)) return [];
       return cfg.formats.map(function (entry) {
-        if (typeof entry === 'string') entry = { preset: entry };
-        if (!entry || typeof entry !== 'object') return null;
+        if (typeof entry === 'string') entry = isUnset(entry) ? null : { preset: entry };
+        if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
         var out = {};
-        if (entry.preset) {
-          var k = String(entry.preset).trim().toLowerCase().replace(/\s+/g, '');
+        if (!isUnset(entry.preset)) {
+          var k = typeof entry.preset === 'string' ? entry.preset.trim().toLowerCase().replace(/\s+/g, '') : '';
           if (PRESET_ALIASES[k]) k = PRESET_ALIASES[k];
           var preset = Object.prototype.hasOwnProperty.call(FORMAT_PRESETS, k) ? FORMAT_PRESETS[k] : null;
           if (preset) Object.keys(preset).forEach(function (p) { out[p] = preset[p]; });
           else out.unknownPreset = String(entry.preset);
         }
         Object.keys(entry).forEach(function (p) {
-          if (p !== 'preset' && entry[p] !== undefined && entry[p] !== null) out[p] = entry[p];
+          if (p !== 'preset' && p !== '__proto__' && !isUnset(entry[p])) out[p] = entry[p];
         });
-        if (!out.unit) out.unit = 'px';
+        if (typeof out.unit !== 'string') delete out.unit;
+        if (out.unit === undefined && (out.width !== undefined || out.height !== undefined)) out.unit = 'px';
+        if (out.kind !== undefined && FORMAT_KINDS.indexOf(out.kind) === -1) out.kind = 'other';
         return out;
-      }).filter(function (f) { return f !== null; });
+      }).filter(function (f) {
+        // An entry with no canvas and no name is not a format. Without this an
+        // empty `{}` revealed the section and drew a blank card.
+        if (f === null) return false;
+        var hasDims = typeof f.width === 'number' && typeof f.height === 'number';
+        return hasDims || (typeof f.name === 'string' && !isUnset(f.name)) || !!f.unknownPreset;
+      });
     }
 
     function safeZoneOf(fmt) {
       var z = fmt.safeZone;
       if (z === undefined || z === null || z === '') return null;
-      var all = typeof z === 'number' ? z : (z && typeof z.all === 'number' ? z.all : null);
-      var src = (z && typeof z === 'object') ? z : {};
+      if (typeof z !== 'number' && (typeof z !== 'object' || Array.isArray(z))) return null;
+      var all = typeof z === 'number' ? z : (typeof z.all === 'number' ? z.all : null);
+      if (all !== null && all < 0) all = null;
+      var src = typeof z === 'object' ? z : {};
       var out = {}, any = all !== null;
       ['top', 'right', 'bottom', 'left'].forEach(function (side) {
-        if (typeof src[side] === 'number') { out[side] = src[side]; any = true; }
+        if (typeof src[side] === 'number' && src[side] >= 0) { out[side] = src[side]; any = true; }
         else out[side] = all !== null ? all : 0;
       });
-      return any ? out : null;
+      if (!any) return null;
+      out.unit = (typeof src.unit === 'string' && !isUnset(src.unit)) ? src.unit
+        : (typeof fmt.unit === 'string' && !isUnset(fmt.unit)) ? fmt.unit : 'px';
+      return out;
     }
 
     function usageOf(src) {
@@ -646,8 +664,8 @@
       }
       var min = src.minSize || {};
       var sizes = [];
-      if (typeof min.digitalPx === 'number') sizes.push(min.digitalPx + 'px on screen');
-      if (typeof min.printMm === 'number') sizes.push(min.printMm + 'mm in print');
+      if (typeof min.digitalPx === 'number' && min.digitalPx > 0) sizes.push(min.digitalPx + 'px on screen');
+      if (typeof min.printMm === 'number' && min.printMm > 0) sizes.push(min.printMm + 'mm in print');
       if (sizes.length) rows.push(['Minimum width', sizes.join(' \u00B7 ')]);
       var placement = [].concat(src.placement || []).filter(function (p) { return !isUnset(p); });
       if (placement.length) rows.push(['Placement', placement.join(' \u00B7 ')]);
@@ -657,7 +675,7 @@
 
     function hasLogoUsage() {
       if (usageOf(cfg.logoUsage)) return true;
-      return (cfg.logos || []).some(function (l) { return !!usageOf(l); });
+      return logoList().some(function (l) { return !!usageOf(l); });
     }
 
     function usageCard(title, u) {
@@ -682,8 +700,8 @@
       if (!section || !container || !hasLogoUsage()) return;
       var html = '';
       var brandWide = usageOf(cfg.logoUsage);
-      if (brandWide) html += usageCard((cfg.logos || []).length > 1 ? 'All logos' : '', brandWide);
-      (cfg.logos || []).forEach(function (l) {
+      if (brandWide) html += usageCard(logoList().length > 1 ? 'All logos' : '', brandWide);
+      logoList().forEach(function (l) {
         var own = usageOf(l);
         if (own) html += usageCard(isUnset(l.name) ? 'Logo' : l.name, own);
       });
@@ -707,13 +725,22 @@
       if (!section || !grid || !formats.length) return;
 
       grid.innerHTML = formats.map(function (f) {
+        var unit = f.unit || 'px';
         var hasDims = typeof f.width === 'number' && typeof f.height === 'number' && f.width > 0 && f.height > 0;
         var zone = safeZoneOf(f);
-        var logo = (f.logo && typeof f.logo === 'object') ? f.logo : (isUnset(f.logo) ? null : { placement: f.logo });
+        var logo = (f.logo && typeof f.logo === 'object' && !Array.isArray(f.logo)) ? f.logo
+          : (typeof f.logo === 'string' && !isUnset(f.logo)) ? { placement: f.logo } : null;
+        // Decided before the preview is drawn: a logo entry that says nothing
+        // gets no row and no chip.
+        var logoBits = logo ? [logo.variant, logo.placement,
+          typeof logo.maxWidth === 'number' ? 'max ' + logo.maxWidth + unit : null, logo.note]
+          .filter(function (x) { return typeof x === 'string' && !isUnset(x); }) : [];
+        if (!logoBits.length) logo = null;
         var preview = '';
         if (hasDims) {
           var pct = function (n, of) { return Math.max(0, Math.min(45, (n / of) * 100)).toFixed(2) + '%'; };
-          var inset = zone
+          var drawZone = zone && zone.unit === unit;
+          var inset = drawZone
             ? 'top:' + pct(zone.top, f.height) + ';right:' + pct(zone.right, f.width) +
               ';bottom:' + pct(zone.bottom, f.height) + ';left:' + pct(zone.left, f.width) + ';'
             : 'top:0;right:0;bottom:0;left:0;';
@@ -721,26 +748,22 @@
           var boxWidth = Math.round(Math.min(220, 220 * (f.width / f.height)));
           preview =
             '<div class="format-preview" style="width:' + boxWidth + 'px;aspect-ratio:' + f.width + ' / ' + f.height + ';">' +
-              '<div class="format-safe' + (zone ? '' : ' none') + '" style="' + inset + '">' +
+              '<div class="format-safe' + (drawZone ? '' : ' none') + '" style="' + inset + '">' +
                 (logo ? '<span class="format-logo-chip" style="' + placementStyle(logo.placement) + '">Logo</span>' : '') +
               '</div>' +
             '</div>';
         }
 
         var rows = [];
-        if (hasDims) rows.push(['Canvas', f.width + ' \u00D7 ' + f.height + ' ' + f.unit]);
+        if (hasDims) rows.push(['Canvas', f.width + ' \u00D7 ' + f.height + ' ' + unit]);
         else if (f.unknownPreset) rows.push(['Canvas', 'Unknown preset "' + f.unknownPreset + '"']);
         if (zone) {
           var even = zone.top === zone.right && zone.right === zone.bottom && zone.bottom === zone.left;
-          rows.push(['Safe zone', even ? zone.top + f.unit + ' on every side'
-            : zone.top + ' / ' + zone.right + ' / ' + zone.bottom + ' / ' + zone.left + ' ' + f.unit + ' (top, right, bottom, left)']);
+          rows.push(['Safe zone', even ? zone.top + zone.unit + ' on every side'
+            : zone.top + ' / ' + zone.right + ' / ' + zone.bottom + ' / ' + zone.left + ' ' + zone.unit + ' (top, right, bottom, left)']);
         }
-        if (logo) {
-          rows.push(['Logo', [logo.variant, logo.placement,
-            typeof logo.maxWidth === 'number' ? 'max ' + logo.maxWidth + f.unit : null]
-            .filter(function (x) { return !isUnset(x); }).join(' \u00B7 ')]);
-        }
-        if (f.typography && typeof f.typography === 'object') {
+        if (logoBits.length) rows.push(['Logo', logoBits.join(' \u00B7 ')]);
+        if (f.typography && typeof f.typography === 'object' && !Array.isArray(f.typography)) {
           Object.keys(f.typography).forEach(function (role) {
             var t = f.typography[role];
             if (typeof t === 'string') t = { style: t };

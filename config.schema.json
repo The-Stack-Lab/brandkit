@@ -106,7 +106,8 @@
                   "minimum": 0,
                   "description": "The same rule as a multiple of the logo's rendered height, e.g. 0.5 for half the logo height. Lets a tool compute the margin."
                 }
-              }
+              },
+              "description": "The rule as a sentence plus a numeric ratio a tool can compute with."
             }
           ]
         },
@@ -116,13 +117,13 @@
           "properties": {
             "digitalPx": {
               "type": "number",
-              "minimum": 0,
-              "description": "Minimum rendered width on screens, in CSS pixels."
+              "description": "Minimum rendered width on screens, in CSS pixels.",
+              "exclusiveMinimum": 0
             },
             "printMm": {
               "type": "number",
-              "minimum": 0,
-              "description": "Minimum rendered width in print, in millimeters."
+              "description": "Minimum rendered width in print, in millimeters.",
+              "exclusiveMinimum": 0
             }
           }
         },
@@ -403,20 +404,36 @@
             ]
           },
           "clearSpace": {
-            "$ref": "#/definitions/logoUsage/properties/clearSpace",
-            "description": "Overrides `logoUsage.clearSpace` for this logo only."
+            "description": "Overrides `logoUsage.clearSpace` for this logo only.",
+            "allOf": [
+              {
+                "$ref": "#/definitions/logoUsage/properties/clearSpace"
+              }
+            ]
           },
           "minSize": {
-            "$ref": "#/definitions/logoUsage/properties/minSize",
-            "description": "Overrides `logoUsage.minSize` for this logo only."
+            "description": "Overrides `logoUsage.minSize` for this logo only.",
+            "allOf": [
+              {
+                "$ref": "#/definitions/logoUsage/properties/minSize"
+              }
+            ]
           },
           "placement": {
-            "$ref": "#/definitions/logoUsage/properties/placement",
-            "description": "Overrides `logoUsage.placement` for this logo only."
+            "description": "Overrides `logoUsage.placement` for this logo only.",
+            "allOf": [
+              {
+                "$ref": "#/definitions/logoUsage/properties/placement"
+              }
+            ]
           },
           "dont": {
-            "$ref": "#/definitions/logoUsage/properties/dont",
-            "description": "Overrides `logoUsage.dont` for this logo only."
+            "description": "Overrides `logoUsage.dont` for this logo only.",
+            "allOf": [
+              {
+                "$ref": "#/definitions/logoUsage/properties/dont"
+              }
+            ]
           }
         }
       }
@@ -439,7 +456,12 @@
       }
     },
     "logoUsage": {
-      "$ref": "#/definitions/logoUsage"
+      "description": "Brand-wide logo usage rules. Renders the Logo Usage section and exports to brand.json and brand.md. Any field can be overridden on a single `logos[]` entry.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/logoUsage"
+        }
+      ]
     },
     "formats": {
       "type": "array",
@@ -491,7 +513,8 @@
                 "oneOf": [
                   {
                     "type": "number",
-                    "minimum": 0
+                    "minimum": 0,
+                    "description": "The same inset on every side, in the format's unit."
                   },
                   {
                     "type": "object",
@@ -525,7 +548,8 @@
                         "type": "string",
                         "description": "Unit for the insets when it differs from the format's unit."
                       }
-                    }
+                    },
+                    "description": "Per-side insets. `all` covers any side not given."
                   }
                 ]
               },
@@ -712,7 +736,8 @@
                           "type": "string",
                           "description": "Free text guidance for this background."
                         }
-                      }
+                      },
+                      "description": "A background with detail: a palette color with a note, or photography with the overlay that keeps text legible."
                     }
                   ]
                 }
@@ -721,7 +746,8 @@
                 "type": "string",
                 "description": "Free text guidance for composing this canvas."
               }
-            }
+            },
+            "description": "One canvas, spelled out. Start from a `preset` or give `name`, `kind`, `width`, `height` and `unit` yourself."
           }
         ]
       }
