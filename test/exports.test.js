@@ -121,7 +121,8 @@ check('a marker oklch is ignored and never exported', /__TODO/.test(JSON.stringi
   [['#00E000', 'oklch(0.79 0.10 142)'], ['#00E000', undefined, undefined], 'an original LESS chromatic than its fallback is not it'],
   [['#FF0000', 'oklch(0.56 0.13 343)'], ['#FF0000', undefined, undefined], 'different hue'],
   [['#000000', 'oklch(1 0 0)'], ['#000000', undefined, undefined], 'black is not white'],
-  [['#000000', 'oklch(4% 0 0)'], ['#000000', 'oklch(4% 0 0)', 'oklch'], 'a near-black that converts to exactly #000000'],
+  [['#000000', 'oklch(4% 0 0)'], ['#000000', undefined, undefined], 'a near-black clips to #000000 but is 0.04 lighter: omitted, the safe direction'],
+  [['#000000', 'oklch(0 0 0)'], ['#000000', 'oklch(0 0 0)', 'oklch'], 'true black'],
   [['#000000', 'oklch(25% 0 0)'], ['#000000', undefined, undefined], 'a visibly lighter dark gray'],
   [['#FFFFFF', 'oklch(1 0 0)'], ['#FFFFFF', 'oklch(1 0 0)', 'oklch'], 'achromatic: hue is ignored'],
   [['#FF0000', 'oklch(0.628 0.258 29.23 / 0.5)'], ['#FF0000', undefined, undefined], 'translucent oklch beside an opaque hex'],
@@ -136,6 +137,11 @@ check('a marker oklch is ignored and never exported', /__TODO/.test(JSON.stringi
   [['#FF0000', 'oklch(0.628 0.258 29.23 / 1)'], ['#FF0000', 'oklch(0.628 0.258 29.23 / 1)', 'oklch'], 'an explicit alpha of 1 is opaque'],
   [['#FF0000', 'oklch(0.628 0.258 29.23 / 100%)'], ['#FF0000', 'oklch(0.628 0.258 29.23 / 100%)', 'oklch'], 'so is 100%'],
   [['#FF0000FF', 'oklch(0.628 0.258 29.23)'], ['#FF0000', 'oklch(0.628 0.258 29.23)', 'oklch'], 'an opaque 8-digit hex does not block the oklch'],
+  [['#83DFFF', 'oklch(0.95 0.30 264)'], ['#83DFFF', undefined, undefined], 'out of gamut: clipping lands exactly on an unrelated hex (53 degrees of hue apart)'],
+  [['#009500', 'oklch(0.5 0.38 150)'], ['#009500', undefined, undefined], 'out of gamut: clipped match with a different lightness'],
+  [['#000000', 'oklch(-1 0 0)'], ['#000000', undefined, undefined], 'a negative lightness clips to black but is never vouched for'],
+  [['#FF0000', 'oklch(0.63 0.45 29)'], ['#FF0000', undefined, undefined], 'chroma beyond what CSS can express'],
+  [['#FF0000', 'oklch(0.63 0.30 29)'], ['#FF0000', 'oklch(0.63 0.30 29)', 'oklch'], 'a P3-range red beside its sRGB fallback'],
   [['#A65188', 'not a color'], ['#A65188', undefined, undefined], 'unparseable oklch'],
   [['#A65188', '__TODO: measure'], ['#A65188', undefined, undefined], 'marker oklch']
 ].forEach(function (row) {
