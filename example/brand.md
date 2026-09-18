@@ -77,6 +77,7 @@ When you change this brand (colors, type, logos, voice, spacing, or anything in 
 
 Revision history (newest first):
 
+- **v1.7.2** (September 2026): With a basePath set, the built pages now prefix the link to the changelog and the changelog's link back to the guide, like every other reference to a generated file. Browsers already followed the right address; the markup is now correct for crawlers, link checkers and agents too.
 - **v1.7.1** (September 2026):
   - Palette tokens in tokens.json describe a wide-gamut value the same way theme tokens do: $value stays sRGB hex, and the original rides along as authored plus colorSpace. The separate oklch key that 1.7.0 introduced is gone.
   - A palette color's oklch is only exported as the authored form of its hex when the two really are the same color. A disagreeing, translucent or out-of-range oklch is left out instead of telling a wide-gamut consumer to paint something else.
