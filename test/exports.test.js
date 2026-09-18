@@ -88,8 +88,17 @@ var tokens = exporter.buildTokensJson(freeway);
 check('Plum is a token', tokens.color.palette.plum.$value, '#A65188');
 check('Pink is a token', tokens.color.palette.pink.$value, '#D56181');
 check('the role is the description', tokens.color.palette.plum.$description, 'Accent. Gradient bridge, tags, highlights');
-check('oklch rides in $extensions, $value stays hex',
-  tokens.color.palette.plum.$extensions['app.stacklist.brandkit'].oklch, 'oklch(0.56 0.13 343)');
+var plumExt = tokens.color.palette.plum.$extensions['app.stacklist.brandkit'];
+check('oklch rides in $extensions as authored + colorSpace, $value stays hex',
+  [plumExt.authored, plumExt.colorSpace, tokens.color.palette.plum.$value], ['oklch(0.56 0.13 343)', 'oklch', '#A65188']);
+check('there is no second convention', 'oklch' in plumExt, false);
+var themeWide = exporter.buildTokensJson({ theme: { '--accent': 'oklch(0.56 0.13 343)' }, colors: { brand: [{ name: 'Plum', oklch: 'oklch(0.56 0.13 343)' }, { name: 'Flat', hex: '#A65188' }, { name: 'Short', hex: '#abc' }] } });
+var tExt = themeWide.color.accent.$extensions['app.stacklist.brandkit'], pExt = themeWide.color.palette.plum.$extensions['app.stacklist.brandkit'];
+check('a palette token and a theme token describe a wide-gamut value identically',
+  [pExt.authored, pExt.colorSpace], [tExt.authored, tExt.colorSpace]);
+check('a plain hex color carries no authored value', 'authored' in themeWide.color.palette.flat.$extensions['app.stacklist.brandkit'], false);
+check('a shorthand hex keeps what the author wrote, as theme tokens do',
+  [themeWide.color.palette['short'].$value, themeWide.color.palette['short'].$extensions['app.stacklist.brandkit'].authored], ['#AABBCC', '#abc']);
 check('neutrals are tokens too', tokens.color.palette.graphite.$value, '#36325A');
 check('flat theme tokens are where they were', tokens.color.accent, { $type: 'color', $value: '#281D73' });
 check('every flat theme token survives',
