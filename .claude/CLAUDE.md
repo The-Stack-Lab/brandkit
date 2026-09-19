@@ -93,6 +93,20 @@ The accent uses a fill/text split: `--accent` (fill), `--accent-foreground` (tex
 - **Dev mode**: engine.js bootstrap reads `config.theme` and injects a `<style data-brandkit-theme>` `:root` block at runtime, appended to `<head>`, so it cascades over the baseline.
 - **Production build**: `cli/build.js` uses `lib/template.js` to **append** the generated `:root` block after styles.css (so brand overrides win), plus injects the Google Fonts `<link>` and title into index.html.
 
+### Chrome vs content (1.8.0)
+
+The brand paints the **content** (prose, headings, swatches, specimens, wordmark blocks, demo surfaces). The **chrome**, brandkit's own UI around it, reads **nothing** from the config: the sidebar and its nav, the copy-format bar, toasts, and the in-card controls (format toggles, size pickers, download buttons, the type tester select). It has its own fixed tokens in the baseline `:root`, fonts and palette both (`--bk-ui-font`, `--bk-mono-font`, `--bk-ui-bg`, `--bk-ui-bg-subtle`, `--bk-ui-bg-hover`, `--bk-ui-border`, `--bk-ui-text`, `--bk-ui-text-muted`, `--bk-ui-text-subtle`, `--bk-ui-selected`, `--bk-ui-selected-fg`, `--bk-ui-code-bg`, `--bk-ui-code-text`), declared in the baseline `:root` and explained in the `CHROME vs CONTENT` block below it in `styles.css`. `.sidebar` sets the font for its whole subtree so later additions inherit neutral; form controls are named explicitly because they do not inherit font. Selection state on the format chips uses `--bk-ui-selected` (ink, not the brand accent), inverted to `--bk-ui-selected-fg` on the base `.logo-format-toggle button.active` rule because a logo card's default dark surface is that same ink. The active nav item is `--bk-ui-text` on `--bk-ui-bg-hover` with a 2px left border.
+
+A third layer, **data**, reads `--bk-mono-font`: `.color-value`, `.hierarchy-hex`, `.type-row-spec`, `.spacing-label`, `.spacing-value`, `.a11y-ratio`, `.code-block`, `.changelog-empty code`. These are values a reader copies (hex, oklch, px, ratios, CSS), not prose. The token also replaced two different hardcoded monospace stacks. `renderHierarchy()` wraps its hex in `.hierarchy-hex` (and now escapes both fields, which it did not before).
+
+The sidebar wordmark **text** is chrome (`.sidebar-brand`); `brand.sidebarLogo` still renders the client's actual mark as an image, because that is an asset being displayed, not the UI adopting a style. `.section-label` is the document's own heading and stays branded. Swatch names and roles stay branded too: `Cloud` is copy, `#F5F7FE` is data.
+
+`test/chrome.test.js` enforces the rule as one invariant (`no chrome rule reads a brand token`) over every rule matching the chrome selector patterns, in both directions, plus WCAG ratios for the chrome palette itself. Note the limit: the classifier is a list of selector *patterns*, so a chrome component introduced under a brand-new class name is not scanned until its selector is added to `CHROME`. Add it in the same commit that adds the component.
+
+Why: a brand typeface is not a UI typeface. A Caslon client guide rendered its entire left-hand menu in EB Garamond, which reads as a broken guide rather than as a serif brand.
+
+`--bk-*` is a **reserved namespace**. `isChromeToken()` (`lib/template.js`, mirrored in `dist/engine.js` and `dist/changelog.js`) drops any `--bk-` key found in `config.theme` from the generated `:root`, so neither a hand-written theme nor one an agent derived from a host codebase can repaint the tool with the brand it documents; `build` prints what it dropped. `test/chrome.test.js` pins both halves of the split, and `lib/agents-doc.js` states the rule in the scaffolded AGENTS.md.
+
 ### Config Schema
 
 `config.json` top-level keys:
@@ -221,7 +235,7 @@ month). Run `build`/`export` afterward to refresh the deployed page and exports.
 
 `config.changelog` rides along automatically: it's added to `brand.json`, and `brand.md`'s `## Changelog` section is emitted **unconditionally**, it leads with the maintenance instruction ("when you change the brand, run `brandkit changelog`…") so an agent reading the brief learns the rule even before any entries exist, then lists the history. `tokens.json` is unaffected (not token data).
 
-**Agent affordances for the changelog.** Two things tell an implementing agent how/when to use it: (1) the `## Changelog` instruction in `brand.md` (the file the agent callout points agents at), and (2) `AGENTS.md`, a brand-agnostic maintenance contract `brandkit init` scaffolds into the guide dir (`lib/agents-doc.js`), written only when absent (so `--update` adds it without clobbering edits). It states the source of truth, the read-from-exports rule, and the "record changes with `brandkit changelog`" workflow + versioning scheme.
+**Agent affordances for the changelog.** Two things tell an implementing agent how/when to use it: (1) the `## Changelog` instruction in `brand.md` (the file the agent callout points agents at), and (2) `AGENTS.md`, a brand-agnostic maintenance contract `brandkit init` scaffolds into the guide dir (`lib/agents-doc.js`), written on `init`, and rewritten by `init --update` so an existing guide picks up contract changes from a new release (1.8.0; it used to be skipped when present, which left old guides on an outdated contract forever). It states the source of truth, the read-from-exports rule, and the "record changes with `brandkit changelog`" workflow + versioning scheme.
 
 `build` also injects `<link rel="alternate" type="application/json" href="brand.json">` and embeds `<script type="application/json" id="brandkit-brand">` (with `</script>` escaped) so an agent fetching the deployed page gets structured data without scraping. The transforms are pure (`lib/export.js`); file writing is `writeExports()`.
 

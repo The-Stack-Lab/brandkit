@@ -126,7 +126,40 @@
        adversarial value like "}</style><script>..." or
        "red; background-image:url(x)" is defanged.
        ============================================================== */
-    function cssVal(v) { return String(v == null ? '' : v).replace(/[<>{};]/g, ''); }
+    function stripComments(v) {
+      // One pass is not enough: removing a delimiter can join its neighbours
+      // into a new one ("//**" -> "/*"), which is the injection this exists
+      // to stop. Repeat to a fixed point; each pass only shortens.
+      var out = String(v), prev;
+      do { prev = out; out = out.replace(/\/\*|\*\//g, ''); } while (out !== prev);
+      return out;
+    }
+    function cssVal(v) { return stripComments(String(v == null ? '' : v).replace(/[<>{};]/g, '')); }
+
+    /* A property NAME, not a value: strips whitespace, comment delimiters and
+       every CSS delimiter. `/*` + `*\/` around a key is invisible to the value
+       sanitizer but invisible to the CSS parser too, so `/**\/--bk-ui-bg` was
+       emitted and read back as --bk-ui-bg. Normalizing here means the guard
+       tests the name the browser will actually see. */
+    function cssKey(k) { return String(k == null ? '' : k).replace(/[\u0000-\u0020<>{}();:,'"\\\/*\[\]]/g, ''); }
+
+
+    /* ==============================================================
+       Reserved chrome namespace: `--bk-*` tokens style brandkit's own
+       UI (the sidebar, the controls, toasts), not the brand. They are
+       dropped from the injected :root so a theme can never repaint the
+       tool with the brand it documents. Mirrors isChromeToken() in
+       lib/template.js.
+       ============================================================== */
+    // Tested AFTER the same strip cssVal() applies: "--b;k-ui-font" is not
+    // --bk-* as written but becomes --bk-ui-font once emitted.
+    /* A CSS custom-property name, reduced to characters one can legally
+       contain. This value is interpolated into a style attribute, where
+       esc() alone would still allow `--ink);" onmouseover=`. */
+    function cssVarName(v) { return String(v == null ? '' : v).replace(/[^-\w]/g, ''); }
+
+    function isChromeToken(key) { return /^--bk-/i.test(cssKey(key)); }
+
 
     /* ==============================================================
        BOOTSTRAP: inject fonts + CSS variables before any rendering
@@ -159,18 +192,24 @@
         }
       }
 
-      // Inject CSS custom properties from theme
+      // Inject CSS custom properties from theme.
+      // Not gated on cfg.theme: a config with fonts and no theme must inject
+      // the font vars here too, or dev previews the baseline face while the
+      // build (lib/template.js, which emits them unconditionally) ships the
+      // brand's.
+      var vars = [];
       if (cfg.theme) {
-        var vars = [];
         var keys = Object.keys(cfg.theme);
         for (var i = 0; i < keys.length; i++) {
-          vars.push('  ' + cssVal(keys[i]) + ': ' + cssVal(cfg.theme[keys[i]]) + ';');
+          if (isChromeToken(keys[i])) continue;
+          vars.push('  ' + cssKey(keys[i]) + ': ' + cssVal(cfg.theme[keys[i]]) + ';');
         }
-        // Add font variables from config
-        if (cfg.fonts) {
-          if (cfg.fonts.display) vars.push('  --font-display: ' + fontStack(cfg.fonts.display) + ';');
-          if (cfg.fonts.body) vars.push('  --font-body: ' + fontStack(cfg.fonts.body) + ';');
-        }
+      }
+      if (cfg.fonts) {
+        if (cfg.fonts.display) vars.push('  --font-display: ' + fontStack(cfg.fonts.display) + ';');
+        if (cfg.fonts.body) vars.push('  --font-body: ' + fontStack(cfg.fonts.body) + ';');
+      }
+      if (vars.length) {
         var style = document.createElement('style');
         style.setAttribute('data-brandkit-theme', '');
         style.textContent = ':root {\n' + vars.join('\n') + '\n}';
@@ -351,7 +390,12 @@
         var cssVar = c.cssVar || c.token || '';
         var role = c.role || c.usage || '';
         var isLight = c.light || (hex && parseInt(hex.slice(1), 16) > 0xAAAAAA);
-        var valueDisplay = oklch ? (esc(hex) + ' \u00B7 ' + esc(oklch)) : esc(hex);
+        // Hex and oklch stack rather than sitting on one · separated line:
+        // in the monospace data font the pair is wider than a swatch column,
+        // and a wrapped line breaks mid-token ("0.05 / 274)"). One copy
+        // target either way, still carrying the hex.
+        var valueDisplay = '<span class="color-value-hex">' + esc(hex) + '</span>' +
+          (oklch ? '<span class="color-value-oklch">' + esc(oklch) + '</span>' : '');
         return (
           '<div class="color-card">' +
             '<div class="color-swatch copyable ' + (isLight ? 'has-border' : '') + '"' +
@@ -1049,7 +1093,7 @@
 
       var demoHtml = '<div class="hierarchy-demo">';
       cfg.hierarchy.forEach(function (h) {
-        demoHtml += '<p class="' + h.class + '">' + h.description + '</p>';
+        demoHtml += '<p class="' + esc(h.class) + '">' + esc(h.description) + '</p>';
       });
       demoHtml += '</div>';
 
@@ -1057,8 +1101,8 @@
       cfg.hierarchy.forEach(function (h) {
         labelsHtml +=
           '<div class="hierarchy-label">' +
-            '<div class="hierarchy-dot" style="background: var(' + h.colorVar + ');"></div> ' +
-            h.colorName + ': ' + h.hex +
+            '<div class="hierarchy-dot" style="background: var(' + cssVarName(h.colorVar) + ');"></div> ' +
+            esc(h.colorName) + ': <span class="hierarchy-hex">' + esc(h.hex) + '</span>' +
           '</div>';
       });
       labelsHtml += '</div>';
