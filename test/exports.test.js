@@ -107,6 +107,16 @@ check('a field the exporter has never heard of survives', bjExtra.sizeMobile, '4
 check('an unfilled marker in a row is omitted, not printed', 'tracking' in bjExtra, false);
 check('the other fields are untouched', [bjExtra.name, bjExtra.size, bjExtra.leading], [freeway.typography[0].name, freeway.typography[0].size, freeway.typography[0].leading]);
 
+// An unfilled marker in `uppercase` is truthy but not a decision. brand.json
+// drops it; brand.md must not say caps for the same row, or the two disagree.
+var markerCase = clone(freeway);
+markerCase.typography[0].uppercase = '__TODO: caps?';
+var bjMarker = exporter.buildBrandJson(markerCase).type.scale[0];
+var mdMarker = exporter.buildBrandMarkdown(markerCase);
+check('a marker in uppercase is omitted from brand.json', 'uppercase' in bjMarker, false);
+check('and brand.md leaves that Case cell empty', new RegExp('^\\| ' + freeway.typography[0].name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\|.* \\|  \\|$', 'm').test(mdMarker), true);
+check('so brand.md does not print the marker either', has(mdMarker, '__TODO'), false);
+
 /* ---------------- 3. tokens.json carries the palette ---------------- */
 
 var tokens = exporter.buildTokensJson(freeway);
