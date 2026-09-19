@@ -128,12 +128,14 @@ check('so brand.md does not print the marker either', has(mdMarker, '__TODO'), f
 //
 // The extractor skips string literals and comments while counting braces, so
 // a '}' inside markup or a comment cannot truncate or overrun the slice. It
-// does not tokenize regex literals; neither function uses one today, and a
-// bad slice fails to compile below with the function named.
+// does not tokenize regex literals; neither function uses one today. A slice
+// that is wrong anyway surfaces as a compile error below or as a call failure
+// in renderSpecimen, not as a silently passing check.
 function engineFunction(src, name) {
   var start = src.indexOf('function ' + name + '(');
   if (start === -1) throw new Error('could not find ' + name + ' in dist/engine.js');
   var i = src.indexOf('{', start), depth = 0, quote = null;
+  if (i === -1) throw new Error('no body brace for ' + name + ' in dist/engine.js');
   for (; i < src.length; i++) {
     var c = src[i], next = src[i + 1];
     if (quote) {
