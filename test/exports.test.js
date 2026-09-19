@@ -121,9 +121,35 @@ var mdMarker = exporter.buildBrandMarkdown(markerCase);
 check('a marker in uppercase is omitted from brand.json', 'uppercase' in bjMarker, false);
 check('and brand.md leaves that Case cell empty', hasCaseCell(mdMarker, freeway.typography[0].name, ''), true);
 check('so brand.md does not print the marker either', has(mdMarker, '__TODO'), false);
-var engineSrc = fs.readFileSync(path.join(__dirname, '..', 'dist', 'engine.js'), 'utf8');
-check('the engine specimen applies the same guard, so all three artifacts agree',
-  has(engineSrc, "(t.uppercase && !isUnset(t.uppercase) ? 'text-transform:uppercase;' : '')"), true);
+// The rendered specimen is the third artifact. Run the engine's own
+// renderTypography() against a stub document rather than asserting on its
+// source text, so a reformat of dist/ cannot break this and a rewrite that
+// keeps the literal but changes the logic cannot pass it.
+function engineFunction(src, name) {
+  var start = src.indexOf('function ' + name + '(');
+  if (start === -1) throw new Error('could not find ' + name + ' in dist/engine.js');
+  var i = src.indexOf('{', start), depth = 0;
+  for (; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}' && --depth === 0) return src.slice(start, i + 1);
+  }
+  throw new Error('unbalanced ' + name + ' in dist/engine.js');
+}
+function renderSpecimen(row) {
+  var src = fs.readFileSync(path.join(__dirname, '..', 'dist', 'engine.js'), 'utf8');
+  var el = { innerHTML: '' };
+  var stubDoc = { getElementById: function () { return el; } };
+  var cfg = { fonts: { display: { family: 'D' }, body: { family: 'B' } }, typography: [row] };
+  new Function('cfg', 'document', engineFunction(src, 'isUnset') + '\n' + engineFunction(src, 'renderTypography') + '\nrenderTypography();')(cfg, stubDoc);
+  return el.innerHTML;
+}
+var baseRow = { name: 'Overline', font: 'body', size: '11px', weight: 700, tracking: '0.1em', leading: '1.4', sample: 'x' };
+var withCaps = renderSpecimen(Object.assign({}, baseRow, { uppercase: true }));
+var withMarker = renderSpecimen(Object.assign({}, baseRow, { uppercase: '__TODO: caps?' }));
+var withoutFlag = renderSpecimen(baseRow);
+check('the engine specimen sets a true row in caps', has(withCaps, 'text-transform:uppercase'), true);
+check('and leaves an unfilled marker alone, so all three artifacts agree', has(withMarker, 'text-transform:uppercase'), false);
+check('and a row without the flag is not uppercased', has(withoutFlag, 'text-transform:uppercase'), false);
 
 /* ---------------- 3. tokens.json carries the palette ---------------- */
 
