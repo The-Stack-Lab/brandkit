@@ -46,13 +46,43 @@ consequences for you:
 They are separate keys and nothing keeps them in sync automatically:
 
 - `colors` is the **inventory**: the swatch grid the guide documents.
-- `theme` is the **rendering**: the CSS custom properties the guide styles *itself* with
-  (`--accent`, `--ink`, `--white`, `--gradient-brand`, `--header-bg`, …).
+- `theme` is the **rendering**: the CSS custom properties the guide paints its *content* with
+  (`--accent`, `--ink`, `--white`, `--gradient-brand`, `--header-bg`, …). It does not reach
+  brandkit's own UI, see "The chrome is not the brand" below.
 
 Setting `colors` alone documents a palette the page never adopts. A fresh scaffold ships
 brandkit's own placeholder indigo (`#4F46E5`) in `theme`, so if the guide still renders indigo
-chrome while the swatches show the client palette, `theme` was never populated. Run
+accents while the swatches show the client palette, `theme` was never populated. Run
 `brandkit generate`, or map the palette into `theme` by hand if the values are not in the CSS.
+
+## The chrome is not the brand
+
+The page has three layers and only one of them is yours to paint:
+
+- **Content**: the document. Prose, headings, swatches, type specimens, the wordmark blocks,
+  the component demos. This *is* the brand, and it renders in the brand's colors and typefaces.
+- **Chrome**: brandkit's UI around the document. The left sidebar and its navigation, the
+  copy-format bar, toasts, and the controls inside cards (format toggles, size pickers,
+  download buttons, the type tester). This is the tool, and it stays neutral on purpose.
+- **Data**: the values the guide reports back. Hex codes, oklch triplets, type metrics,
+  spacing steps, contrast ratios, CSS. Measurements a reader copies, not copy to read, so
+  they render as machine output in one monospace stack.
+
+The chrome reads **nothing** from `config.json`. Not the fonts, not the palette. It has its own
+fixed tokens (`--bk-ui-font`, `--bk-mono-font`, `--bk-ui-bg`, `--bk-ui-text`, and so on), so a
+guide for a Caslon brand and a guide for a Helvetica brand have an identical sidebar. brandkit
+displays your brand; it does not wear it.
+
+- **Do not restyle the chrome.** No overrides for `.sidebar`, `.nav-group`, `.copy-format-bar`,
+  `.toast` or the logo/type-tester controls, and no extra stylesheet dropped into this
+  directory to bring the guide "on brand".
+- **`--bk-*` is a reserved namespace.** `brandkit build`, the dev server and the exporters all
+  drop any `--bk-` key found in `config.theme` (build prints what it dropped). Do not route a
+  brand font or color through it.
+- **The brand belongs in the content**: the header, the logos (`brand.headerLogo` /
+  `brand.sidebarLogo`), every swatch, specimen, demo surface and line of prose on the page.
+  That is a lot of brand. A guide that looks unbranded is a `config.json` problem, never a
+  chrome problem.
 
 ## When you change the brand, record it in the changelog
 
@@ -88,6 +118,11 @@ npx brandkit changelog "…"  # record a brand change (see above)
 
 - Edit `config.json`. Do **not** hand-edit `index.html`, `styles.css`, `engine.js`, or
   `changelog.html`. They are universal and overwritten on every rebuild.
+- **This file is generated too.** `brandkit init --update` rewrites it, so a guide picks up
+  contract changes from a new brandkit release. Guide-specific notes belong in the host
+  project, not here.
+- Leave brandkit's chrome alone: style the brand through `config.json`, never the guide UI
+  around it (see above).
 - Within `config.json`, respect the ownership table above: change token values at their source
   and re-run `brandkit generate`, rather than typing hex codes into `theme` or `colors`.
 - After changing `config.json`: run `brandkit changelog "…"`, then `brandkit build` (or `export`).
