@@ -87,6 +87,11 @@ check('brand.json scale carries tracking and leading', [bj.type.scale[0].trackin
 // never reached brand.json, and no row in brand.md said it was set in caps.
 // brandkit's own scaffold sets uppercase on Overline, so every guide had this.
 
+// True when brand.md's type-scale table has a row for `name` whose last (Case) cell is exactly `caseCell`.
+function hasCaseCell(text, name, caseCell) {
+  var quoted = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp('^\\| ' + quoted + ' \\|.* \\| ' + caseCell + ' \\|$', 'm').test(text);
+}
 var capsRow = freeway.typography.filter(function (t) { return t.uppercase === true; })[0];
 var plainRow = freeway.typography.filter(function (t) { return !t.uppercase; })[0];
 check('the fixture has one row of each case', [!!capsRow, !!plainRow], [true, true]);
@@ -96,8 +101,8 @@ check('brand.json carries uppercase', bjCaps.uppercase, true);
 check('brand.json carries the sample', bjCaps.sample, capsRow.sample);
 check('a row without the flag does not gain one', 'uppercase' in bjPlain, false);
 check('the caps row says so in brand.md', has(md, '| ' + capsRow.name + ' | '), true);
-check('and its Case cell reads caps', new RegExp('^\\| ' + capsRow.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\|.* \\| caps \\|$', 'm').test(md), true);
-check('a plain row has an empty Case cell', new RegExp('^\\| ' + plainRow.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\|.* \\|  \\|$', 'm').test(md), true);
+check('and its Case cell reads caps', hasCaseCell(md, capsRow.name, 'caps'), true);
+check('a plain row has an empty Case cell', hasCaseCell(md, plainRow.name, ''), true);
 
 var extraField = clone(freeway);
 extraField.typography[0].sizeMobile = '48px';
@@ -114,8 +119,11 @@ markerCase.typography[0].uppercase = '__TODO: caps?';
 var bjMarker = exporter.buildBrandJson(markerCase).type.scale[0];
 var mdMarker = exporter.buildBrandMarkdown(markerCase);
 check('a marker in uppercase is omitted from brand.json', 'uppercase' in bjMarker, false);
-check('and brand.md leaves that Case cell empty', new RegExp('^\\| ' + freeway.typography[0].name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\|.* \\|  \\|$', 'm').test(mdMarker), true);
+check('and brand.md leaves that Case cell empty', hasCaseCell(mdMarker, freeway.typography[0].name, ''), true);
 check('so brand.md does not print the marker either', has(mdMarker, '__TODO'), false);
+var engineSrc = fs.readFileSync(path.join(__dirname, '..', 'dist', 'engine.js'), 'utf8');
+check('the engine specimen applies the same guard, so all three artifacts agree',
+  has(engineSrc, "(t.uppercase && !isUnset(t.uppercase) ? 'text-transform:uppercase;' : '')"), true);
 
 /* ---------------- 3. tokens.json carries the palette ---------------- */
 

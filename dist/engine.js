@@ -871,7 +871,7 @@
           'font-weight:' + t.weight + ';' +
           'letter-spacing:' + t.tracking + ';' +
           'line-height:' + t.leading + ';' +
-          (t.uppercase ? 'text-transform:uppercase;' : '') +
+          (t.uppercase && !isUnset(t.uppercase) ? 'text-transform:uppercase;' : '') +
           (t.name === 'Body SM' ? 'color:var(--graphite);' : '') +
           (t.name === 'Caption' || t.name === 'Overline' ? 'color:var(--slate);' : '');
 
