@@ -125,23 +125,50 @@ check('so brand.md does not print the marker either', has(mdMarker, '__TODO'), f
 // renderTypography() against a stub document rather than asserting on its
 // source text, so a reformat of dist/ cannot break this and a rewrite that
 // keeps the literal but changes the logic cannot pass it.
+//
+// The extractor skips string literals and comments while counting braces, so
+// a '}' inside markup or a comment cannot truncate or overrun the slice. It
+// does not tokenize regex literals; neither function uses one today, and a
+// bad slice fails to compile below with the function named.
 function engineFunction(src, name) {
   var start = src.indexOf('function ' + name + '(');
   if (start === -1) throw new Error('could not find ' + name + ' in dist/engine.js');
-  var i = src.indexOf('{', start), depth = 0;
+  var i = src.indexOf('{', start), depth = 0, quote = null;
   for (; i < src.length; i++) {
-    if (src[i] === '{') depth++;
-    else if (src[i] === '}' && --depth === 0) return src.slice(start, i + 1);
+    var c = src[i], next = src[i + 1];
+    if (quote) {
+      if (c === '\\') i++;                         // skip the escaped char
+      else if (c === quote) quote = null;
+    } else if (c === "'" || c === '"' || c === '`') {
+      quote = c;
+    } else if (c === '/' && next === '/') {
+      i = src.indexOf('\n', i); if (i === -1) break;
+    } else if (c === '/' && next === '*') {
+      i = src.indexOf('*/', i + 2); if (i === -1) break; i++;
+    } else if (c === '{') {
+      depth++;
+    } else if (c === '}' && --depth === 0) {
+      return src.slice(start, i + 1);
+    }
   }
   throw new Error('unbalanced ' + name + ' in dist/engine.js');
 }
+var engineSrc = fs.readFileSync(path.join(__dirname, '..', 'dist', 'engine.js'), 'utf8');
+var specimenRenderer = (function () {
+  var body = engineFunction(engineSrc, 'isUnset') + '\n' + engineFunction(engineSrc, 'renderTypography') + '\nrenderTypography();';
+  try { return new Function('cfg', 'document', body); }
+  catch (e) { throw new Error('extracted engine functions do not compile: ' + e.message); }
+})();
 function renderSpecimen(row) {
-  var src = fs.readFileSync(path.join(__dirname, '..', 'dist', 'engine.js'), 'utf8');
-  var el = { innerHTML: '' };
-  var stubDoc = { getElementById: function () { return el; } };
-  var cfg = { fonts: { display: { family: 'D' }, body: { family: 'B' } }, typography: [row] };
-  new Function('cfg', 'document', engineFunction(src, 'isUnset') + '\n' + engineFunction(src, 'renderTypography') + '\nrenderTypography();')(cfg, stubDoc);
-  return el.innerHTML;
+  // Keyed by id and loud on anything else, so a renderer that starts writing
+  // a second node cannot clobber the markup the assertions inspect.
+  var nodes = { 'type-scale': { innerHTML: '' } };
+  var stubDoc = { getElementById: function (id) {
+    if (!nodes[id]) throw new Error('renderTypography asked for an unexpected element: ' + id);
+    return nodes[id];
+  } };
+  specimenRenderer({ fonts: { display: { family: 'D' }, body: { family: 'B' } }, typography: [row] }, stubDoc);
+  return nodes['type-scale'].innerHTML;
 }
 var baseRow = { name: 'Overline', font: 'body', size: '11px', weight: 700, tracking: '0.1em', leading: '1.4', sample: 'x' };
 var withCaps = renderSpecimen(Object.assign({}, baseRow, { uppercase: true }));
