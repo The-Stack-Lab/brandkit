@@ -44,19 +44,19 @@ Clear, confident, and friendly. Brandkit speaks like a thoughtful teammate: it e
 
 **Type scale:**
 
-| Style | Font | Size | Weight | Tracking | Leading |
-|---|---|---|---|---|---|
-| Display XL | display | 72px | 700 | -0.03em | 1.05 |
-| Display | display | 56px | 700 | -0.025em | 1.1 |
-| H1 | display | 44px | 700 | -0.02em | 1.15 |
-| H2 | display | 36px | 700 | -0.015em | 1.2 |
-| H3 | display | 28px | 600 | -0.01em | 1.3 |
-| H4 | display | 22px | 600 | -0.005em | 1.35 |
-| Body LG | body | 18px | 400 | 0 | 1.7 |
-| Body | body | 16px | 400 | 0 | 1.7 |
-| Body SM | body | 14px | 400 | 0 | 1.6 |
-| Caption | body | 12px | 500 | 0.02em | 1.5 |
-| Overline | body | 11px | 700 | 0.1em | 1.4 |
+| Style | Font | Size | Weight | Tracking | Leading | Case |
+|---|---|---|---|---|---|---|
+| Display XL | display | 72px | 700 | -0.03em | 1.05 |  |
+| Display | display | 56px | 700 | -0.025em | 1.1 |  |
+| H1 | display | 44px | 700 | -0.02em | 1.15 |  |
+| H2 | display | 36px | 700 | -0.015em | 1.2 |  |
+| H3 | display | 28px | 600 | -0.01em | 1.3 |  |
+| H4 | display | 22px | 600 | -0.005em | 1.35 |  |
+| Body LG | body | 18px | 400 | 0 | 1.7 |  |
+| Body | body | 16px | 400 | 0 | 1.7 |  |
+| Body SM | body | 14px | 400 | 0 | 1.6 |  |
+| Caption | body | 12px | 500 | 0.02em | 1.5 |  |
+| Overline | body | 11px | 700 | 0.1em | 1.4 | caps |
 
 ## Spacing
 - **Scale:** `space-1` 4px, `space-2` 8px, `space-3` 12px, `space-4` 16px, `space-6` 24px, `space-8` 32px, `space-12` 48px, `space-16` 64px, `space-24` 96px.
@@ -77,6 +77,9 @@ When you change this brand (colors, type, logos, voice, spacing, or anything in 
 
 Revision history (newest first):
 
+- **v1.8.1** (September 2026):
+  - A type-scale row now reaches brand.json whole. The exporter used to name the fields it kept, so uppercase and sample were dropped from every guide, including the Overline style brandkit's own scaffold sets in caps. A consumer reading 11px / 700 / 0.1em tracking with no caps flag rendered a letterspaced sentence-case label. Any field the schema gains later passes through the same way; only an unfilled marker is omitted.
+  - brand.md's type-scale table gained a Case column that reads caps for an uppercase style, so the brief states the case instead of leaving it to inference.
 - **v1.8.0** (September 2026):
   - Separated the guide into chrome and content. brandkit's own UI (sidebar, navigation, controls, toasts) now reads nothing from config.json, fonts or palette, so it is identical in every guide. The brand gets the whole document instead: header, logos, swatches, specimens, demo surfaces and prose.
   - Reported values (hex, oklch, type metrics, spacing steps, contrast ratios, CSS) now render in one monospace stack rather than the brand typeface. A measurement a reader copies is not body copy, and it replaces two different hardcoded mono stacks.

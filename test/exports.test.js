@@ -73,14 +73,39 @@ check('an unfilled role is omitted, not printed', has(exporter.buildBrandMarkdow
 
 /* ---------------- 2. brand.md carries the type scale and spacing ---------------- */
 
-check('type scale header', has(md, '| Style | Font | Size | Weight | Tracking | Leading |'), true);
+check('type scale header', has(md, '| Style | Font | Size | Weight | Tracking | Leading | Case |'), true);
 freeway.typography.forEach(function (t) {
   check('type scale row ' + t.name,
-    has(md, '| ' + [t.name, t.font, t.size, t.weight, t.tracking, t.leading].join(' | ') + ' |'), true);
+    has(md, '| ' + [t.name, t.font, t.size, t.weight, t.tracking, t.leading].join(' | ') + ' | ' + (t.uppercase ? 'caps' : '') + ' |'), true);
 });
 check('spacing scale is one line', has(md, '- **Scale:** `space-1` 4px, `space-2` 8px,'), true);
 var bj = exporter.buildBrandJson(freeway);
 check('brand.json scale carries tracking and leading', [bj.type.scale[0].tracking, bj.type.scale[0].leading], ['-0.03em', '1.05']);
+
+/* ---------------- 2b. a type-scale row is exported whole (LAB-1226) ---------------- */
+// The exporters used to name the fields they kept, so `uppercase` and `sample`
+// never reached brand.json, and no row in brand.md said it was set in caps.
+// brandkit's own scaffold sets uppercase on Overline, so every guide had this.
+
+var capsRow = freeway.typography.filter(function (t) { return t.uppercase === true; })[0];
+var plainRow = freeway.typography.filter(function (t) { return !t.uppercase; })[0];
+check('the fixture has one row of each case', [!!capsRow, !!plainRow], [true, true]);
+var bjCaps = bj.type.scale.filter(function (t) { return t.name === capsRow.name; })[0];
+var bjPlain = bj.type.scale.filter(function (t) { return t.name === plainRow.name; })[0];
+check('brand.json carries uppercase', bjCaps.uppercase, true);
+check('brand.json carries the sample', bjCaps.sample, capsRow.sample);
+check('a row without the flag does not gain one', 'uppercase' in bjPlain, false);
+check('the caps row says so in brand.md', has(md, '| ' + capsRow.name + ' | '), true);
+check('and its Case cell reads caps', new RegExp('^\\| ' + capsRow.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\|.* \\| caps \\|$', 'm').test(md), true);
+check('a plain row has an empty Case cell', new RegExp('^\\| ' + plainRow.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\|.* \\|  \\|$', 'm').test(md), true);
+
+var extraField = clone(freeway);
+extraField.typography[0].sizeMobile = '48px';
+extraField.typography[0].tracking = '__TODO: measure';
+var bjExtra = exporter.buildBrandJson(extraField).type.scale[0];
+check('a field the exporter has never heard of survives', bjExtra.sizeMobile, '48px');
+check('an unfilled marker in a row is omitted, not printed', 'tracking' in bjExtra, false);
+check('the other fields are untouched', [bjExtra.name, bjExtra.size, bjExtra.leading], [freeway.typography[0].name, freeway.typography[0].size, freeway.typography[0].leading]);
 
 /* ---------------- 3. tokens.json carries the palette ---------------- */
 
@@ -349,7 +374,7 @@ var hall = hmd + JSON.stringify(hj) + JSON.stringify(ht);
 check('no marker reaches any export', has(hall, '__TODO'), false);
 check('no "undefined", "NaN" or "[object Object]" is printed', /undefined|NaN|\[object Object\]/.test(hall), false);
 check('a newline in a value cannot start a markdown heading', /^## Injected/m.test(hmd), false);
-check('the type scale row stays on one line', has(hmd, '| Dis/play X | a b | 1 | 1 |  |  |'), true);
+check('the type scale row stays on one line', has(hmd, '| Dis/play X | a b | 1 | 1 |  |  |  |'), true);
 check('spacing keeps only real dimensions', has(hmd, '- **Scale:** `sm` 8px, `lg` 24px.'), true);
 check('and so do the tokens', ht.dimension, { sm: { $type: 'dimension', $value: '8px' }, lg: { $type: 'dimension', $value: '24px' } });
 check('a marker name falls back to the label', has(hmd, '- **Real** `#123456`: Real usage.'), true);

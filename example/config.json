@@ -6,7 +6,7 @@
     "description": "Brandkit turns a single config.json into a complete, living brand guide: colors, typography, logos, voice, and components, all driven by design tokens. This is the default guide; swap the config and assets to make it your own.",
     "url": "github.com/The-Stack-Lab/brandkit",
     "byline": "Open source · MIT",
-    "version": "1.8.0",
+    "version": "1.8.1",
     "date": "September 2026",
     "guideLabel": "Web Style Guide",
     "headerLogo": "",
@@ -704,6 +704,14 @@
     ]
   },
   "changelog": [
+    {
+      "version": "1.8.1",
+      "date": "September 2026",
+      "changes": [
+        "A type-scale row now reaches brand.json whole. The exporter used to name the fields it kept, so uppercase and sample were dropped from every guide, including the Overline style brandkit's own scaffold sets in caps. A consumer reading 11px / 700 / 0.1em tracking with no caps flag rendered a letterspaced sentence-case label. Any field the schema gains later passes through the same way; only an unfilled marker is omitted.",
+        "brand.md's type-scale table gained a Case column that reads caps for an uppercase style, so the brief states the case instead of leaving it to inference."
+      ]
+    },
     {
       "version": "1.8.0",
       "date": "September 2026",
