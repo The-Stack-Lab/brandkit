@@ -73,14 +73,112 @@ check('an unfilled role is omitted, not printed', has(exporter.buildBrandMarkdow
 
 /* ---------------- 2. brand.md carries the type scale and spacing ---------------- */
 
-check('type scale header', has(md, '| Style | Font | Size | Weight | Tracking | Leading |'), true);
+check('type scale header', has(md, '| Style | Font | Size | Weight | Tracking | Leading | Case |'), true);
 freeway.typography.forEach(function (t) {
   check('type scale row ' + t.name,
-    has(md, '| ' + [t.name, t.font, t.size, t.weight, t.tracking, t.leading].join(' | ') + ' |'), true);
+    has(md, '| ' + [t.name, t.font, t.size, t.weight, t.tracking, t.leading].join(' | ') + ' | ' + (t.uppercase ? 'caps' : '') + ' |'), true);
 });
 check('spacing scale is one line', has(md, '- **Scale:** `space-1` 4px, `space-2` 8px,'), true);
 var bj = exporter.buildBrandJson(freeway);
 check('brand.json scale carries tracking and leading', [bj.type.scale[0].tracking, bj.type.scale[0].leading], ['-0.03em', '1.05']);
+
+/* ---------------- 2b. a type-scale row is exported whole (LAB-1226) ---------------- */
+// The exporters used to name the fields they kept, so `uppercase` and `sample`
+// never reached brand.json, and no row in brand.md said it was set in caps.
+// brandkit's own scaffold sets uppercase on Overline, so every guide had this.
+
+// True when brand.md's type-scale table has a row for `name` whose last (Case) cell is exactly `caseCell`.
+function hasCaseCell(text, name, caseCell) {
+  var quoted = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp('^\\| ' + quoted + ' \\|.* \\| ' + caseCell + ' \\|$', 'm').test(text);
+}
+var capsRow = freeway.typography.filter(function (t) { return t.uppercase === true; })[0];
+var plainRow = freeway.typography.filter(function (t) { return !t.uppercase; })[0];
+check('the fixture has one row of each case', [!!capsRow, !!plainRow], [true, true]);
+var bjCaps = bj.type.scale.filter(function (t) { return t.name === capsRow.name; })[0];
+var bjPlain = bj.type.scale.filter(function (t) { return t.name === plainRow.name; })[0];
+check('brand.json carries uppercase', bjCaps.uppercase, true);
+check('brand.json carries the sample', bjCaps.sample, capsRow.sample);
+check('a row without the flag does not gain one', 'uppercase' in bjPlain, false);
+check('the caps row says so in brand.md', has(md, '| ' + capsRow.name + ' | '), true);
+check('and its Case cell reads caps', hasCaseCell(md, capsRow.name, 'caps'), true);
+check('a plain row has an empty Case cell', hasCaseCell(md, plainRow.name, ''), true);
+
+var extraField = clone(freeway);
+extraField.typography[0].sizeMobile = '48px';
+extraField.typography[0].tracking = '__TODO: measure';
+var bjExtra = exporter.buildBrandJson(extraField).type.scale[0];
+check('a field the exporter has never heard of survives', bjExtra.sizeMobile, '48px');
+check('an unfilled marker in a row is omitted, not printed', 'tracking' in bjExtra, false);
+check('the other fields are untouched', [bjExtra.name, bjExtra.size, bjExtra.leading], [freeway.typography[0].name, freeway.typography[0].size, freeway.typography[0].leading]);
+
+// An unfilled marker in `uppercase` is truthy but not a decision. brand.json
+// drops it; brand.md must not say caps for the same row, or the two disagree.
+var markerCase = clone(freeway);
+markerCase.typography[0].uppercase = '__TODO: caps?';
+var bjMarker = exporter.buildBrandJson(markerCase).type.scale[0];
+var mdMarker = exporter.buildBrandMarkdown(markerCase);
+check('a marker in uppercase is omitted from brand.json', 'uppercase' in bjMarker, false);
+check('and brand.md leaves that Case cell empty', hasCaseCell(mdMarker, freeway.typography[0].name, ''), true);
+check('so brand.md does not print the marker either', has(mdMarker, '__TODO'), false);
+// The rendered specimen is the third artifact. Run the engine's own
+// renderTypography() against a stub document rather than asserting on its
+// source text, so a reformat of dist/ cannot break this and a rewrite that
+// keeps the literal but changes the logic cannot pass it.
+//
+// The extractor skips string literals and comments while counting braces, so
+// a '}' inside markup or a comment cannot truncate or overrun the slice. It
+// does not tokenize regex literals; neither function uses one today. A slice
+// that is wrong anyway surfaces as a compile error below or as a call failure
+// in renderSpecimen, not as a silently passing check.
+function engineFunction(src, name) {
+  var start = src.indexOf('function ' + name + '(');
+  if (start === -1) throw new Error('could not find ' + name + ' in dist/engine.js');
+  var i = src.indexOf('{', start), depth = 0, quote = null;
+  if (i === -1) throw new Error('no body brace for ' + name + ' in dist/engine.js');
+  for (; i < src.length; i++) {
+    var c = src[i], next = src[i + 1];
+    if (quote) {
+      if (c === '\\') i++;                         // skip the escaped char
+      else if (c === quote) quote = null;
+    } else if (c === "'" || c === '"' || c === '`') {
+      quote = c;
+    } else if (c === '/' && next === '/') {
+      i = src.indexOf('\n', i); if (i === -1) break;
+    } else if (c === '/' && next === '*') {
+      i = src.indexOf('*/', i + 2); if (i === -1) break; i++;
+    } else if (c === '{') {
+      depth++;
+    } else if (c === '}' && --depth === 0) {
+      return src.slice(start, i + 1);
+    }
+  }
+  throw new Error('unbalanced ' + name + ' in dist/engine.js');
+}
+var engineSrc = fs.readFileSync(path.join(__dirname, '..', 'dist', 'engine.js'), 'utf8');
+var specimenRenderer = (function () {
+  var body = engineFunction(engineSrc, 'isUnset') + '\n' + engineFunction(engineSrc, 'renderTypography') + '\nrenderTypography();';
+  try { return new Function('cfg', 'document', body); }
+  catch (e) { throw new Error('extracted engine functions do not compile: ' + e.message); }
+})();
+function renderSpecimen(row) {
+  // Keyed by id and loud on anything else, so a renderer that starts writing
+  // a second node cannot clobber the markup the assertions inspect.
+  var nodes = { 'type-scale': { innerHTML: '' } };
+  var stubDoc = { getElementById: function (id) {
+    if (!nodes[id]) throw new Error('renderTypography asked for an unexpected element: ' + id);
+    return nodes[id];
+  } };
+  specimenRenderer({ fonts: { display: { family: 'D' }, body: { family: 'B' } }, typography: [row] }, stubDoc);
+  return nodes['type-scale'].innerHTML;
+}
+var baseRow = { name: 'Overline', font: 'body', size: '11px', weight: 700, tracking: '0.1em', leading: '1.4', sample: 'x' };
+var withCaps = renderSpecimen(Object.assign({}, baseRow, { uppercase: true }));
+var withMarker = renderSpecimen(Object.assign({}, baseRow, { uppercase: '__TODO: caps?' }));
+var withoutFlag = renderSpecimen(baseRow);
+check('the engine specimen sets a true row in caps', has(withCaps, 'text-transform:uppercase'), true);
+check('and leaves an unfilled marker alone, so all three artifacts agree', has(withMarker, 'text-transform:uppercase'), false);
+check('and a row without the flag is not uppercased', has(withoutFlag, 'text-transform:uppercase'), false);
 
 /* ---------------- 3. tokens.json carries the palette ---------------- */
 
@@ -349,7 +447,7 @@ var hall = hmd + JSON.stringify(hj) + JSON.stringify(ht);
 check('no marker reaches any export', has(hall, '__TODO'), false);
 check('no "undefined", "NaN" or "[object Object]" is printed', /undefined|NaN|\[object Object\]/.test(hall), false);
 check('a newline in a value cannot start a markdown heading', /^## Injected/m.test(hmd), false);
-check('the type scale row stays on one line', has(hmd, '| Dis/play X | a b | 1 | 1 |  |  |'), true);
+check('the type scale row stays on one line', has(hmd, '| Dis/play X | a b | 1 | 1 |  |  |  |'), true);
 check('spacing keeps only real dimensions', has(hmd, '- **Scale:** `sm` 8px, `lg` 24px.'), true);
 check('and so do the tokens', ht.dimension, { sm: { $type: 'dimension', $value: '8px' }, lg: { $type: 'dimension', $value: '24px' } });
 check('a marker name falls back to the label', has(hmd, '- **Real** `#123456`: Real usage.'), true);

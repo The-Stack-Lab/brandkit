@@ -4,7 +4,7 @@
   "tagline": "The config-driven brand guide",
   "description": "Brandkit turns a single config.json into a complete, living brand guide: colors, typography, logos, voice, and components, all driven by design tokens. This is the default guide; swap the config and assets to make it your own.",
   "url": "github.com/The-Stack-Lab/brandkit",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "generatedBy": "brandkit",
   "voice": {
     "summary": "Clear, confident, and friendly. Brandkit speaks like a thoughtful teammate: it explains the what and the why without jargon, and never talks down to the reader.",
@@ -142,91 +142,103 @@
     "scale": [
       {
         "name": "Display XL",
+        "font": "display",
         "size": "72px",
         "weight": 700,
         "tracking": "-0.03em",
         "leading": "1.05",
-        "font": "display"
+        "sample": "One config, every token"
       },
       {
         "name": "Display",
+        "font": "display",
         "size": "56px",
         "weight": 700,
         "tracking": "-0.025em",
         "leading": "1.1",
-        "font": "display"
+        "sample": "A brand guide that builds itself"
       },
       {
         "name": "H1",
+        "font": "display",
         "size": "44px",
         "weight": 700,
         "tracking": "-0.02em",
         "leading": "1.15",
-        "font": "display"
+        "sample": "Design tokens, end to end"
       },
       {
         "name": "H2",
+        "font": "display",
         "size": "36px",
         "weight": 700,
         "tracking": "-0.015em",
         "leading": "1.2",
-        "font": "display"
+        "sample": "Colors, type, and components"
       },
       {
         "name": "H3",
+        "font": "display",
         "size": "28px",
         "weight": 600,
         "tracking": "-0.01em",
         "leading": "1.3",
-        "font": "display"
+        "sample": "Consistent by construction"
       },
       {
         "name": "H4",
+        "font": "display",
         "size": "22px",
         "weight": 600,
         "tracking": "-0.005em",
         "leading": "1.35",
-        "font": "display"
+        "sample": "A card heading, set in display"
       },
       {
         "name": "Body LG",
+        "font": "body",
         "size": "18px",
         "weight": 400,
         "tracking": "0",
         "leading": "1.7",
-        "font": "body"
+        "sample": "Lead paragraphs and intros sit comfortably at this size with generous line height."
       },
       {
         "name": "Body",
+        "font": "body",
         "size": "16px",
         "weight": 400,
         "tracking": "0",
         "leading": "1.7",
-        "font": "body"
+        "sample": "The default for body copy: legible, neutral, and easy on the eyes at any length."
       },
       {
         "name": "Body SM",
+        "font": "body",
         "size": "14px",
         "weight": 400,
         "tracking": "0",
         "leading": "1.6",
-        "font": "body"
+        "sample": "Smaller supporting text for secondary details and helper copy."
       },
       {
         "name": "Caption",
+        "font": "body",
         "size": "12px",
         "weight": 500,
         "tracking": "0.02em",
         "leading": "1.5",
-        "font": "body"
+        "sample": "Captions, timestamps, and metadata"
       },
       {
         "name": "Overline",
+        "font": "body",
         "size": "11px",
         "weight": 700,
         "tracking": "0.1em",
         "leading": "1.4",
-        "font": "body"
+        "sample": "Section label",
+        "uppercase": true
       }
     ]
   },
@@ -363,6 +375,14 @@
     }
   ],
   "changelog": [
+    {
+      "version": "1.8.1",
+      "date": "September 2026",
+      "changes": [
+        "A type-scale row now reaches brand.json whole. The exporter used to name the fields it kept, so uppercase and sample were dropped from every guide, including the Overline style brandkit's own scaffold sets in caps. A consumer reading 11px / 700 / 0.1em tracking with no caps flag rendered a letterspaced sentence-case label. Any field the schema gains later passes through the same way; only an unfilled marker is omitted.",
+        "brand.md's type-scale table gained a Case column that reads caps for an uppercase style, so the brief states the case instead of leaving it to inference."
+      ]
+    },
     {
       "version": "1.8.0",
       "date": "September 2026",
