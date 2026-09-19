@@ -32,6 +32,35 @@
   --font-display: 'Inter', sans-serif;
   --font-body: 'Inter', sans-serif;
 
+  /* Chrome font: the guide's own UI, never the brand's typeface.
+     A system stack, so it needs no webfont and can never render serif
+     because the documented brand happens to be a serif. See the chrome
+     block below for what it governs. This is not a brand token: nothing
+     in config.json is expected to set it. */
+  --bk-ui-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Data font: the values the guide reports back (hex, oklch, px, ratios,
+     token names, CSS). Measurements, not copy, so they are not set in the
+     brand's typeface either. Also not a brand token. */
+  --bk-mono-font: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* Chrome palette: brandkit's own UI colors. Fixed, never brand-derived,
+     for the same reason as --bk-ui-font. The guide DISPLAYS the brand; it
+     does not wear it. */
+  --bk-ui-bg: #FFFFFF;
+  --bk-ui-bg-subtle: #F9FAFB;
+  --bk-ui-bg-hover: #F3F4F6;
+  --bk-ui-border: #E5E7EB;        /* hairlines: panel edges, dividers */
+  --bk-ui-border-strong: #8B919C; /* a control whose border IS its shape (3.2:1) */
+  --bk-ui-text: #111827;
+  --bk-ui-text-rgb: 17, 24, 39;   /* same ink, for shadows and overlays */
+  --bk-ui-text-muted: #6B7280;
+  --bk-ui-text-subtle: #6C7480;   /* 4.7:1 on --bk-ui-bg; was #9CA3AF at 2.5:1 */
+  --bk-ui-selected: #111827;      /* the active format chip, not the accent */
+  --bk-ui-selected-fg: #FFFFFF;
+  --bk-ui-code-bg: #111827;
+  --bk-ui-code-text: #E5E7EB;
+
   /* Accent: fill vs. text split (Material/shadcn "on-color" convention)
        --accent            the fill color (buttons, active chips)
        --accent-foreground text/icon color ON the fill (must pass on --accent)
@@ -80,10 +109,68 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ─────────────────────────────────────────────────────
+   CHROME vs CONTENT
+
+   The brand paints the CONTENT: prose, headings, specimens, swatches,
+   wordmarks, the component demos. That is the document, and it should
+   look like the brand.
+
+   The CHROME is brandkit's own UI wrapped around it: the sidebar, the
+   copy-format bar, toasts, and the controls inside cards (format
+   toggles, size pickers, download buttons, the type tester's select).
+   That is the tool, not the brand, and it stays neutral.
+
+   DATA is the third layer: the values the guide reports back. A hex code,
+   an oklch triplet, a type metric, a spacing step, a contrast ratio, a
+   line of CSS. They are measurements a reader copies, not prose, so they
+   read as machine output in one monospace stack. #F5F7FE set in a Caslon
+   is a value dressed up as a sentence.
+
+   Why the split exists: a brand's typeface is not a UI typeface. A
+   Caslon brand used to set the whole navigation in Caslon, which read
+   as the guide being broken rather than as the brand being serif.
+
+   `.sidebar` sets the font for its whole subtree, so anything added to
+   the sidebar later is neutral by default. Form controls do not inherit
+   font, so each one is named explicitly.
+
+   Deliberately NOT in this list: `.section-label` (a heading of the
+   document, not of the tool) and `.sidebar-logo` (the client's actual
+   mark, an asset being displayed). `.sidebar-brand` IS chrome: the
+   wordmark TEXT is UI, while `brand.sidebarLogo` renders the real mark.
+   ──────────────────────────────────────────────────── */
+.sidebar,
+.copy-format-bar button,
+.toast,
+.copy-hint span,
+.logo-format-toggle button,
+.logo-size-select,
+.logo-size-picker,
+.logo-download-btn,
+.type-tester-label select,
+.changelog-back {
+  font-family: var(--bk-ui-font), sans-serif;
+}
+
+.color-value,
+.hierarchy-hex,
+.type-row-spec,
+.spacing-label,
+.spacing-value,
+.a11y-ratio,
+.code-block,
+.changelog-empty code {
+  font-family: var(--bk-mono-font), monospace;
+}
+
 /* ── Layout ── */
 .layout { display: flex; min-height: 100vh; }
 
 .sidebar {
+  /* Sets color as well as font for the whole subtree: without it, anything
+     added to the sidebar later inherits body's brand ink by default. */
+  color: var(--bk-ui-text);
   position: fixed;
   top: 0;
   left: 0;
@@ -91,19 +178,19 @@ body {
   height: 100vh;
   padding: 32px 0;
   overflow-y: auto;
-  background: var(--white);
-  border-right: 1px solid var(--mist);
+  background: var(--bk-ui-bg);
+  border-right: 1px solid var(--bk-ui-border);
   z-index: 100;
-  /* Column layout so the changelog link can pin to the bottom (margin-top:auto) */
+  /* Column layout so the changelog link can pin to the bottom (margin-top: auto) */
   display: flex;
   flex-direction: column;
 }
 
 .sidebar-brand {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--bk-ui-font), sans-serif;
   font-size: 18px;
   font-weight: 700;
-  color: var(--accent-text);
+  color: var(--bk-ui-text);
   padding: 0 24px;
   margin-bottom: 32px;
   letter-spacing: -0.02em;
@@ -123,33 +210,33 @@ body {
   display: block;
   padding: 8px 24px;
   font-size: 13px;
-  color: var(--slate);
+  color: var(--bk-ui-text-muted);
   text-decoration: none;
   transition: all 150ms ease;
   border-left: 2px solid transparent;
 }
 
-.sidebar-nav a:hover { color: var(--ink); background: var(--cloud); }
-.sidebar-nav a.active { color: var(--accent-text); border-left-color: var(--accent-text); background: rgba(var(--accent-rgb), 0.04); font-weight: 500; }
+.sidebar-nav a:hover { color: var(--bk-ui-text); background: var(--bk-ui-bg-subtle); }
+.sidebar-nav a.active { color: var(--bk-ui-text); border-left-color: var(--bk-ui-text); background: var(--bk-ui-bg-hover); font-weight: 600; }
 
 /* Agent callout: paste-ready prompt that points an AI agent at the exports */
 .sidebar-agent {
   margin: 28px 16px 8px;
   padding: 14px;
-  border: 1px solid var(--mist);
+  border: 1px solid var(--bk-ui-border);
   border-radius: 12px;
-  background: rgba(var(--accent-rgb), 0.04);
+  background: var(--bk-ui-bg-subtle);
 }
 .sidebar-agent-title {
   font-size: 12px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--bk-ui-text);
   margin-bottom: 4px;
 }
 .sidebar-agent-desc {
   font-size: 11px;
   line-height: 1.4;
-  color: var(--slate);
+  color: var(--bk-ui-text-muted);
   margin: 0 0 10px;
 }
 .sidebar-agent-btn {
@@ -159,8 +246,8 @@ body {
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
-  color: var(--primary-foreground);
-  background: var(--primary);
+  color: var(--bk-ui-selected-fg);
+  background: var(--bk-ui-selected);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -168,7 +255,7 @@ body {
 }
 .sidebar-agent-btn:hover { filter: brightness(0.9); }
 .sidebar-agent-btn:active { transform: translateY(1px); }
-.sidebar-agent-btn:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.sidebar-agent-btn:focus-visible { outline: 2px solid var(--bk-ui-text); outline-offset: 2px; }
 
 /* Changelog link: pinned to the bottom of the sidebar column */
 /* The author `display:flex` below would override the UA `[hidden]{display:none}`
@@ -178,35 +265,34 @@ body {
 .sidebar-changelog {
   margin: auto 16px 4px;        /* auto top pushes it to the bottom */
   padding-top: 16px;
-  border-top: 1px solid var(--mist);
+  border-top: 1px solid var(--bk-ui-border);
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--slate);
+  color: var(--bk-ui-text-muted);
   text-decoration: none;
   transition: color 150ms ease;
 }
-.sidebar-changelog:hover { color: var(--accent-text); }
+.sidebar-changelog:hover { color: var(--bk-ui-text); }
 .sidebar-changelog svg { width: 14px; height: 14px; flex: none; }
 .sidebar-changelog-label { flex: 1; }
 .sidebar-changelog-version {
   font-size: 11px;
-  color: var(--haze);
+  color: var(--bk-ui-text-subtle);
   font-variant-numeric: tabular-nums;
 }
-.sidebar-changelog:hover .sidebar-changelog-version { color: var(--slate); }
+.sidebar-changelog:hover .sidebar-changelog-version { color: var(--bk-ui-text-muted); }
 
 /* ── Sidebar Grouped Navigation ── */
 .nav-group {
   padding: 20px 24px 6px;
-  font-family: var(--font-body), sans-serif;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.10em;
   text-transform: uppercase;
-  color: var(--slate);
+  color: var(--bk-ui-text-muted);
   cursor: default;
   user-select: none;
 }
@@ -223,14 +309,14 @@ body {
   display: block;
   padding: 6px 24px 6px 32px;
   font-size: 13px;
-  color: var(--slate);
+  color: var(--bk-ui-text-muted);
   text-decoration: none;
   transition: all 150ms ease;
   border-left: 2px solid transparent;
 }
 
-.nav-group-items a:hover { color: var(--ink); background: var(--cloud); }
-.nav-group-items a.active { color: var(--accent-text); border-left-color: var(--accent-text); background: rgba(var(--accent-rgb), 0.04); font-weight: 500; }
+.nav-group-items a:hover { color: var(--bk-ui-text); background: var(--bk-ui-bg-subtle); }
+.nav-group-items a.active { color: var(--bk-ui-text); border-left-color: var(--bk-ui-text); background: var(--bk-ui-bg-hover); font-weight: 600; }
 
 .main { margin-left: 200px; flex: 1; }
 
@@ -247,11 +333,11 @@ body {
   left: 224px;
   display: flex;
   gap: 2px;
-  background: var(--white);
-  border: 1px solid var(--mist);
+  background: var(--bk-ui-bg);
+  border: 1px solid var(--bk-ui-border);
   border-radius: 9999px;
   padding: 3px;
-  box-shadow: 0 4px 20px rgba(var(--ink-rgb), 0.1);
+  box-shadow: 0 4px 20px rgba(var(--bk-ui-text-rgb), 0.1);
   z-index: 200;
   font-size: 12px;
 }
@@ -261,20 +347,19 @@ body {
   border: none;
   border-radius: 9999px;
   background: transparent;
-  color: var(--slate);
+  color: var(--bk-ui-text-muted);
   cursor: pointer;
-  font-family: var(--font-body), sans-serif;
   font-size: 12px;
   font-weight: 500;
   transition: all 150ms ease;
 }
 
 .copy-format-bar button.active {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--bk-ui-selected);
+  color: var(--bk-ui-selected-fg);
 }
 
-.copy-format-bar button:hover:not(.active) { background: var(--cloud); }
+.copy-format-bar button:hover:not(.active) { background: var(--bk-ui-bg-subtle); }
 
 /* ── Toast ── */
 .toast-container {
@@ -289,14 +374,13 @@ body {
 }
 
 .toast {
-  background: var(--ink);
-  color: var(--white);
+  background: var(--bk-ui-text);
+  color: var(--bk-ui-bg);
   padding: 10px 20px;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 500;
-  font-family: var(--font-body), sans-serif;
-  box-shadow: 0 4px 20px rgba(var(--ink-rgb), 0.2);
+  box-shadow: 0 4px 20px rgba(var(--bk-ui-text-rgb), 0.2);
   animation: toast-in 200ms ease forwards;
   display: flex;
   align-items: center;
@@ -397,7 +481,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(var(--ink-rgb), 0.6);
+  background: rgba(var(--bk-ui-text-rgb), 0.6);
   border-radius: inherit;
   opacity: 0;
   transition: opacity 150ms ease;
@@ -407,7 +491,7 @@ body {
 .copy-hint span {
   font-size: 11px;
   font-weight: 700;
-  color: var(--white);
+  color: var(--bk-ui-selected-fg);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -437,15 +521,23 @@ body {
 .color-name { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
 
 .color-value {
+  display: flex;
+  flex-direction: column;
   font-size: 11px;
   font-weight: 400;
-  color: var(--slate);
+  color: var(--bk-ui-text-muted);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
   padding: 2px 0;
 }
 
-.color-value:hover { color: var(--accent-text); }
+.color-value-hex, .color-value-oklch { white-space: nowrap; }
+.hierarchy-hex { color: var(--bk-ui-text-muted); }
+/* Inherits --bk-ui-text-muted from .color-value: a second, lighter tint here
+   would put two low-contrast greys in a row under every swatch. */
+.color-value-oklch { font-size: 10px; }
+
+.color-value:hover { color: var(--bk-ui-text); }
 
 .color-role { font-size: 11px; color: var(--haze); margin-top: 2px; }
 
@@ -648,12 +740,11 @@ body {
 }
 
 .type-tester-label select {
-  font-family: var(--font-body), sans-serif;
   font-size: 12px;
   font-weight: 500;
-  color: var(--accent-text);
-  background: rgba(var(--accent-rgb), 0.06);
-  border: 1px solid rgba(var(--accent-rgb), 0.15);
+  color: var(--bk-ui-text);
+  background: var(--bk-ui-bg-subtle);
+  border: 1px solid var(--bk-ui-border);
   border-radius: 6px;
   padding: 4px 8px;
   cursor: pointer;
@@ -697,7 +788,7 @@ body {
 }
 
 .type-row-sample { color: var(--ink); }
-.type-row-spec { font-size: 12px; color: var(--slate); text-align: right; font-variant-numeric: tabular-nums; }
+.type-row-spec { font-size: 12px; color: var(--bk-ui-text-muted); text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ── Text Hierarchy ── */
 .hierarchy-demo {
@@ -823,15 +914,18 @@ body {
   background: transparent;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  font-family: var(--font-body), sans-serif;
   font-size: 11px;
   font-weight: 500;
   transition: all 150ms ease;
 }
 
+/* On a dark or gradient card the chip inverts: --bk-ui-selected is the same
+   ink as the default .on-dark surface, so a filled chip would vanish. The
+   .on-light / .bg-light overrides below put the ink back. */
+
 .logo-format-toggle button.active {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--bk-ui-selected-fg);
+  color: var(--bk-ui-selected);
 }
 
 .logo-format-toggle button:hover:not(.active) {
@@ -841,27 +935,26 @@ body {
 
 /* Light background variant for format toggle */
 .logo-card.bg-light .logo-format-toggle {
-  background: var(--cloud);
-  border-color: var(--mist);
+  background: var(--bk-ui-bg-subtle);
+  border-color: var(--bk-ui-border);
 }
 
 .logo-card.bg-light .logo-format-toggle button {
-  color: var(--slate);
+  color: var(--bk-ui-text-muted);
 }
 
 .logo-card.bg-light .logo-format-toggle button.active {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--bk-ui-selected);
+  color: var(--bk-ui-selected-fg);
 }
 
 .logo-card.bg-light .logo-format-toggle button:hover:not(.active) {
-  background: var(--mist);
-  color: var(--ink);
+  background: var(--bk-ui-bg-hover);
+  color: var(--bk-ui-text);
 }
 
 .logo-size-select,
 .logo-size-picker {
-  font-family: var(--font-body), sans-serif;
   font-size: 12px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.8);
@@ -885,44 +978,44 @@ body {
 
 /* Light background variant for size select */
 .logo-card.bg-light .logo-size-select {
-  color: var(--graphite);
-  background-color: var(--cloud);
-  border-color: var(--mist);
+  color: var(--bk-ui-text);
+  background-color: var(--bk-ui-bg-subtle);
+  border-color: var(--bk-ui-border);
   background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%236E6584' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 .logo-card.bg-light .logo-size-select:hover,
 .logo-card.on-light .logo-size-picker:hover {
-  background-color: var(--mist);
+  background-color: var(--bk-ui-bg-hover);
 }
 
 /* Engine-generated on-light variants */
 .logo-card.on-light .logo-format-toggle {
-  background: var(--mist);
-  border-color: var(--haze);
+  background: var(--bk-ui-bg-subtle);
+  border-color: var(--bk-ui-border-strong);
 }
 .logo-card.on-light .logo-format-toggle button {
-  color: var(--slate);
+  color: var(--bk-ui-text-muted);
 }
 .logo-card.on-light .logo-format-toggle button.active {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--bk-ui-selected);
+  color: var(--bk-ui-selected-fg);
 }
 .logo-card.on-light .logo-format-toggle button:hover:not(.active) {
-  background: var(--cloud);
+  background: var(--bk-ui-bg-subtle);
 }
 .logo-card.on-light .logo-size-picker {
-  color: var(--graphite);
-  background-color: var(--cloud);
-  border-color: var(--mist);
+  color: var(--bk-ui-text);
+  background-color: var(--bk-ui-bg-subtle);
+  border-color: var(--bk-ui-border);
 }
 .logo-card.on-light .logo-download-btn {
-  border-color: var(--haze);
+  border-color: var(--bk-ui-border-strong);
   background: transparent;
-  color: var(--accent-text);
+  color: var(--bk-ui-text);
 }
 .logo-card.on-light .logo-download-btn:hover {
-  background: var(--cloud);
+  background: var(--bk-ui-bg-subtle);
 }
 
 .logo-download-btn {
@@ -933,8 +1026,7 @@ body {
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.25);
   background: rgba(255, 255, 255, 0.1);
-  color: var(--white);
-  font-family: var(--font-body), sans-serif;
+  color: var(--bk-ui-selected-fg);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -948,13 +1040,13 @@ body {
 
 /* Light background variant for download button */
 .logo-card.bg-light .logo-download-btn {
-  border-color: var(--haze);
+  border-color: var(--bk-ui-border-strong);
   background: transparent;
-  color: var(--accent-text);
+  color: var(--bk-ui-text);
 }
 
 .logo-card.bg-light .logo-download-btn:hover {
-  background: rgba(var(--accent-rgb), 0.06);
+  background: var(--bk-ui-bg-subtle);
 }
 
 /* ── Voice ── */
@@ -1086,7 +1178,7 @@ body {
 .spacing-label {
   font-size: 12px;
   font-weight: 500;
-  color: var(--slate);
+  color: var(--bk-ui-text-muted);
   width: 70px;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -1106,7 +1198,7 @@ body {
   top: 50%;
   transform: translateY(-50%);
   font-size: 10px;
-  color: var(--slate);
+  color: var(--bk-ui-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1142,11 +1234,10 @@ body {
 
 /* ── Code Block ── */
 .code-block {
-  background: var(--ink);
-  color: var(--mist);
+  background: var(--bk-ui-code-bg);
+  color: var(--bk-ui-code-text);
   border-radius: 16px;
   padding: 28px;
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 13px;
   line-height: 1.8;
   overflow-x: auto;
@@ -1212,13 +1303,13 @@ body {
   display: inline-block;
   font-size: 13px;
   font-weight: 500;
-  color: var(--slate);
+  color: var(--bk-ui-text-muted);
   text-decoration: none;
   margin-bottom: 32px;
   transition: color 150ms ease;
 }
 
-.changelog-back:hover { color: var(--accent-text); }
+.changelog-back:hover { color: var(--bk-ui-text); }
 
 .changelog-brand {
   font-family: var(--font-body), sans-serif;
@@ -1326,12 +1417,11 @@ body {
 }
 
 .changelog-empty code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;
-  background: var(--mist);
+  background: var(--bk-ui-bg-hover);
   padding: 2px 6px;
   border-radius: 6px;
-  color: var(--ink);
+  color: var(--bk-ui-text);
 }
 
 .changelog-footer {

@@ -52,7 +52,20 @@
   // injected <style> block ( < > ), the :root {…} rule ( { } ), or its own
   // declaration to smuggle in another ( ; ). Mirrors cssVal() in
   // dist/engine.js. A real CSS value never contains them.
-  function cssVal(v) { return String(v == null ? '' : v).replace(/[<>{};]/g, ''); }
+  function stripComments(v) {
+    // Repeat to a fixed point: see dist/engine.js. One pass can rebuild the
+    // delimiter it removed.
+    var out = String(v), prev;
+    do { prev = out; out = out.replace(/\/\*|\*\//g, ''); } while (out !== prev);
+    return out;
+  }
+  function cssVal(v) { return stripComments(String(v == null ? '' : v).replace(/[<>{};]/g, '')); }
+  /* Property names get a stricter pass than values: see dist/engine.js. */
+  function cssKey(k) { return String(k == null ? '' : k).replace(/[\u0000-\u0020<>{}();:,'"\\\/*\[\]]/g, ''); }
+
+  /* `--bk-*` styles brandkit's chrome, not the brand: never injected from a
+     config theme. Mirrors engine.js / lib/template.js. */
+  function isChromeToken(key) { return /^--bk-/i.test(cssKey(key)); }
 
   /* ================================================================
      Bootstrap: fonts + theme variables, mirroring engine.js
@@ -78,16 +91,21 @@
       }
     }
 
+    // Not gated on cfg.theme: a config with fonts and no theme still needs the
+    // font vars, or this page previews in the baseline face while the build
+    // ships the brand's. Mirrors dist/engine.js.
+    var vars = [];
     if (cfg.theme) {
-      var vars = [];
-      var keys = Object.keys(cfg.theme);
+      var keys = Object.keys(cfg.theme).filter(function (k) { return !isChromeToken(k); });
       for (var i = 0; i < keys.length; i++) {
-        vars.push('  ' + cssVal(keys[i]) + ': ' + cssVal(cfg.theme[keys[i]]) + ';');
+        vars.push('  ' + cssKey(keys[i]) + ': ' + cssVal(cfg.theme[keys[i]]) + ';');
       }
-      if (cfg.fonts) {
-        if (cfg.fonts.display) vars.push('  --font-display: ' + fontStack(cfg.fonts.display) + ';');
-        if (cfg.fonts.body) vars.push('  --font-body: ' + fontStack(cfg.fonts.body) + ';');
-      }
+    }
+    if (cfg.fonts) {
+      if (cfg.fonts.display) vars.push('  --font-display: ' + fontStack(cfg.fonts.display) + ';');
+      if (cfg.fonts.body) vars.push('  --font-body: ' + fontStack(cfg.fonts.body) + ';');
+    }
+    if (vars.length) {
       var style = document.createElement('style');
       style.setAttribute('data-brandkit-theme', '');
       style.textContent = ':root {\n' + vars.join('\n') + '\n}';

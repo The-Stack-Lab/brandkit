@@ -5,9 +5,28 @@ var template = require('../lib/template');
 var unfilled = require('../lib/unfilled');
 
 module.exports = function build(args) {
-  var force = args.indexOf('--force') !== -1;
-  args = args.filter(function (a) { return a !== '--force'; });
-  var targetDir = path.resolve(args[0] || '.');
+  // `--` ends the options: everything after it is positional, so a directory
+  // whose name starts with a dash stays expressible (`-- ./-weird-dir`), and
+  // a literal `--force` after it is a path, not the flag. Split first, then
+  // read flags out of the left side only.
+  var sep = args.indexOf('--');
+  var opts = sep === -1 ? args : args.slice(0, sep);
+  var rest = sep === -1 ? [] : args.slice(sep + 1);
+  var force = opts.indexOf('--force') !== -1;
+  // Anything else with a leading dash is a typo, not a directory name:
+  // `build <dir> --froce` used to be accepted silently.
+  var unknown = opts.filter(function (a) {
+    return a.charAt(0) === '-' && a !== '--force';
+  })[0];
+  if (unknown) {
+    console.error('');
+    console.error('  Unknown option: ' + unknown);
+    console.error('  Usage: brandkit build [dir] [--force]');
+    console.error('');
+    process.exit(1);
+  }
+  var positional = opts.filter(function (a) { return a.charAt(0) !== '-'; }).concat(rest);
+  var targetDir = path.resolve(positional[0] || '.');
   var distDir = resolve.getDistPath();
 
   var configPath = path.join(targetDir, 'config.json');
@@ -58,6 +77,16 @@ module.exports = function build(args) {
   }
   if (blocking.length) {
     console.log('  Building with ' + blocking.length + ' essential field(s) not yet defined (--force).');
+    console.log('');
+  }
+
+  // The chrome (sidebar, controls, toasts) is deliberately not brand-painted,
+  // so a --bk-* key in the theme is a misunderstanding worth naming rather than
+  // silently dropping. The build drops it either way; see lib/template.js.
+  var chromeKeys = Object.keys(config.theme || {}).filter(template.isChromeToken);
+  if (chromeKeys.length) {
+    console.log('  Ignoring ' + chromeKeys.length + ' reserved chrome token(s) in theme: ' + chromeKeys.join(', '));
+    console.log('    --bk-* styles the guide UI, not the brand. Remove them from config.theme.');
     console.log('');
   }
 

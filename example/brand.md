@@ -77,6 +77,14 @@ When you change this brand (colors, type, logos, voice, spacing, or anything in 
 
 Revision history (newest first):
 
+- **v1.8.0** (September 2026):
+  - Separated the guide into chrome and content. brandkit's own UI (sidebar, navigation, controls, toasts) now reads nothing from config.json, fonts or palette, so it is identical in every guide. The brand gets the whole document instead: header, logos, swatches, specimens, demo surfaces and prose.
+  - Reported values (hex, oklch, type metrics, spacing steps, contrast ratios, CSS) now render in one monospace stack rather than the brand typeface. A measurement a reader copies is not body copy, and it replaces two different hardcoded mono stacks.
+  - Swatch values now stack the hex above the oklch instead of sharing one line, because the monospace pair is wider than a swatch column and used to wrap mid-token. One click target still, still copying the hex.
+  - Reserved the --bk-* token namespace for that chrome. A --bk- key in config.theme is dropped by build and by the dev engine, and build reports it.
+  - Scaffolded AGENTS.md now states the rule, so an agent maintaining a guide knows not to restyle the tool around the brand.
+  - `brandkit init --update` now refreshes AGENTS.md instead of skipping it, so a guide installed before a rule existed stops handing its agent an outdated contract. The flag can also come before the directory now; it used to scaffold into a folder named "--update".
+  - Hardening from four rounds of review: the reserved-namespace guard normalizes a theme key the way a browser will read it, so a key carrying a semicolon or wrapped in a CSS comment can no longer arrive as a chrome token; the value sanitizer strips comment delimiters to a fixed point, since one pass could rebuild the delimiter it removed and comment out the rest of the generated block; chrome tokens no longer reach tokens.json; the hierarchy renderer escapes its remaining config fields; dev and build agree on font variables when a config has fonts but no theme; and the two CLIs parse their options properly, rejecting a mistyped flag in any position while honoring a bare -- as the end of options.
 - **v1.7.2** (September 2026): With a basePath set, the built pages now prefix the link to the changelog and the changelog's link back to the guide, like every other reference to a generated file. Browsers already followed the right address; the markup is now correct for crawlers, link checkers and agents too.
 - **v1.7.1** (September 2026):
   - Palette tokens in tokens.json describe a wide-gamut value the same way theme tokens do: $value stays sRGB hex, and the original rides along as authored plus colorSpace. The separate oklch key that 1.7.0 introduced is gone.

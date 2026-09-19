@@ -122,7 +122,7 @@ On `brandkit build`, the generated `index.html` then points its stylesheet, engi
 - `basePath`: absolute path the guide is served from (e.g. `/brand`). Omit (or leave empty) when serving at the root or from a trailing-slash directory URL: output stays page-relative and unchanged. See [Serving from a base path](#serving-from-a-base-path).
 - `brand`: name, tagline, description, version, date; optional `guideLabel` (renames the "Web Style Guide" header/footer label), `headerLogo` and `sidebarLogo` (logo image paths that replace the text wordmark in the header and left menu)
 - `fonts`: display + body with Google Fonts import; each font takes an optional `fallback` web stand-in for brands whose official typeface isn't web-available (the rendered font stack becomes `'family', 'fallback', sans-serif`, while labels keep the clean family name)
-- `theme`: CSS variable map (colors, gradients, font vars)
+- `theme`: CSS variable map (colors, gradients, font vars). Paints the guide's **content**, not brandkit's UI: see [Chrome vs content](#chrome-vs-content). `--bk-*` is reserved and ignored here.
 - `nav`: sidebar structure
 - `colors`: brand / neutrals / semantic palettes
 - `gradients`, `gradientUsage`: gradient definitions + do/don't lists
@@ -220,6 +220,29 @@ The fallbacks mean single-accent brands need set none of these.
 - **Build**: `brandkit build` appends the generated `:root` after the stylesheet's defaults and injects the Google Fonts `<link>` and page title into `index.html`.
 
 Swap the config, and every color, gradient, and font token updates everywhere.
+
+### Chrome vs content
+
+The page is three layers, and the brand only paints one of them.
+
+| | What it is | What styles it |
+|---|---|---|
+| **Content** | The document: prose, headings, swatches, specimens, wordmark blocks, component demos | The brand. `config.theme` + `config.fonts` |
+| **Chrome** | brandkit's UI around it: the sidebar and its navigation, the copy-format bar, toasts, the controls inside cards | Its own fixed tokens (`--bk-ui-font`, `--bk-ui-bg`, `--bk-ui-text`, …). Reads nothing from the config |
+| **Data** | The values the guide reports back: hex, oklch, type metrics, spacing steps, contrast ratios, CSS | One monospace stack (`--bk-mono-font`) |
+
+A brand typeface is not a UI typeface, and a brand palette is not a UI palette. Before this split,
+a serif brand set the guide's whole navigation in its serif and painted it in the brand's greys,
+which read as a broken guide rather than as a serif brand. The chrome is now identical in every
+guide, and a reported value like `#F5F7FE` reads as machine output rather than as a sentence. The
+brand gets the whole document: the header, the logos, the swatches, the specimens, the demo
+surfaces, the prose.
+
+`--bk-*` is a **reserved namespace** for chrome tokens. `brandkit build`, the dev engine and the
+exporters all drop any `--bk-` key found in `config.theme` (build prints what it dropped), so a
+brand cannot be routed into the tool by accident, and a chrome grey cannot reach `tokens.json`
+labelled as the client's. `brandkit init` scaffolds the same rule into `AGENTS.md` for the agents that maintain the
+guide.
 
 ## License
 

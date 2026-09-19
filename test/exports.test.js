@@ -189,10 +189,14 @@ check('the fixture itself is dash-free (or this section proves nothing)', DASHES
 // The two allowed files match a dash on purpose, by escape, to recognize one
 // in a client's content.
 var ESCAPED = /\\u201[34]|&[mn]dash;|&#821[12];/;
-var ALLOW_ESCAPE = ['lib/export.js', 'lib/config-schema.js'];
+// exports.test.js joins them now that the scan covers test/: it builds dashed
+// fixtures by escape in order to prove they are stripped.
+var ALLOW_ESCAPE = ['lib/export.js', 'lib/config-schema.js', 'test/exports.test.js'];
 var offenders = [];
+var SKIP = ['test/fixtures'];   // pinned historical copy, dashes and all
 function scan(rel) {
   var abs = path.join(__dirname, '..', rel);
+  if (SKIP.indexOf(rel.split(path.sep).join('/')) !== -1) return;
   if (fs.statSync(abs).isDirectory()) {
     fs.readdirSync(abs).forEach(function (f) { scan(path.join(rel, f)); });
     return;
@@ -203,8 +207,9 @@ function scan(rel) {
   if (DASHES.test(text)) offenders.push(posix);
   else if (ESCAPED.test(text) && ALLOW_ESCAPE.indexOf(posix) === -1) offenders.push(posix + ' (escaped)');
 }
-['bin', 'cli', 'lib', 'dist', 'integrations', 'example', 'README.md', 'config.schema.json'].forEach(scan);
-check('no dashes anywhere in the shipped package or the demo', offenders, []);
+['bin', 'cli', 'lib', 'dist', 'integrations', 'example', 'scripts', 'test',
+ 'README.md', 'config.schema.json', '.claude/CLAUDE.md'].forEach(scan);
+check('no dashes anywhere in the package, the demo, the tests or the contract', offenders, []);
 
 // A client's own dash is theirs to keep: stripped from the family prefix, as
 // before, but never rewritten inside their prose.
