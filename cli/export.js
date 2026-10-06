@@ -1,9 +1,10 @@
 var fs = require('fs');
 var path = require('path');
 var exporter = require('../lib/export');
+var validate = require('../lib/validate');
 
 /**
- * brandkit export [dir] [--format json|dtcg|md|all] [--out <dir>]
+ * brandkit export [dir] [--format json|dtcg|md|all] [--out <dir>] [--force]
  *
  * Emit agent-native views of a brand from its config.json:
  *   brand.json, normalized, semantic brand (roles, usage, contrast, assets)
@@ -15,6 +16,7 @@ module.exports = function exportCmd(args) {
   var positional = [];
   var format = 'all';
   var outDir = null;
+  var force = false;
 
   for (var i = 0; i < args.length; i++) {
     var a = args[i];
@@ -22,6 +24,7 @@ module.exports = function exportCmd(args) {
     else if (a.indexOf('--format=') === 0) { format = a.slice('--format='.length); }
     else if (a === '--out' && args[i + 1]) { outDir = args[++i]; }
     else if (a.indexOf('--out=') === 0) { outDir = a.slice('--out='.length); }
+    else if (a === '--force') { force = true; }
     else if (a.charAt(0) !== '-') { positional.push(a); }
   }
 
@@ -43,6 +46,18 @@ module.exports = function exportCmd(args) {
     console.error('  Could not parse ' + path.relative(process.cwd(), configPath) + ': ' + e.message);
     console.error('');
     process.exit(1);
+  }
+
+  // Agents read these files as the brand. Projecting a malformed config into
+  // them hands every agent the same wrong answer, so stop unless forced.
+  var checked = validate.validateConfig(config);
+  if (validate.report(checked, { label: path.relative(process.cwd(), configPath) })) {
+    if (!force) {
+      console.error('  Fix them, or run `brandkit export --force` to export anyway.');
+      console.error('');
+      process.exit(1);
+    }
+    console.log('  Exporting anyway (--force).');
   }
 
   var dest = outDir ? path.resolve(outDir) : targetDir;

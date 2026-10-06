@@ -17,7 +17,12 @@ node bin/brandkit.js dev example
 
 # Or use the npm script
 npm run dev
+
+# Run every test file (test/run.js); CI runs the same on Node 18/20/22
+npm test
 ```
+
+`test/run.js` runs each `test/*.test.js` in its own process and reports every failing file. It replaced an `&&` chain, under which one red file silently skipped all the files after it. Anything compared against a fixture calls `starterConfig({ date })`: unpinned, the starter stamps the current month.
 
 The `fetch()` in engine.js requires a server (won't work from `file://`).
 
@@ -47,6 +52,7 @@ lib/
     render.js         ← Optional Playwright escalation, detected, never depended on
     reconcile.js      ← Precedence, evidence, conflicts, rejections
   config-schema.js    ← Starter config template + merge logic
+  validate.js         ← Zero-dep draft-07 subset validator for config.schema.json (build/export gate)
   formats.js          ← Output-format presets + safe zone / clear space normalizers (preset table mirrored in dist/engine.js)
   resolve.js          ← Path to dist/ (swagger-ui-dist pattern)
 config.schema.json    ← JSON Schema for config.json (shipped in npm files)
@@ -108,6 +114,8 @@ Why: a brand typeface is not a UI typeface. A Caslon client guide rendered its e
 `--bk-*` is a **reserved namespace**. `isChromeToken()` (`lib/template.js`, mirrored in `dist/engine.js` and `dist/changelog.js`) drops any `--bk-` key found in `config.theme` from the generated `:root`, so neither a hand-written theme nor one an agent derived from a host codebase can repaint the tool with the brand it documents; `build` prints what it dropped. `test/chrome.test.js` pins both halves of the split, and `lib/agents-doc.js` states the rule in the scaffolded AGENTS.md.
 
 ### Config Schema
+
+**Enforced (LAB-1433).** `build` and `export` run `lib/validate.js`. Errors are shape only (wrong type, missing required) and stop the command unless `--force`; value constraints (enum, pattern, minimum) and undescribed keys are warnings. The split is deliberate: run against the 59 config files on Kyle's machine (16 distinct consumer guides plus their build and worktree copies), value-level enforcement failed guides that render fine (free-text ratings like "Fail: never use", rgba neutrals), while the one shape error found (bare-string gradient stops) is a real render bug. `__TODO` reads as absent. `test/schema.test.js` requires the starter, the example and `generate` output to validate with zero warnings, and fails if the schema adopts a keyword the validator does not implement. If you add a config field, add it to the schema in the same commit or every guide gets an unknown-key warning.
 
 `config.json` top-level keys:
 

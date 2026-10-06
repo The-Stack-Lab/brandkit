@@ -70,18 +70,29 @@
       }
     },
     "colorGroup": {
-      "type": "object",
-      "properties": {
-        "label": {
-          "type": "string"
+      "description": "A color group: { label, items }, or a bare array of colors (the shape guides before 1.1 shipped, still rendered and exported).",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/colorItem"
+              }
+            }
+          }
         },
-        "items": {
+        {
           "type": "array",
           "items": {
             "$ref": "#/definitions/colorItem"
           }
         }
-      }
+      ]
     },
     "logoUsage": {
       "type": "object",

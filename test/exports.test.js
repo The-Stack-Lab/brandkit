@@ -295,18 +295,19 @@ var SKIP = ['test/fixtures'];   // pinned historical copy, dashes and all
 function scan(rel) {
   var abs = path.join(__dirname, '..', rel);
   if (SKIP.indexOf(rel.split(path.sep).join('/')) !== -1) return;
+  if (!fs.existsSync(abs)) return;   // docs/ arrives with the first ADR
   if (fs.statSync(abs).isDirectory()) {
     fs.readdirSync(abs).forEach(function (f) { scan(path.join(rel, f)); });
     return;
   }
-  if (!/\.(js|json|md|css|html|svg)$/.test(rel)) return;
+  if (!/\.(js|json|md|css|html|svg|ya?ml)$/.test(rel)) return;
   var text = fs.readFileSync(abs, 'utf8');
   var posix = rel.split(path.sep).join('/');
   if (DASHES.test(text)) offenders.push(posix);
   else if (ESCAPED.test(text) && ALLOW_ESCAPE.indexOf(posix) === -1) offenders.push(posix + ' (escaped)');
 }
 ['bin', 'cli', 'lib', 'dist', 'integrations', 'example', 'scripts', 'test',
- 'README.md', 'config.schema.json', '.claude/CLAUDE.md'].forEach(scan);
+ 'README.md', 'config.schema.json', '.claude/CLAUDE.md', '.github', 'docs'].forEach(scan);
 check('no dashes anywhere in the package, the demo, the tests or the contract', offenders, []);
 
 // A client's own dash is theirs to keep: stripped from the family prefix, as
@@ -318,7 +319,9 @@ check('a legacy "Family (dash) description" prefix is still stripped',
 /* ---------------- 5. Rewording the starter did not break provenance ---------------- */
 
 var legacy = fixture('starter-1.6.0.json');
-var current = schema.starterConfig();
+// The fixture's month, not the clock's: this section is about copy, and an
+// unpinned starter made it fail every month after September 2026.
+var current = schema.starterConfig({ date: legacy.changelog[0].date });
 Object.keys(legacy).forEach(function (key) {
   if (key === 'brand') return; // version and date differ by design
   check('a 1.6.0 scaffold "' + key + '" still reads as scaffold', schema.copyKey(legacy[key]), schema.copyKey(current[key]));

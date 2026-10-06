@@ -3,6 +3,7 @@ var path = require('path');
 var resolve = require('../lib/resolve');
 var template = require('../lib/template');
 var unfilled = require('../lib/unfilled');
+var validate = require('../lib/validate');
 
 module.exports = function build(args) {
   // `--` ends the options: everything after it is positional, so a directory
@@ -44,6 +45,20 @@ module.exports = function build(args) {
   console.log('  Reading ' + path.relative(process.cwd(), configPath) + '...');
 
   var config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+  // A config the schema rejects renders wrong rather than failing: a gradient
+  // stop with no `color` is an empty dot. Stop here, where the message can say
+  // which field. --force builds anyway, like an unfilled draft.
+  var checked = validate.validateConfig(config);
+  if (validate.report(checked, { label: path.relative(process.cwd(), configPath) })) {
+    if (!force) {
+      console.error('  Fix them, or run `brandkit build --force` to build anyway.');
+      console.error('');
+      process.exitCode = 1;
+      return;
+    }
+    console.log('  Building anyway (--force).');
+  }
 
   // A guide with unfilled essentials is not ready to send. Building it anyway
   // is how brandkit's own placeholder content reached client approval

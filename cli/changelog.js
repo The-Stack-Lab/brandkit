@@ -1,5 +1,6 @@
 var fs = require('fs');
 var path = require('path');
+var schema = require('../lib/config-schema');
 
 /**
  * brandkit changelog: record a brand-guide revision.
@@ -87,7 +88,7 @@ module.exports = function changelog(args) {
   }
 
   var nextVersion = nextVersionFor(prevVersion, opts);
-  var date = opts.date || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  var date = opts.date || schema.monthStamp();
 
   var entry = { version: nextVersion, date: date, changes: opts.messages.slice() };
   config.changelog.unshift(entry);
