@@ -2,7 +2,7 @@
  * Tests for LAB-1433: config.schema.json is enforced, not just editor help.
  *
  * The schema was never checked against a real config before it was enforced.
- * Run against the 59 configs on the maintainer's machine, it rejected guides
+ * Run against the 59 config files on the maintainer's machine (16 distinct guides plus build copies), it rejected guides
  * that render correctly today: bare-array color groups (Freeway), free-text
  * contrast ratings, rgba neutrals. Those cases are pinned here so the schema
  * cannot drift back to breaking builds, and the configs brandkit itself writes
