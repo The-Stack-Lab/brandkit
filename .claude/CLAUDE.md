@@ -17,7 +17,12 @@ node bin/brandkit.js dev example
 
 # Or use the npm script
 npm run dev
+
+# Run every test file (test/run.js); CI runs the same on Node 18/20/22
+npm test
 ```
+
+`test/run.js` runs each `test/*.test.js` in its own process and reports every failing file. It replaced an `&&` chain, under which one red file silently skipped all the files after it. Anything compared against a fixture calls `starterConfig({ date })`: unpinned, the starter stamps the current month.
 
 The `fetch()` in engine.js requires a server (won't work from `file://`).
 
