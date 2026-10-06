@@ -58,6 +58,8 @@ And for a person who wants to hand the guide to their own agent, the sidebar sho
 
 A JSON Schema for `config.json` ships at [`config.schema.json`](config.schema.json). Point your editor's `$schema` at it for validation and autocomplete.
 
+`brandkit build` and `brandkit export` check `config.json` against it. A wrong shape (a string where an object belongs, a missing `brand`, `fonts` or `theme`) stops the command and names the field; pass `--force` to go ahead anyway. A value the schema does not expect (a rating outside AAA/AA/AA Large/Fail, an rgba where a hex is expected) or a key it does not describe is printed as a warning and never stops anything. `__TODO` counts as unset.
+
 ## Changelog
 
 A brand guide evolves, so brandkit keeps a history of its revisions. Record one with:

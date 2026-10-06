@@ -52,7 +52,9 @@ function printHelp() {
   console.log('      --brand-name <name>        Helps rank which asset is the brand logo');
   console.log('    brandkit dev [dir]         Start dev server with live reload');
   console.log('    brandkit build [dir]       Build static files for production');
+  console.log('      --force                    Build even if config.json fails the schema or is unfilled');
   console.log('    brandkit export [dir]      Emit agent-native brand data (brand.json, tokens.json, brand.md)');
+  console.log('      --force                    Export even if config.json fails the schema');
   console.log('    brandkit changelog "<msg>" Record a revision (bumps version, adds a changelog entry)');
   console.log('');
   console.log('  Options:');
